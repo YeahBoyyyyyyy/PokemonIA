@@ -187,4 +187,34 @@ attacks = {
                         }
                     }
                 },
+
+            "rain_dance": {
+                "type": "Water",
+                "category": "Status",
+                "basePower": 0,
+                "priority": 0,
+                "accuracy": 100,
+                "PP": 5,
+                "multi_target": False,
+                "effect": {
+                    "weather": {
+                    "type": "Rain",
+                    "duration": 5
+                    }
+                }
+            },
+            "recover": {
+                "type": "Normal",
+                "category": "Status",
+                "basePower": 0,
+                "priority": 0,
+                "accuracy": 100,
+                "PP": 10,
+                "multi_target": False,
+                "effect": {
+                    "heal": {
+                        "amount": lambda pokemon: setattr(pokemon, 'current_hp', min(pokemon.max_hp, pokemon.current_hp + pokemon.max_hp // 2))
+                            }
+                    }
+                },
 }
