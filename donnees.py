@@ -9,6 +9,8 @@ TERRAIN = ["Grassy Terrain", "Electric Terrain", "Psychic Terrain", "Misty Terra
 
 WEATHER = ["Sunny", "Rainy", "Snow", "Sandstorm", "None"]
 
+
+
 type_chart = [
     # Normal  Fight  Fly  Pois  Grou  Rock  Bug   Ghos  Stee  Fire  Wate  Gras  Elec  Psyc  Ice   Drag  Dark  Fair
     [  1.0,   1.0,  1.0,  1.0,  1.0,  0.5,  1.0,  0.0,  0.5,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0],  # Normal

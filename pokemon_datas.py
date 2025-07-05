@@ -16,7 +16,8 @@ pokemon_data = {
             "Sp. Atk": 100,
             "Sp. Def": 100,
             "Speed": 80
-        }
+        },
+        "fully_evolved": True
     },
     "Charizard": {
         "name": "Charizard",
@@ -29,7 +30,8 @@ pokemon_data = {
             "Sp. Atk": 109,
             "Sp. Def": 85,
             "Speed": 100
-        }
+        },
+        "fully_evolved": True
     },
     "Blastoise": {
         "name": "Blastoise",
@@ -42,7 +44,8 @@ pokemon_data = {
             "Sp. Atk": 85,
             "Sp. Def": 105,
             "Speed": 78
-        }
+        },
+        "fully_evolved": True
     },
     "Butterfree": {
         "name": "Butterfree",
@@ -55,7 +58,8 @@ pokemon_data = {
             "Sp. Atk": 90,
             "Sp. Def": 80,
             "Speed": 70
-        }
+        },
+        "fully_evolved": True
     },
     "Beedrill": {
         "name": "Beedrill",
@@ -68,7 +72,8 @@ pokemon_data = {
             "Sp. Atk": 45,
             "Sp. Def": 80,
             "Speed": 75
-        }
+        },
+        "fully_evolved": True
     },
     "Pidgeot": {
         "name": "Pidgeot",
@@ -81,7 +86,8 @@ pokemon_data = {
             "Sp. Atk": 70,
             "Sp. Def": 70,
             "Speed": 101
-        }
+        },
+        "fully_evolved": True
     },
     "Raticate": {
         "name": "Raticate",
@@ -94,7 +100,8 @@ pokemon_data = {
             "Sp. Atk": 50,
             "Sp. Def": 70,
             "Speed": 97
-        }
+        },
+        "fully_evolved": True
     },
     "Fearow": {
         "name": "Fearow",
@@ -107,7 +114,8 @@ pokemon_data = {
             "Sp. Atk": 61,
             "Sp. Def": 61,
             "Speed": 100
-        }
+        },
+        "fully_evolved": True
     },
     "Arbok": {
         "name": "Arbok",
@@ -120,7 +128,8 @@ pokemon_data = {
             "Sp. Atk": 65,
             "Sp. Def": 79,
             "Speed": 80
-        }
+        },
+        "fully_evolved": True
     },
     "Raichu": {
         "name": "Raichu",
@@ -133,7 +142,8 @@ pokemon_data = {
             "Sp. Atk": 90,
             "Sp. Def": 80,
             "Speed": 110
-        }
+        },
+        "fully_evolved": True
     },
     "Sandslash": {
         "name": "Sandslash",
@@ -146,7 +156,8 @@ pokemon_data = {
             "Sp. Atk": 45,
             "Sp. Def": 55,
             "Speed": 65
-        }
+        },
+        "fully_evolved": True
     },
     "Nidoqueen": {
         "name": "Nidoqueen",
@@ -159,7 +170,8 @@ pokemon_data = {
             "Sp. Atk": 75,
             "Sp. Def": 85,
             "Speed": 76
-        }
+        },
+        "fully_evolved": True
     },
     "Nidoking": {
         "name": "Nidoking",
@@ -172,7 +184,8 @@ pokemon_data = {
             "Sp. Atk": 85,
             "Sp. Def": 75,
             "Speed": 85
-        }
+        },
+        "fully_evolved": True
     },
     "Clefable": {
         "name": "Clefable",
@@ -185,7 +198,8 @@ pokemon_data = {
             "Sp. Atk": 95,
             "Sp. Def": 90,
             "Speed": 60
-        }
+        },
+        "fully_evolved": True
     },
     "Ninetales": {
         "name": "Ninetales",
@@ -198,7 +212,8 @@ pokemon_data = {
             "Sp. Atk": 81,
             "Sp. Def": 100,
             "Speed": 100
-        }
+        },
+        "fully_evolved": True
     },
     "Wigglytuff": {
         "name": "Wigglytuff",
@@ -211,7 +226,8 @@ pokemon_data = {
             "Sp. Atk": 85,
             "Sp. Def": 50,
             "Speed": 45
-        }
+        },
+        "fully_evolved": True
     },
     "Vileplume": {
         "name": "Vileplume",
@@ -224,7 +240,8 @@ pokemon_data = {
             "Sp. Atk": 110,
             "Sp. Def": 90,
             "Speed": 50
-        }
+        },
+        "fully_evolved": True
     },
     "Parasect": {
         "name": "Parasect",
@@ -237,7 +254,8 @@ pokemon_data = {
             "Sp. Atk": 60,
             "Sp. Def": 80,
             "Speed": 30
-        }
+        },
+        "fully_evolved": True
     },
     "Venomoth": {
         "name": "Venomoth",
@@ -250,7 +268,8 @@ pokemon_data = {
             "Sp. Atk": 90,
             "Sp. Def": 75,
             "Speed": 90
-        }
+        },
+        "fully_evolved": True
     },
     "Dugtrio": {
         "name": "Dugtrio",
@@ -263,7 +282,8 @@ pokemon_data = {
             "Sp. Atk": 50,
             "Sp. Def": 70,
             "Speed": 120
-        }
+        },
+        "fully_evolved": True
     },
     "Persian": {
         "name": "Persian",
@@ -276,7 +296,8 @@ pokemon_data = {
             "Sp. Atk": 65,
             "Sp. Def": 65,
             "Speed": 115
-        }
+        },
+        "fully_evolved": True
     },
     "Golduck": {
         "name": "Golduck",
@@ -289,7 +310,8 @@ pokemon_data = {
             "Sp. Atk": 95,
             "Sp. Def": 80,
             "Speed": 85
-        }
+        },
+        "fully_evolved": True
     },
     "Primeape": {
         "name": "Primeape",
@@ -302,7 +324,8 @@ pokemon_data = {
             "Sp. Atk": 60,
             "Sp. Def": 70,
             "Speed": 95
-        }
+        },
+        "fully_evolved": True
     },
     "Arcanine": {
         "name": "Arcanine",
@@ -315,7 +338,8 @@ pokemon_data = {
             "Sp. Atk": 100,
             "Sp. Def": 80,
             "Speed": 95
-        }
+        },
+        "fully_evolved": True
     },
     "Poliwrath": {
         "name": "Poliwrath",
@@ -328,7 +352,8 @@ pokemon_data = {
             "Sp. Atk": 70,
             "Sp. Def": 90,
             "Speed": 70
-        }
+        },
+        "fully_evolved": True
     },
     "Alakazam": {
         "name": "Alakazam",
@@ -341,7 +366,8 @@ pokemon_data = {
             "Sp. Atk": 135,
             "Sp. Def": 95,
             "Speed": 120
-        }
+        },
+        "fully_evolved": True
     },
     "Machamp": {
         "name": "Machamp",
@@ -354,7 +380,8 @@ pokemon_data = {
             "Sp. Atk": 65,
             "Sp. Def": 85,
             "Speed": 55
-        }
+        },
+        "fully_evolved": True
     },
     "Victreebel": {
         "name": "Victreebel",
@@ -367,7 +394,8 @@ pokemon_data = {
             "Sp. Atk": 100,
             "Sp. Def": 70,
             "Speed": 70
-        }
+        },
+        "fully_evolved": True
     },
     "Tentacruel": {
         "name": "Tentacruel",
@@ -380,7 +408,8 @@ pokemon_data = {
             "Sp. Atk": 80,
             "Sp. Def": 120,
             "Speed": 100
-        }
+        },
+        "fully_evolved": True
     },
     "Golem": {
         "name": "Golem",
@@ -393,7 +422,8 @@ pokemon_data = {
             "Sp. Atk": 55,
             "Sp. Def": 65,
             "Speed": 45
-        }
+        },
+        "fully_evolved": True
     },
     "Rapidash": {
         "name": "Rapidash",
@@ -406,7 +436,8 @@ pokemon_data = {
             "Sp. Atk": 80,
             "Sp. Def": 80,
             "Speed": 105
-        }
+        },
+        "fully_evolved": True
     },
     "Slowbro": {
         "name": "Slowbro",
@@ -419,7 +450,8 @@ pokemon_data = {
             "Sp. Atk": 100,
             "Sp. Def": 80,
             "Speed": 30
-        }
+        },
+        "fully_evolved": True
     },
     "Magneton": {
         "name": "Magneton",
@@ -432,7 +464,8 @@ pokemon_data = {
             "Sp. Atk": 120,
             "Sp. Def": 70,
             "Speed": 70
-        }
+        },
+        "fully_evolved": False  # Evolves into Magnezone
     },
     "Farfetch'd": {
         "name": "Farfetch'd",
@@ -445,7 +478,8 @@ pokemon_data = {
             "Sp. Atk": 58,
             "Sp. Def": 62,
             "Speed": 60
-        }
+        },
+        "fully_evolved": False  # Evolves into Sirfetch'd (Galarian)
     },
     "Dodrio": {
         "name": "Dodrio",
@@ -458,7 +492,8 @@ pokemon_data = {
             "Sp. Atk": 60,
             "Sp. Def": 60,
             "Speed": 110
-        }
+        },
+        "fully_evolved": True
     },
     "Dewgong": {
         "name": "Dewgong",
@@ -471,7 +506,8 @@ pokemon_data = {
             "Sp. Atk": 70,
             "Sp. Def": 95,
             "Speed": 70
-        }
+        },
+        "fully_evolved": True
     },
     "Muk": {
         "name": "Muk",
@@ -484,7 +520,8 @@ pokemon_data = {
             "Sp. Atk": 65,
             "Sp. Def": 100,
             "Speed": 50
-        }
+        },
+        "fully_evolved": True
     },
     "Cloyster": {
         "name": "Cloyster",
@@ -497,7 +534,8 @@ pokemon_data = {
             "Sp. Atk": 85,
             "Sp. Def": 45,
             "Speed": 70
-        }
+        },
+        "fully_evolved": True
     },
     "Gengar": {
         "name": "Gengar",
@@ -510,7 +548,8 @@ pokemon_data = {
             "Sp. Atk": 130,
             "Sp. Def": 75,
             "Speed": 110
-        }
+        },
+        "fully_evolved": True
     },
     "Hypno": {
         "name": "Hypno",
@@ -523,7 +562,8 @@ pokemon_data = {
             "Sp. Atk": 73,
             "Sp. Def": 115,
             "Speed": 67
-        }
+        },
+        "fully_evolved": True
     },
     "Kingler": {
         "name": "Kingler",
@@ -536,7 +576,8 @@ pokemon_data = {
             "Sp. Atk": 50,
             "Sp. Def": 50,
             "Speed": 75
-        }
+        },
+        "fully_evolved": True
     },
     "Electrode": {
         "name": "Electrode",
@@ -549,7 +590,8 @@ pokemon_data = {
             "Sp. Atk": 80,
             "Sp. Def": 80,
             "Speed": 150
-        }
+        },
+        "fully_evolved": True
     },
     "Exeggutor": {
         "name": "Exeggutor",
@@ -562,7 +604,8 @@ pokemon_data = {
             "Sp. Atk": 125,
             "Sp. Def": 75,
             "Speed": 55
-        }
+        },
+        "fully_evolved": True
     },
     "Marowak": {
         "name": "Marowak",
@@ -575,7 +618,8 @@ pokemon_data = {
             "Sp. Atk": 50,
             "Sp. Def": 80,
             "Speed": 45
-        }
+        },
+        "fully_evolved": True
     },
     "Hitmonlee": {
         "name": "Hitmonlee",
@@ -588,7 +632,8 @@ pokemon_data = {
             "Sp. Atk": 35,
             "Sp. Def": 110,
             "Speed": 87
-        }
+        },
+        "fully_evolved": True
     },
     "Hitmonchan": {
         "name": "Hitmonchan",
@@ -601,7 +646,8 @@ pokemon_data = {
             "Sp. Atk": 35,
             "Sp. Def": 110,
             "Speed": 76
-        }
+        },
+        "fully_evolved": True
     },
     "Weezing": {
         "name": "Weezing",
@@ -614,7 +660,8 @@ pokemon_data = {
             "Sp. Atk": 85,
             "Sp. Def": 70,
             "Speed": 60
-        }
+        },
+        "fully_evolved": True
     },
     "Rhydon": {
         "name": "Rhydon",
@@ -627,7 +674,8 @@ pokemon_data = {
             "Sp. Atk": 45,
             "Sp. Def": 45,
             "Speed": 40
-        }
+        },
+        "fully_evolved": False  # Evolves into Rhyperior
     },
     "Chansey": {
         "name": "Chansey",
@@ -640,7 +688,8 @@ pokemon_data = {
             "Sp. Atk": 35,
             "Sp. Def": 105,
             "Speed": 50
-        }
+        },
+        "fully_evolved": False  # Evolves into Blissey
     },
     "Tangela": {
         "name": "Tangela",
@@ -653,7 +702,8 @@ pokemon_data = {
             "Sp. Atk": 100,
             "Sp. Def": 40,
             "Speed": 60
-        }
+        },
+        "fully_evolved": False  # Evolves into Tangrowth
     },
     "Kangaskhan": {
         "name": "Kangaskhan",
@@ -666,7 +716,8 @@ pokemon_data = {
             "Sp. Atk": 40,
             "Sp. Def": 80,
             "Speed": 90
-        }
+        },
+        "fully_evolved": True
     },
     "Seaking": {
         "name": "Seaking",
@@ -679,7 +730,8 @@ pokemon_data = {
             "Sp. Atk": 65,
             "Sp. Def": 80,
             "Speed": 68
-        }
+        },
+        "fully_evolved": True
     },
     "Starmie": {
         "name": "Starmie",
@@ -692,7 +744,8 @@ pokemon_data = {
             "Sp. Atk": 100,
             "Sp. Def": 85,
             "Speed": 115
-        }
+        },
+        "fully_evolved": True
     },
     "Mr. Mime": {
         "name": "Mr. Mime",
@@ -705,7 +758,8 @@ pokemon_data = {
             "Sp. Atk": 100,
             "Sp. Def": 120,
             "Speed": 90
-        }
+        },
+        "fully_evolved": True
     },
     "Scyther": {
         "name": "Scyther",
@@ -718,7 +772,8 @@ pokemon_data = {
             "Sp. Atk": 55,
             "Sp. Def": 80,
             "Speed": 105
-        }
+        },
+        "fully_evolved": False  # Evolves into Scizor or Kleavor
     },
     "Jynx": {
         "name": "Jynx",
@@ -731,7 +786,8 @@ pokemon_data = {
             "Sp. Atk": 115,
             "Sp. Def": 95,
             "Speed": 95
-        }
+        },
+        "fully_evolved": True
     },
     "Electabuzz": {
         "name": "Electabuzz",
@@ -744,7 +800,8 @@ pokemon_data = {
             "Sp. Atk": 95,
             "Sp. Def": 85,
             "Speed": 105
-        }
+        },
+        "fully_evolved": False  # Evolves into Electivire
     },
     "Magmar": {
         "name": "Magmar",
@@ -757,7 +814,8 @@ pokemon_data = {
             "Sp. Atk": 100,
             "Sp. Def": 85,
             "Speed": 93
-        }
+        },
+        "fully_evolved": False  # Evolves into Magmortar
     },
     "Pinsir": {
         "name": "Pinsir",
@@ -770,7 +828,8 @@ pokemon_data = {
             "Sp. Atk": 55,
             "Sp. Def": 70,
             "Speed": 85
-        }
+        },
+        "fully_evolved": True
     },
     "Tauros": {
         "name": "Tauros",
@@ -783,7 +842,8 @@ pokemon_data = {
             "Sp. Atk": 40,
             "Sp. Def": 70,
             "Speed": 110
-        }
+        },
+        "fully_evolved": True
     },
     "Gyarados": {
         "name": "Gyarados",
@@ -796,7 +856,8 @@ pokemon_data = {
             "Sp. Atk": 60,
             "Sp. Def": 100,
             "Speed": 81
-        }
+        },
+        "fully_evolved": True
     },
     "Lapras": {
         "name": "Lapras",
@@ -809,7 +870,8 @@ pokemon_data = {
             "Sp. Atk": 85,
             "Sp. Def": 95,
             "Speed": 60
-        }
+        },
+        "fully_evolved": True
     },
     "Ditto": {
         "name": "Ditto",
@@ -822,7 +884,8 @@ pokemon_data = {
             "Sp. Atk": 48,
             "Sp. Def": 48,
             "Speed": 48
-        }
+        },
+        "fully_evolved": True
     },
     "Vaporeon": {
         "name": "Vaporeon",
@@ -835,7 +898,8 @@ pokemon_data = {
             "Sp. Atk": 110,
             "Sp. Def": 95,
             "Speed": 65
-        }
+        },
+        "fully_evolved": True
     },
     "Jolteon": {
         "name": "Jolteon",
@@ -848,7 +912,8 @@ pokemon_data = {
             "Sp. Atk": 110,
             "Sp. Def": 95,
             "Speed": 130
-        }
+        },
+        "fully_evolved": True
     },
     "Flareon": {
         "name": "Flareon",
@@ -861,7 +926,8 @@ pokemon_data = {
             "Sp. Atk": 95,
             "Sp. Def": 110,
             "Speed": 65
-        }
+        },
+        "fully_evolved": True
     },
     "Porygon": {
         "name": "Porygon",
@@ -874,7 +940,8 @@ pokemon_data = {
             "Sp. Atk": 85,
             "Sp. Def": 75,
             "Speed": 40
-        }
+        },
+        "fully_evolved": False  # Evolves into Porygon2
     },
     "Omastar": {
         "name": "Omastar",
@@ -887,7 +954,8 @@ pokemon_data = {
             "Sp. Atk": 115,
             "Sp. Def": 70,
             "Speed": 55
-        }
+        },
+        "fully_evolved": True
     },
     "Kabutops": {
         "name": "Kabutops",
@@ -900,7 +968,8 @@ pokemon_data = {
             "Sp. Atk": 65,
             "Sp. Def": 70,
             "Speed": 80
-        }
+        },
+        "fully_evolved": True
     },
     "Aerodactyl": {
         "name": "Aerodactyl",
@@ -913,7 +982,8 @@ pokemon_data = {
             "Sp. Atk": 60,
             "Sp. Def": 75,
             "Speed": 130
-        }
+        },
+        "fully_evolved": True
     },
     "Snorlax": {
         "name": "Snorlax",
@@ -926,7 +996,8 @@ pokemon_data = {
             "Sp. Atk": 65,
             "Sp. Def": 110,
             "Speed": 30
-        }
+        },
+        "fully_evolved": True
     },
     "Articuno": {
         "name": "Articuno",
@@ -939,7 +1010,8 @@ pokemon_data = {
             "Sp. Atk": 95,
             "Sp. Def": 125,
             "Speed": 85
-        }
+        },
+        "fully_evolved": True
     },
     "Zapdos": {
         "name": "Zapdos",
@@ -952,7 +1024,8 @@ pokemon_data = {
             "Sp. Atk": 125,
             "Sp. Def": 90,
             "Speed": 100
-        }
+        },
+        "fully_evolved": True
     },
     "Moltres": {
         "name": "Moltres",
@@ -965,7 +1038,8 @@ pokemon_data = {
             "Sp. Atk": 125,
             "Sp. Def": 85,
             "Speed": 90
-        }
+        },
+        "fully_evolved": True
     },
     "Dragonite": {
         "name": "Dragonite",
@@ -978,7 +1052,8 @@ pokemon_data = {
             "Sp. Atk": 100,
             "Sp. Def": 100,
             "Speed": 80
-        }
+        },
+        "fully_evolved": True
     },
     "Mewtwo": {
         "name": "Mewtwo",
@@ -991,7 +1066,8 @@ pokemon_data = {
             "Sp. Atk": 154,
             "Sp. Def": 90,
             "Speed": 130
-        }
+        },
+        "fully_evolved": True
     },
     "Mew": {
         "name": "Mew",
@@ -1004,6 +1080,7 @@ pokemon_data = {
             "Sp. Atk": 100,
             "Sp. Def": 100,
             "Speed": 100
-        }
+        },
+        "fully_evolved": True
     }
 }

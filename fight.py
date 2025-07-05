@@ -1,5 +1,19 @@
 from pokemon import pokemon
 import random 
+import donnees 
+from item import item_effects
+
+def trigger_held_item(self, pokemon):
+    """
+    Applique l'effet de l'objet tenu si applicable.
+    """
+    item = pokemon.item
+    if not item:
+        return
+
+    if item in item_effects:
+        item_effects[item](pokemon, self)
+
 
 class Fight():
     def __init__(self, team1, team2):
@@ -231,7 +245,6 @@ class Fight():
         elif "Misty Terrain" in self.field_effects:
             print("Le terrain est brumeux ! Les attaques de type Dragon sont neutralisées.")
             
-
     #def attack(pokemon : pokemon, attack : dict, target : pokemon, fight : Fight):
     def attack_power(self, user_pokemon : pokemon, attack : dict, target_pokemon : pokemon):
         """
@@ -257,9 +270,10 @@ class Fight():
         random = random.uniform(0.85, 1.0)  # Valeur aléatoire entre 0.85 et 1.0
         stab = is_stab(user_pokemon, attack)
         screen = screen_effect(attack, self)  # Effet de l'écran de protection actif
+        type_modifier = (attack['type'], target_pokemon.types)  # Modificateur de type
 
         
-        damage = ((22 * base_power * (attack_stat / defense_stat)) / 50 + 2) * burn * screen * terrain_boost * weather_boost * critical * stab * random * berry
+        damage = ((22 * base_power * (attack_stat / defense_stat)) / 50 + 2) * burn * screen * terrain_boost * weather_boost * critical * stab * random * berry * type_modifier
             
         return damage
     
@@ -299,22 +313,24 @@ class Fight():
                 print(f"{self.active1.name} est remplacé par {self.team1[index].name} !")
                 self.active1.reset_stats_nd_status()  # Réinitialiser les stats et les effets de statut du Pokémon actif
                 self.active1 = self.team1[index]
+                self.active1.locked_move = None  # Réinitialiser le verrouillage de l'attaque si le Pokémon est switché
         elif team == 2:
             if self.team2[index].current_hp > 0:
                 print(f"{self.active2.name} est remplacé par {self.team2[index].name} !")
                 self.active2.reset_stats_nd_status()  # Réinitialiser les stats et les effets de statut du Pokémon actif
                 self.active2 = self.team2[index]
+                self.active2.locked_move = None  # Réinitialiser le verrouillage de l'attaque si le Pokémon est switché
         
     def reset_stats_nd_status(self, pokemon):
         """
-        Réinitialise les stats et les effets de statut d'un Pokémon.
+        Réinitialise les stats et les effets de statut d'un Pokémon lorsque le pokémon est switché.
         :param pokemon: Instance de la classe Pokemon à réinitialiser.
         """ 
         pokemon.stats_modifier = [0, 0, 0, 0, 0]
         pokemon.ev_and_acc_modifier = [0, 0]
         if pokemon.is_confused:
             pokemon.is_confused = False
-        
+
     def player_attack(self, attacker, attack, defender):
         """
         Gère l'action "Attaquer" d'un Pokémon sur un autre, en prenant en compte les effets de statut, multi-tours et priorités.
@@ -333,12 +349,33 @@ class Fight():
                 attacker.charging = True
             return
 
+        # Si le Pokémon est confus, on gère la confusion
+        if attacker.is_confused:
+            if attacker.still_confused:
+                if random.random() < 0.33:
+                    print(f"{attacker.name} est confus et se blesse lui-même !")
+                    damage = confusion_attack(attacker)
+                    self.damage_method(attacker, damage)
+                    if random() < 0.33: # Le Pokémon ne sera plus confus au prochain tour 1/3 chance
+                        attacker.is_confused = False
+                    return
+            elif attacker.still_confused == False and attacker.is_confused:
+                print(f"{attacker.name} n'est plus confus !")
+                attacker.is_confused = False
+        
         # Vérification Précision avec modificateurs
         if not self.calculate_hit_chance(attacker, defender, attack):
             print(f"{attacker.name} rate son attaque !")
             return
 
         print(f"{attacker.name} utilise {attack['name']} !")
+        
+        # Vérifie si l'objet de choix le verrouille sur une attaque
+        if attacker.item and "Choice" in attacker.item:
+            if attacker.locked_move and attacker.locked_move != attack['name']:
+                print(f"{attacker.name} est verrouillé sur {attacker.locked_move} à cause de {attacker.item} et ne peut pas utiliser {attack['name']} !")
+                return
+            attacker.locked_move = attack['name']
 
         # Gérer effet météo
         if "weather" in attack.get("effect", {}):
@@ -441,12 +478,78 @@ class Fight():
         effective_accuracy = base_accuracy * attacker.accuracy / defender.evasion
         return random.random() <= effective_accuracy
     
+#### appliquer les degats des statuts ####
+    def apply_status_damage(self, pokemon):
+        """
+        Applique les dégâts liés aux statuts persistants : burn, poison, etc.
+        """
+        if pokemon.status == "burn":
+            dmg = int(pokemon.max_hp * 0.0625)
+            print(f"{pokemon.name} souffre de sa brûlure ! Il perd {dmg} PV.")
+            self.damage_method(pokemon, dmg)
+        elif pokemon.status == "poison":
+            dmg = int(pokemon.max_hp * 0.125)
+            print(f"{pokemon.name} est empoisonné ! Il perd {dmg} PV.")
+            self.damage_method(pokemon, dmg)
+        elif pokemon.status == "badly_poisoned":
+            if not hasattr(pokemon, "toxic_counter"):
+                pokemon.toxic_counter = 1
+            dmg = int(pokemon.max_hp * 0.0625 * pokemon.toxic_counter)
+            print(f"{pokemon.name} est gravement empoisonné ! Il perd {dmg} PV.")
+            self.damage_method(pokemon, dmg)
+            pokemon.toxic_counter += 1
+
+    def check_status_before_attack(self, attacker: pokemon) -> bool:
+        """
+        Vérifie si le Pokémon peut agir selon son statut.
+        Retourne True s'il peut attaquer, False sinon.
+        """
+        if attacker.status == "sleep":
+            if attacker.sleep_counter > 0:
+                print(f"{attacker.name} dort encore ({attacker.sleep_counter} tour(s) restant).")
+                attacker.sleep_counter -= 1
+                return False
+            else:
+                print(f"{attacker.name} se réveille !")
+                attacker.remove_status()
+                return True
+
+        if attacker.status == "freeze":
+            if random.random() < 0.2:  # 20% chance de dégeler
+                print(f"{attacker.name} dégèle !")
+                attacker.remove_status()
+                return True
+            else:
+                print(f"{attacker.name} est gelé et ne peut pas bouger.")
+                return False
+
+        if attacker.status == "paralyze":
+            if random.random() < 0.25:
+                print(f"{attacker.name} est paralysé ! Il ne peut pas attaquer.")
+                return False
+
+        return True
+    
+#### Activer l'item du pokemon ####
+    
+    def trigger_held_item(self, pokemon):
+        """
+        Applique l'effet de l'objet tenu si applicable.
+        """
+        item = pokemon.item
+        if not item:
+            return
+
+        if item in item_effects:
+            item_effects[item](pokemon, self)
 
 
+#### Gerer le STAB ####
 def is_stab(pokemon : pokemon, attack : dict):
     if attack['type'] in pokemon.types:
         return 1.5
 
+#### Regarder si c'est un coup critique ####
 def is_critical_hit(pokemon, attack, target):
     """Détermine si une attaque est un coup critique.
     :param pokemon: Instance de la classe Pokemon qui attaque. Pour connaitre son item, son talent
@@ -475,6 +578,7 @@ def is_critical_hit(pokemon, attack, target):
     
     return random.random() < 0.0625*nb_of_boost  # retourne True si le coup est critique, False sinon. 0.0625 est la probabilité de coup critique de base (1/16)
 
+#### Regarder si le terrain booste l'attaque ####
 def attack_terrain_boost(attack, fight : Fight):
     """
     Applique les mdoficateurs de puissance des attaques en fonction du terrein.
@@ -492,6 +596,7 @@ def attack_terrain_boost(attack, fight : Fight):
         case (["Misty Terrain"], "Dragon"):
             return 0.5
         
+#### Regarder si le Pokémon en face tient une baie qui le fait resister à l'attaque ####
 def berry_boost(pokemon, attack):
     """
     Placeholder pour l'effet de la baie, si applicable, si le pokémon tient une baie qui reduit les dégâts de l'attaque si celle ce est super efficace.
@@ -509,6 +614,7 @@ def berry_boost(pokemon, attack):
     else:
         return 1.0    # sera implémenté plus tard
 
+#### Regarder si la météo booste l'attaque ####
 def attack_weather_boost(attack, fight):
     """
     Applique les modificateurs de puissance des attaques en fonction de la météo.
@@ -529,12 +635,22 @@ def attack_weather_boost(attack, fight):
         case _:
             return 1.0  # Pas de boost si la météo ne correspond pas à l'attaque
 
-    
+#### Regarder si le Pokémon est brûlé ####
 def is_burned(pokemon):
     if pokemon.status != "burn":
         return False
     else:
         return True
+    
+#### Attaque de confusion ####
+def confusion_attack(pokemon):
+    """
+    Gère l'attaque subit lorsqu'un pokémon est confus, il s'agit d'une attaque de type Normal (qui n'est pas affecté par les types ni le stab)
+    et qui a 40 de puissance de base. La formule de calcul est donc la suivante :
+    ((base_power * (attack_stat / defense_stat)) + 1) 
+    """
+    damage = int(((40 * (pokemon.current_stats()['Attack'] / pokemon.current_stats()['Defense'])) + 1))
+    return damage
 
 def screen_effect(attack, fight : Fight):
     """
