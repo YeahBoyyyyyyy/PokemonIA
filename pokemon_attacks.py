@@ -1,3 +1,9 @@
+import pokemon_datas as STATS
+import pokemon_talents as TALENTS
+import pokemon as PK
+import random
+
+
 '''
 Ce fihiers contient toutes les attaques pokemon, leur type, puissance, précision, et effets spéciaux.
 
@@ -28,193 +34,305 @@ sound: Has no effect on Pokemon with the Ability Soundproof.
 import pokemon_datas as STATS
 import pokemon_talents as TALENTS
 import pokemon as PK
+import random
 
-attacks = {
-            "tackle": { "type": "Normal",
-                "basePower": 40, 
-                "accuracy": 100, 
-                "priority" : 0, 
-                "category": "Physical", 
-                "PP": 35,
-                "multi_target": False, 
-                "flags": ["contact", "protect", "mirror"],
-                "target": "Foe",
-            },
-            "ember": { "type": "Fire",
-                "basePower": 40, 
-                "accuracy": 100, 
-                "priority" : 0, 
-                "category": "Special", 
-                "PP": 25,
-                "multi_target": False, 
-                "flags": ["protect", "mirror"],
-                "target": "Foe",
-                "effect": {
-                    "burn": {
-                        "chance": 10,  # Chance de brûler l'adversaire
-                        "effect": lambda pokemon, attaque: pokemon.apply_status("burn") if attaque else None
-                    }
-                }
-            },
-            "water_gun": { "type": "Water",
-                    "basePower": 40, 
-                    "accuracy": 100, 
-                    "priority" : 0, 
-                    "category": "Special", 
-                    "PP": 25,
-                    "multi_target": False, 
-                    "flags": ["protect", "mirror"],
-                    "target": "Foe",
-                   
-                   },
-            "vine_whip": { "type": "Plant",
-                    "basePower": 45,
-                    "accuracy": 100,
-                    "priority" : 0,
-                    "category": "Physical",
-                    "PP": 25,
-                    "multi_target": False,
-                    "flags": ["contact", "protect", "mirror"],
-                    "target": "Foe",
+class Attack:
+    def __init__(self, name, type_, category, power, accuracy, priority, pp, flags, target, multi_target=False, critical_chance=6.25, guaranteed_critical=False):
+        self.name = name
+        self.type = type_
+        self.category = category
+        self.base_power = power
+        self.accuracy = accuracy
+        self.priority = priority
+        self.pp = pp
+        self.flags = flags or []
+        self.target = target
+        self.multi_target = multi_target
+        self.critical_chance = critical_chance  # Chance de coup critique, à définir dans les attaques concrètes
+        self.guaranteed_critical = False  # Indique si l'attaque est un coup critique garanti
 
-                    },
-            "nuzzle": { "type": "Electric",
-                    "basePower": 20,
-                    "accuracy": 100,
-                    "priority" : 0,
-                    "category": "Physical",
-                    "PP": 20,
-                    "multi_target": False,
-                    "flags": ["contact", "protect", "mirror"],
-                    "target": "Foe",
-                    "effect": {
-                        "paralyze": {
-                            "chance": 100,  # Chance de paralyser l'adversaire
-                            "effect": lambda pokemon, attaque: pokemon.apply_status("paralyzed") if attaque else None
-                        }
-                    }
-            },
-            "leech_seed": { "type": "Plant",
-                    "basePower": 0,
-                    "accuracy": 90,
-                    "priority" : 0,
-                    "category": "Status",
-                    "PP": 10,
-                    "multi_target": False,
-                    "flags": ["protect"],
-                    "target": "Foe",
-                    "effect": {
-                          "leech_seed": {
-                           "chance": 100,  # Chance de planter la graine
-                           "effect": lambda pokemon, attaque: pokemon.apply_status("leech_seed") if attaque else None
-                          }
-                    }
-                },
-            "protect": { "type": "Normal",
-                    "basePower": 0,
-                    "precision": True,
-                    "priority" : 4,
-                    "category": "Status",
-                    "PP": 10,
-                    "multi_target": False,
-                    "flags": [],
-                    "target": "User",
-                    "effect": {
-                         "protect": {
-                           "chance": True,  # Chance de protéger le Pokémon
-                           "effect": lambda pokemon, attaque: pokemon.apply_status("protected") if attaque else None
-                         }
-                    }
-                },
-            "rockslide": { "type": "Rock",
-                    "basePower": 75,
-                    "accuracy": 90,
-                    "priority" : 0,
-                    "category": "Physical",
-                    "PP": 10,
-                    "multi_target": True,  # Peut toucher plusieurs cibles
-                    "flags": ["protect", "mirror"],
-                    "target": "Foe",
-                    "effect": {
-                        "flinch": {
-                            "chance": 30,  # Chance de faire flancher l'adversaire
-                            "effect": lambda pokemon, attaque: pokemon.apply_status("flinch") if attaque else None
-                        }
-                    }
-                },
-            "surging_strike": { "type": "Water",
-                    "basePower": 25,
-                    "accuracy": 100,
-                    "priority" : 0,
-                    "category": "Physical",
-                    "PP": 5,
-                    "multi_target": False,
-                    "flags": ["contact", "protect", "mirror"],
-                    "target": "Foe",
-                    "effect": {
-                        "critical": {
-                            "chance": 100,  # Chance de faire un coup critique
-                        }
-                    }
-                },
-            "stone edge": { "type": "Rock",
-                    "basePower": 100,
-                    "accuracy": 80,
-                    "priority" : 0,
-                    "category": "Physical",
-                    "PP": 5,
-                    "multi_target": False,
-                    "flags": ["protect", "mirror"],
-                    "target": "Foe",
-                    "effect": {
-                        "critical": {
-                            "chance": 12.5,  # Chance de faire un coup critique
-                        }
-                    }
-                },
-            "flower_trick": { "type": "Plant",
-                    "basePower": 70,
-                    "accuracy": 100,
-                    "priority" : 0,
-                    "category": "Physical",
-                    "PP": 10,
-                    "multi_target": False,
-                    "flags": ["protect", "mirror"],
-                    "target": "Foe",
-                    "effect": {
-                        "critical": {
-                            "chance": 100,  # Chance de faire un coup critique
-                        }
-                    }
-                },
+    def apply_effect(self, user, target, fight):
+        pass  # Surcharge dans les attaques concrètes
 
-            "rain_dance": {
-                "type": "Water",
-                "category": "Status",
-                "basePower": 0,
-                "priority": 0,
-                "accuracy": 100,
-                "PP": 5,
-                "multi_target": False,
-                "effect": {
-                    "weather": {
-                    "type": "Rain",
-                    "duration": 5
-                    }
-                }
-            },
-            "recover": {
-                "type": "Normal",
-                "category": "Status",
-                "basePower": 0,
-                "priority": 0,
-                "accuracy": 100,
-                "PP": 10,
-                "multi_target": False,
-                "effect": {
-                    "heal": {
-                        "amount": lambda pokemon: setattr(pokemon, 'current_hp', min(pokemon.max_hp, pokemon.current_hp + pokemon.max_hp // 2))
-                            }
-                    }
-                },
-}
+class Ember(Attack):
+    def __init__(self):
+        super().__init__(
+            name="ember",
+            type_="Fire",
+            category="Special",
+            power=40,
+            accuracy=100,
+            priority=0,
+            pp=25,
+            flags=["protect", "mirror"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        if random.randint(1, 100) <= 10:
+            target.apply_status("burn")
+
+class Protect(Attack):
+    def __init__(self):
+        super().__init__(
+            name="protect",
+            type_="Normal",
+            category="Status",
+            power=0,
+            accuracy=100,
+            priority=4,
+            pp=10,
+            flags=[],
+            target="User"
+        )
+
+    def apply_effect(self, user, target, fight):
+        if random.random() < 1 / (2 ** user.protect_turns):
+            user.protect = True
+            user.protect_turns += 1
+
+class Tackle(Attack):
+    def __init__(self):
+        super().__init__(
+            name="tackle",
+            type_="Normal",
+            category="Physical",
+            power=40,
+            accuracy=100,
+            priority=0,
+            pp=35,
+            flags=["contact", "protect", "mirror"],
+            target="Foe"
+        )
+
+class RockSlide(Attack):
+    def __init__(self):
+        super().__init__(
+            name="rockslide",
+            type_="Rock",
+            category="Physical",
+            power=75,
+            accuracy=90,
+            priority=0,
+            pp=10,
+            flags=["protect", "mirror"],
+            target="Foe",
+            multi_target=True
+        )
+
+    def apply_effect(self, user, target, fight):
+        if random.randint(1, 100) <= 30:
+            target.apply_status("flinch")
+
+class SurgingStrike(Attack):
+    def __init__(self):
+        super().__init__(
+            name="surging_strike",
+            type_="Water",
+            category="Physical",
+            power=25,
+            accuracy=100,
+            priority=0,
+            pp=5,
+            flags=["contact", "protect" "mirror"],
+            target="Foe"
+        )
+
+class LeechSeed(Attack):
+    def __init__(self):
+        super().__init__(
+            name="leech_seed",
+            type_="Plant",
+            category="Status",
+            power=0,
+            accuracy=90,
+            priority=0,
+            pp=10,
+            flags=["protect"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        if target.type1 == "Plant" or target.type2 == "Plant":
+            print(f"{target.name} est de type Plante : Leech Seed échoue.")
+            return
+        if target.leech_seeded_by is None:
+            target.leech_seeded_by = user
+            print(f"{target.name} a été infecté !")
+
+class FlowerTrick(Attack):
+    def __init__(self):
+        super().__init__(
+            name="flower_trick",
+            type_="Plant",
+            category="Physical",
+            power=70,
+            accuracy=100,
+            priority=0,
+            pp=10,
+            flags=["protect", "mirror"],
+            target="Foe"
+        )
+        self.guaranteed_critical = True  # Coup critique garanti
+
+class RainDance(Attack):
+    def __init__(self):
+        super().__init__(
+            name="rain_dance",
+            type_="Water",
+            category="Status",
+            power=0,
+            accuracy=100,
+            priority=0,
+            pp=5,
+            flags=[],
+            target="User"
+        )
+    
+    def apply_effect(self, user, target, fight):
+        fight.set_weather("Rain", duration=5)
+        print(f"{user.name} invoque la pluie !")
+
+class Recover(Attack):
+    def __init__(self):
+        super().__init__(
+            name="recover",
+            type_="Normal",
+            category="Status",
+            power=0,
+            accuracy=100,
+            priority=0,
+            pp=10,
+            flags=[],
+            target="User"
+        )
+
+    def apply_effect(self, user, target, fight):
+        heal_amount = user.max_hp // 2
+        user.current_hp = min(user.max_hp, user.current_hp + heal_amount)
+        print(f"{user.name} récupère {heal_amount} PV grâce à Recover.")
+
+class StoneEdge(Attack):
+    def __init__(self):
+        super().__init__(
+            name="stone_edge",
+            type_="Rock",
+            category="Physical",
+            power=100,
+            accuracy=80,
+            priority=0,
+            pp=5,
+            flags=["protect", "mirror"],
+            target="Foe"
+        )
+        self.critical_chance = 12.5  # Chance de coup critique
+
+class Nuzzle(Attack):
+    def __init__(self):
+        super().__init__(
+            name="nuzzle",
+            type_="Electric",
+            category="Physical",
+            power=20,
+            accuracy=100,
+            priority=0,
+            pp=20,
+            flags=["contact", "protect", "mirror"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        target.apply_status("paralyzed")
+        print(f"{target.name} est paralysé par Nuzzle !")
+
+class FakeOut(Attack):
+    def __init__(self):
+        super().__init__(
+            name="fake_out",
+            type_="Normal",
+            category="Physical",
+            power=40,
+            accuracy=100,
+            priority=3,
+            pp=10,
+            flags=["contact", "protect", "mirror"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        if not target.flinched:
+            target.flinched = True
+            print(f"{target.name} est flinché par Fake Out !")
+        else:
+            print(f"{target.name} a déjà été flinché ce tour-ci.")
+
+class Thunderbolt(Attack):
+    def __init__(self):
+        super().__init__(
+            name="thunderbolt",
+            type_="Electric",
+            category="Special",
+            power=90,
+            accuracy=100,
+            priority=0,
+            pp=15,
+            flags=["protect", "mirror"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        if random.randint(1, 100) <= 10:
+            target.apply_status("paralyzed")
+            print(f"{target.name} est paralysé par Thunderbolt !")
+
+class Spore(Attack):
+    def __init__(self):
+        super().__init__(
+            name="spore",
+            type_="Grass",
+            category="Status",
+            power=0,
+            accuracy=100,
+            priority=0,
+            pp=15,
+            flags=["protect"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        if target.type1 == "Grass" or target.type2 == "Grass":
+            print(f"{target.name} est de type Plante : Spore échoue.")
+            return
+        target.apply_status("sleep")
+        print(f"{target.name} s'endort grâce à Spore !")
+
+class WeatherBall(Attack):
+    def __init__(self):
+        super().__init__(
+            name="weather_ball",
+            type_="Normal",
+            category="Special",
+            power=50,
+            accuracy=100,
+            priority=0,
+            pp=10,
+            flags=["protect", "mirror"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        if fight.weather["current"] == "Sunny":
+            self.type = "Fire"
+            self.base_power = 100
+        elif fight.weather["current"] == "Rain":
+            self.type = "Water"
+            self.base_power = 100
+        elif fight.weather["current"] == "Sandstorm":
+            self.type = "Rock"
+            self.base_power = 100
+        elif fight.weather["current"] == "Hail":
+            self.type = "Ice"
+            self.base_power = 100
+        else:
+            self.type = "Normal"
+            self.base_power = 50

@@ -14,16 +14,16 @@ def sitrus_berry_effect(pokemon, fight=None):
 
 def apply_choice_boost(pokemon, fight=None):
     if pokemon.item == "Choice Band":
-        pokemon.stats["Attack"] = int(pokemon.stats["Attack"] * 1.5)
+        pokemon.stats["Attack"] += int(pokemon.stats_with_no_modifier["Attack"] * 0.5)
     elif pokemon.item == "Choice Specs":
-        pokemon.stats["Sp. Atk"] = int(pokemon.stats["Sp. Atk"] * 1.5)
+        pokemon.stats["Sp. Atk"] += int(pokemon.stats_with_no_modifier["Sp. Atk"] * 0.5)
     elif pokemon.item == "Choice Scarf":
-        pokemon.stats["Speed"] = int(pokemon.stats["Speed"] * 1.5)
+        pokemon.stats["Speed"] += int(pokemon.stats_with_no_modifier["Speed"] * 0.5)
 
 def apply_eviolite(pokemon, fight=None):
     if not pokemon.fully_evolved and pokemon.item == "Eviolite":
-        pokemon.stats["Defense"] = int(pokemon.stats["Defense"] * 1.5)
-        pokemon.stats["Sp. Def"] = int(pokemon.stats["Sp. Def"] * 1.5)
+        pokemon.stats["Defense"] += int(pokemon.stats_with_no_modifier["Defense"] * 0.5)
+        pokemon.stats["Sp. Def"] += int(pokemon.stats_with_no_modifier["Sp. Def"] * 0.5)
 
 item_effects = {
     "Leftovers": leftovers_effect,
