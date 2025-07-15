@@ -102,15 +102,15 @@ venusaur = import_pokemon("Venusaur")
 venusaur.talent = "Chlorophyll"
 venusaur.item = "Leftovers"
 venusaur.attack1 = ATTACKES.FlowerTrick()
-venusaur.attack2 = ATTACKES.Tackle()
+venusaur.attack2 = ATTACKES.RainDance()
 venusaur.attack3 = ATTACKES.LeechSeed()
+venusaur.attack4 = ATTACKES.Recover()
 print(venusaur.talent)
 
 charizard = import_pokemon("Charizard")
 charizard.talent = "Drought"
 charizard.item = "Choice Specs"
-charizard.attack1 = ATTACKES.Ember()
-charizard.attack2 = ATTACKES.Recover()
+charizard.attack2 = ATTACKES.Ember()
 
 launch_battle([venusaur], [charizard])
 

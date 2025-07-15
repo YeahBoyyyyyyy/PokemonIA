@@ -1,6 +1,6 @@
 import random
 import donnees # Données de la table des types et des natures
-import item as ITEM
+from pokemon_items import trigger_item
 from pokemon_talents import trigger_talent
 '''
 Véritable Intelligence Artificielle pour faire des combats pokémon : On va ici implémenenter toutes les particularités d'un combat pokémon,
@@ -95,35 +95,19 @@ class pokemon():
 
     def actualize_stats(self):
         self.stats = {
-            "Attack": self.calculate_stat(self.base_stats['Attack'], self.evs['Attack'], self.nature_modifier[0]),
-            "Defense": self.calculate_stat(self.base_stats['Defense'], self.evs['Defense'], self.nature_modifier[1]),
-            "Sp. Atk": self.calculate_stat(self.base_stats['Sp. Atk'], self.evs['Sp. Atk'], self.nature_modifier[2]),
-            "Sp. Def": self.calculate_stat(self.base_stats['Sp. Def'], self.evs['Sp. Def'], self.nature_modifier[3]),
-            "Speed": self.calculate_stat(self.base_stats['Speed'], self.evs['Speed'], self.nature_modifier[4])
+            "Attack": self.calculate_stat(self.base_stats['Attack'], self.evs['Attack'], self.nature_modifier[0], self.stats_modifier[0]),
+            "Defense": self.calculate_stat(self.base_stats['Defense'], self.evs['Defense'], self.nature_modifier[1], self.stats_modifier[1]),
+            "Sp. Atk": self.calculate_stat(self.base_stats['Sp. Atk'], self.evs['Sp. Atk'], self.nature_modifier[2], self.stats_modifier[2]),
+            "Sp. Def": self.calculate_stat(self.base_stats['Sp. Def'], self.evs['Sp. Def'], self.nature_modifier[3], self.stats_modifier[3]),
+            "Speed": self.calculate_stat(self.base_stats['Speed'], self.evs['Speed'], self.nature_modifier[4], self.stats_modifier[4]),
         }
 
         self.evasion = self.calculate_accuracy_and_evasion(self.ev_and_acc_modifier[0])
         self.accuracy = self.calculate_accuracy_and_evasion(self.ev_and_acc_modifier[1])
 
-        for stat in ["Attack", "Defense", "Sp. Atk", "Sp. Def", "Speed"]:
-            boost = trigger_talent(self, "modify_stat", stat, self.fight)
-            if boost:
-                self.stats[stat] = boost
-
-
-
-    def item_talent_init(self, pokemon):
-        """ 
-        Initialise les effets de l'objet et du talent du Pokémon. 
-        A appeler juste après avoir initialisé le pokémon (mis son talent, objet, stats, etc)
-        """
-        if self.item:
-            # Appliquer les effets de l'objet
-            if self.item in ITEM.item_effects:
-                ITEM.item_effects[self.item](self)
-            else:
-                raise ValueError(f"Objet '{self.item}' inconnu.")
-
+        print("déclenchement talents")
+        trigger_item(self, self.fight)
+        trigger_talent(self, "modify_stat", self.fight)
     
     def set_nature(self, nature):
         """
@@ -216,10 +200,9 @@ class pokemon():
 
     def init_fight(self, fight):
         self.fight = fight  # ← Ajout important
-        self.item_talent_init(self)
         self.actualize_stats()
 
-    def calculate_stat(self, base, ev, nature):
+    def calculate_stat(self, base, ev, nature, modifier):
         """
         Calcule une statistique hors PV selon les formules officielles de Pokémon.
         
@@ -228,7 +211,12 @@ class pokemon():
         :param nature: Le multiplicateur de la nature (0.9, 1.0 ou 1.1)
         :return: La statistique calculée
         """
-        return int(((2 * base + 31 + ev // 4) // 2 + 5) * nature)
+        base_value = (2 * base + 31 + ev // 4) // 2 + 5
+        if modifier >= 0:
+            modifier = 1 + modifier / 2
+        else:
+            modifier = 1 / (1 + abs(modifier) / 2)
+        return int(base_value * nature * modifier)
 
     def calculate_accuracy_and_evasion(self, stage_mod):
         """

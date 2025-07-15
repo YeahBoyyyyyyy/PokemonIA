@@ -25,7 +25,7 @@ def apply_eviolite(pokemon, fight=None):
         pokemon.stats["Defense"] += int(pokemon.stats_with_no_modifier["Defense"] * 0.5)
         pokemon.stats["Sp. Def"] += int(pokemon.stats_with_no_modifier["Sp. Def"] * 0.5)
 
-item_effects = {
+item_registry = {
     "Leftovers": leftovers_effect,
     "Sitrus Berry": sitrus_berry_effect,
     "Choice Band": apply_choice_boost,
@@ -33,3 +33,11 @@ item_effects = {
     "Choice Scarf": apply_choice_boost,
     "Eviolite": apply_eviolite,
 }
+
+def trigger_item(pokemon, fight=None):
+    item = item_registry.get(pokemon.item)
+    if item:
+        item(pokemon, fight)
+    else:
+        print(f"{pokemon.name} n'a pas d'effet d'objet actif.")
+    return None

@@ -19,7 +19,7 @@ class Talent:
     def on_defense(self, poke, incoming_attack, fight):
         pass
 
-    def modify_stat(self, poke, stat_name, fight = None):
+    def modify_stat(self, poke, fight = None):
         return None
 
 
@@ -33,10 +33,13 @@ class WaterAbsorb(Talent):
 
 
 class Chlorophyll(Talent):
-    def modify_stat(self, poke, stat_name, fight=None):
-        if stat_name == "Speed" and fight and fight.weather["current"] == "Sunny":
-            return poke.stats["Speed"] * 2
-        return None
+    def modify_stat(self, poke, fight=None):
+        if fight:
+            if fight.weather["current"] == "Sunny" and fight.weather["previous"] != "Sunny":
+                poke.stats["Speed"] = int(poke.stats["Speed"] * 2)
+            elif fight.weather["previous"] == "Sunny" and fight.weather["current"] != "Sunny":
+                poke.stats["Speed"] = poke.stats["Speed"] // 2
+        return
 
 
 class Overgrow(Talent):
@@ -91,5 +94,5 @@ def trigger_talent(poke, event_name, *args):
     talent = talent_registry.get(poke.talent)
     if talent and hasattr(talent, event_name):
         print(f"[TALENT] {poke.name} active {poke.talent} -> {event_name}")
-        return getattr(talent, event_name)(poke, *args)
+        getattr(talent, event_name)(poke, *args)
     return None

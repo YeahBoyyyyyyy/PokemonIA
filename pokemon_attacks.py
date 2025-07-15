@@ -51,7 +51,7 @@ class Attack:
         self.critical_chance = critical_chance  # Chance de coup critique, à définir dans les attaques concrètes
         self.guaranteed_critical = False  # Indique si l'attaque est un coup critique garanti
 
-    def apply_effect(self, user, target, fight):
+    def apply_effect(self, user : PK.pokemon, target : PK.pokemon, fight):
         pass  # Surcharge dans les attaques concrètes
 
 class Ember(Attack):
@@ -142,7 +142,7 @@ class LeechSeed(Attack):
     def __init__(self):
         super().__init__(
             name="leech_seed",
-            type_="Plant",
+            type_="Grass",
             category="Status",
             power=0,
             accuracy=90,
@@ -153,7 +153,7 @@ class LeechSeed(Attack):
         )
 
     def apply_effect(self, user, target, fight):
-        if target.type1 == "Plant" or target.type2 == "Plant":
+        if "Grass" in target.types:
             print(f"{target.name} est de type Plante : Leech Seed échoue.")
             return
         if target.leech_seeded_by is None:
@@ -164,16 +164,18 @@ class FlowerTrick(Attack):
     def __init__(self):
         super().__init__(
             name="flower_trick",
-            type_="Plant",
+            type_="Grass",
             category="Physical",
             power=70,
             accuracy=100,
             priority=0,
             pp=10,
             flags=["protect", "mirror"],
-            target="Foe"
+            target="Foe",
+            
         )
         self.guaranteed_critical = True  # Coup critique garanti
+        
 
 class RainDance(Attack):
     def __init__(self):
@@ -242,8 +244,9 @@ class Nuzzle(Attack):
         )
 
     def apply_effect(self, user, target, fight):
-        target.apply_status("paralyzed")
-        print(f"{target.name} est paralysé par Nuzzle !")
+        if target.status == None:
+            target.apply_status("paralyzed")
+            print(f"{target.name} est paralysé ! Il aura du mal à attaquer.")
 
 class FakeOut(Attack):
     def __init__(self):
@@ -282,9 +285,9 @@ class Thunderbolt(Attack):
 
     def apply_effect(self, user, target, fight):
         if random.randint(1, 100) <= 10:
-            target.apply_status("paralyzed")
-            print(f"{target.name} est paralysé par Thunderbolt !")
-
+            if target.status == None:
+                target.apply_status("paralyzed")
+                print(f"{target.name} est paralysé ! Il aura du mal à attaquer.")
 class Spore(Attack):
     def __init__(self):
         super().__init__(
@@ -303,8 +306,9 @@ class Spore(Attack):
         if target.type1 == "Grass" or target.type2 == "Grass":
             print(f"{target.name} est de type Plante : Spore échoue.")
             return
-        target.apply_status("sleep")
-        print(f"{target.name} s'endort grâce à Spore !")
+        if target.status is None:
+            target.apply_status("sleep")
+            print(f"{target.name} s'endort mimimiimimi !")
 
 class WeatherBall(Attack):
     def __init__(self):

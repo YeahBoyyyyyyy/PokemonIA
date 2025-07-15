@@ -1,7 +1,7 @@
 from pokemon import pokemon
 import random 
 import donnees 
-from item import item_effects
+from pokemon_items import trigger_item
 from pokemon_talents import trigger_talent
 from pokemon_attacks import Attack
 
@@ -31,16 +31,16 @@ class Fight():
 
         self.turn = 0  # Compteur de tours pour suivre le nombre de tours écoulés dans le combat
 
+        """
         self.check_ability_weather(self.active1)
         self.check_ability_weather(self.active2)
+        """
+        trigger_talent(self.active1, "on_entry", self)
+        trigger_talent(self.active2, "on_entry", self)
         
         self.active1.init_fight(self)
         self.active2.init_fight(self)
         self.active1.actualize_stats()  # Met à jour les stats du Pokémon actif au cas ou le talent de active2 active celui de 1
-
-
-        trigger_talent(self.active1, "on_entry", self)
-        trigger_talent(self.active2, "on_entry", self)
 
     
     def is_team_defeated(self, team):
@@ -78,8 +78,10 @@ class Fight():
     def set_weather(self, weather, duration=5):
         """
         Déclenche une météo avec une durée (par défaut 5 tours).
-        :param weather: str, nom de la météo ("Sunny", "Rainy", etc.)
+
+        :param weather: str, nom de la météo ("Sunny", "Rain", etc.)
         :param duration: int, nombre de tours pendant lesquels la météo est active
+        :return: Change la météo
         """
         self.weather["previous"] = self.weather["current"]
         self.weather["current"] = weather
@@ -106,14 +108,14 @@ class Fight():
                     if "Ice" not in pokemon.types:
                         damage = int(pokemon.max_hp * 0.0625)
                         self.damage_method(pokemon, damage)
-            case "Rainy":
+            case "Rain":
                 for pokemon in [self.active1, self.active2]:
                     # Si l'un des Pokémons a le talent "Rain Dish", il regagne des PV
                     if pokemon.talent == "Rain Dish":
                         heal_amount = int(pokemon.max_hp * 0.0625) # Régénération de 1/16 des PV max
                         self.damage_method(pokemon, -heal_amount)
                     # Si l'un des Pokémons a le talent "Dry Skin", il perd des PV
-                    if talent == "Dry Skin":
+                    if pokemon.talent == "Dry Skin":
                         heal_amount = int(pokemon.max_hp * 0.125)
                         self.damage_method(pokemon, -heal_amount)  # Régénération de 1/8 des PV max
             case "Sunny":
@@ -137,32 +139,34 @@ class Fight():
             elif self.weather["previous"] == "Sandstorm" and self.weather["current"] != "Sandstorm" and "Rock" in pokemon.types:
                 pokemon.stats_modifier[1] -= 1
 
-    def actualize_weather(self):
+    def weather_update(self):
         """
         Met à jour la météo : décrémente les tours restants et la retire si elle expire.
         """
         if self.weather_turn_left is not None:
             self.weather_turn_left -= 1
+            self.weather['previous'] = self.weather['current']
             if self.weather_turn_left <= 0:
                 print(f"La météo {self.weather['current']} se dissipe.")
-                self.weather['previous'] = self.weather['current']
                 self.weather['current'] = None
                 self.weather_turn_left = None
 
-    def check_ability_weather(self, pokemon):
-        """
-        Déclenche une météo si le Pokémon possède un talent météo.
-        """
-        talent_weather = {
-            "Drought": "Sun",
-            "Drizzle": "Rain",
-            "Sand Stream": "Sandstorm",
-            "Snow Warning": "Snow"
-        }
+    """
+    INUTILE ?
+        def check_ability_weather(self, pokemon):
+            
+            Déclenche une météo si le Pokémon possède un talent météo.
+            
+            talent_weather = {
+                "Drought": "Sun",
+                "Drizzle": "Rain",
+                "Sand Stream": "Sandstorm",
+                "Snow Warning": "Snow"
+            }
 
-        if pokemon.talent in talent_weather:
-            self.set_weather(talent_weather[pokemon.talent], duration=None)
-
+            if pokemon.talent in talent_weather:
+                self.set_weather(talent_weather[pokemon.talent], duration=5)
+    """
 
 ###### Méthodes pour gérer les effets de terrain #######
     def add_field_effect(self, effect):
@@ -230,7 +234,7 @@ class Fight():
     def print_fight_status(self):
         print(f"Pokémon 1: {self.active1.name} (HP: {self.active1.current_hp}/{self.active1.max_hp})")
         print(f"Pokémon 2: {self.active2.name} (HP: {self.active2.current_hp}/{self.active2.max_hp})")
-        print(f"Météo actuelle: {self.weather['current']}")
+        print(f"Météo actuelle: {self.weather['current']}, Météo précédente: {self.weather['previous']}")
         print(f"Effets de terrain actifs: {', '.join(self.field_effects) if self.field_effects else 'Aucun'}")
         print(f"Écran de protection actif: {self.screen if self.screen else 'Aucun'}")
 
@@ -244,9 +248,9 @@ class Fight():
         """
         self.turn += 1
         print(f"Tour {self.turn}:")
-        self.actualize_weather()
+        self.weather_update()
 
-        self.print_fight_status()
+        #self.print_fight_status()
         
         # Appliquer les effets de terrain et de météo
         self.apply_weather_effects()
@@ -254,7 +258,7 @@ class Fight():
 
         if self.weather['current'] == "Sunny":
             print("Le soleil brille ! Les attaques de type Feu sont boostées.")
-        elif self.weather['current'] == "Rainy":
+        elif self.weather['current'] == "Rain":
             print("Il pleut ! Les attaques de type Eau sont boostées.")
         elif self.weather['current'] == "Sandstorm":
             print("Une tempête de sable souffle ! Les Pokémon du mauvais type subissent des dégâts.")
@@ -272,6 +276,9 @@ class Fight():
             print("Le terrain est psychique ! Les attaques de priorité sont neutralisées.")
         elif "Misty Terrain" == self.field_effects:
             print("Le terrain est brumeux ! Les attaques de type Dragon sont neutralisées.")
+        
+        for p in [self.active1, self.active2]:
+            trigger_talent(p, "modify_stat", self)
             
     #def attack(pokemon : pokemon, attack : dict, target : pokemon, fight : Fight):
     def attack_power(self, user_pokemon : pokemon, attack : Attack, target_pokemon : pokemon):
@@ -293,8 +300,9 @@ class Fight():
         terrain_boost = attack_terrain_boost(attack, self)  # Modificateur de puissance des attaques en fonction du terrain
         weather_boost = attack_weather_boost(attack, self)  # Modificateur de puissance des attaques en fonction de la météo
         berry = berry_boost(target_pokemon, attack)  # Placeholder pour l'effet de la baie, si applicable
-        burn = 0.5 if is_burned(user_pokemon) else 1.0  # Si le Pokémon est brûlé, les dégâts sont réduits de moitié
+        burn = burn_effect(user_pokemon, attack)  # Si le Pokémon est brûlé, les dégâts sont réduits de moitié
         rdm = random.uniform(0.85, 1.0)  # Valeur aléatoire entre 0.85 et 1.0
+        print(rdm)
         stab = is_stab(user_pokemon, attack)
         screen = screen_effect(attack, self)  # Effet de l'écran de protection actif
         type_eff = type_effectiveness(attack.type, target_pokemon.types)  # Calcul de l'efficacité du type
@@ -307,7 +315,8 @@ class Fight():
         else:
             critical = 1.0
             damage = ((22 * base_power * (attack_stat / defense_stat)) / 50 + 2) * burn * screen * type_eff * terrain_boost * weather_boost * critical * stab * rdm * berry
-            
+        
+        print(f"Dégâts calculés : {damage} (base_power: {base_power}, attack_stat: {attack_stat}, defense_stat: {defense_stat}, burn: {burn}, screen: {screen}, weather_boost: {weather_boost}, terrain_boost: {terrain_boost}, critical: {critical}, stab: {stab}, rdm: {rdm}, type_eff: {type_eff}, berry: {berry})")
         return damage
     
     ## PRINTING METHODS POUR DEBUGGER
@@ -607,7 +616,7 @@ class Fight():
                 print(f"{attacker.name} est gelé et ne peut pas bouger.")
                 return False
 
-        if attacker.status == "paralyze":
+        if attacker.status == "paralyzed":
             if random.random() < 0.25:
                 print(f"{attacker.name} est paralysé ! Il ne peut pas attaquer.")
                 return False
@@ -618,22 +627,6 @@ class Fight():
             return False
         
         return True
-    
-#### Activer l'item du pokemon ####
-    
-    def trigger_held_item(self, pokemon):
-        """
-        Applique l'effet de l'objet tenu si applicable.
-        """
-        item = pokemon.item
-        if not item:
-            return
-
-        if item in item_effects:
-            item_effects[item](pokemon, self)
-
-
-
 
 #
 # Ensemble des fonctions pour gérer la puissance d'une attaque contre un autre pokémon.
@@ -656,7 +649,7 @@ def is_stab(pokemon : pokemon, attack : Attack):
 #### Regarder si c'est un coup critique ####
 import random
 
-def is_critical_hit(pokemon, attack, target):
+def is_critical_hit(pokemon, attack : Attack, target):
     """
     Détermine si une attaque est un coup critique.
     
@@ -667,7 +660,7 @@ def is_critical_hit(pokemon, attack, target):
     """
     
     # 1. Cas d'un crit garanti (ex: Flower Trick)
-    if getattr(attack, "guaranteed_crit", False):
+    if attack.guaranteed_critical:
         return True
 
     # 2. Cas où le talent de la cible bloque les coups critiques
@@ -757,11 +750,11 @@ def attack_weather_boost(attack : Attack, fight):
     match fight.weather["current"], attack.type:
         case ("Sunny", "Fire"):
             return 1.5
-        case ("Rainy", "Water"):
+        case ("Rain", "Water"):
             return 1.5
         case ("Sunny", "Water"):
             return 0.5
-        case ("Rainy", "Fire"):
+        case ("Rain", "Fire"):
             return 0.5
         case _:
             return 1.0  # Pas de boost si la météo ne correspond pas à l'attaque
@@ -772,6 +765,19 @@ def is_burned(pokemon):
         return False
     else:
         return True
+    
+def burn_effect(pokemon : pokemon, attack : Attack):
+    """
+    Renvoie le multiplicateur de dégâts en fonction de l'attaque
+    
+    :param pokemon: Instance de la classe Pokemon qui attaque.
+    :param attack: Instance de la classe Attack.
+    :return: Multiplicateur de dégâts en fonction de l'attaque.
+    """
+    if attack.category == "Physical" and is_burned(pokemon):
+        return 0.5
+    else:
+        return 1.0
     
 #### Attaque de confusion ####
 def confusion_attack(pokemon : pokemon):
