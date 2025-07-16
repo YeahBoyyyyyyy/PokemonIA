@@ -81,7 +81,7 @@ class pokemon():
         self.is_confused = False  # Indique si le Pokémon est confus
         self.power = False # Indique si le Pokémon est sous l'effet de puissance (qui booste le taux de crits)
         self.charging = False  # Indique si le Pokémon est en train de charger une attaque (par exemple : "Meteor Beam", "Solar Beam", etc.)
-        self.sleep_counter = 0  # Nombre de tours de sommeil restants si le Pokémon est endormi
+        self.sleep_counter = None  # Nombre de tours de sommeil du Pokémon endormi
         self.poison_counter = 0  # Nombre de tours de poison restants si le Pokémon est gravement empoisonné vu que les degats augmentent à chaque tour
         self.protect_turns = 0  # Nombre de tours de protection restants si le Pokémon utilise "Protect" ou "Detect"
         self.still_confused = False  # Indique si le Pokémon est toujours confus au prochain tour
@@ -139,7 +139,7 @@ class pokemon():
     def apply_status(self, status):
         self.status = status
         if status == "sleep":
-            self.sleep_counter = random.randint(1, 3)
+            self.sleep_counter = 0
         if status == "badly_poisoned":
             self.toxic_counter = 1
     

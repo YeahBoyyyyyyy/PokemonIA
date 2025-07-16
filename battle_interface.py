@@ -3,19 +3,22 @@ import pokemon as pk
 import pokemon_attacks as ATTACKES
 import pokemon_datas as STATS
 import random
+from donnees import bcolors
 
 # Option pour afficher les stats d'un Pokémon
 def print_pokemon_stats(pokemon : pk.pokemon):
-    print(f"\nStats de {pokemon.name}:")
+
+    print(f"\n{bcolors.LIGHT_GREEN}Stats de {bcolors.BOLD}{pokemon.name}{bcolors.UNBOLD}:")
     print(f"Talent: {pokemon.talent}")
     print(f"Objet: {pokemon.item}")
     print(f"PV: {pokemon.current_hp}/{pokemon.max_hp}")
     for stat in ["Attack", "Defense", "Sp. Atk", "Sp. Def", "Speed"]:
         print(f"{stat}: {pokemon.stats[stat]}")
-    print("Attaques:")
+    print(f"{bcolors.LIGHT_RED}Attaques:")
     for i, atk in enumerate([pokemon.attack1, pokemon.attack2, pokemon.attack3, pokemon.attack4], 1):
         if atk:
             print(f"  {i}. {atk.name}")
+    print(f"{bcolors.ENDC}")
 
 
 def launch_battle(team1 : list[pk.pokemon], team2 : list[pk.pokemon]):
@@ -30,11 +33,11 @@ def launch_battle(team1 : list[pk.pokemon], team2 : list[pk.pokemon]):
 
         action1 = None
         while action1 not in ["1", "2"]:
-            print("\nChoisissez une action pour le joueur 1 :")
+            print(f"\n{bcolors.LIGHT_BLUE}Choisissez une action pour le joueur 1 :")
             print("1. Attaquer")
             print("2. Changer de Pokémon")
             print("3. Voir les stats d'un Pokémon'")
-            print("4. Quitter le combat")
+            print(f"4. Quitter le combat{bcolors.ENDC}")
 
             action1 = input("Action (1 ou 2) : ").strip()
 
@@ -55,13 +58,14 @@ def launch_battle(team1 : list[pk.pokemon], team2 : list[pk.pokemon]):
         if action1 == "1":
             attacker = fight.active1
             attacks = [attacker.attack1, attacker.attack2, attacker.attack3, attacker.attack4]
-            print("Choisissez une attaque :")
+            print(f"{bcolors.GRAY}Choisissez une attaque :")
             for i, atk in enumerate(attacks):
                 if atk:
                     print(f"{i+1}. {atk.name}")
             choice = int(input("Numéro d'attaque : ")) - 1
             atk1 = attacks[choice]
             act1 = (attacker, atk1)
+            print(f'{bcolors.ENDC}')
         elif action1 == "2":
             print("Choisissez un autre Pokémon dans votre équipe :")
             for i, p in enumerate(fight.team1):
@@ -102,9 +106,9 @@ venusaur = import_pokemon("Venusaur")
 venusaur.talent = "Chlorophyll"
 venusaur.item = "Leftovers"
 venusaur.attack1 = ATTACKES.FlowerTrick()
-venusaur.attack2 = ATTACKES.RainDance()
-venusaur.attack3 = ATTACKES.LeechSeed()
-venusaur.attack4 = ATTACKES.Recover()
+venusaur.attack2 = ATTACKES.Spore()
+venusaur.attack3 = ATTACKES.Protect()
+venusaur.attack4 = ATTACKES.RainDance()
 print(venusaur.talent)
 
 charizard = import_pokemon("Charizard")

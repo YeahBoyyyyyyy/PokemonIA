@@ -90,6 +90,10 @@ class Protect(Attack):
         if random.random() < 1 / (2 ** user.protect_turns):
             user.protect = True
             user.protect_turns += 1
+        else:
+            print("L'attaque échoue !")
+            user.protect = False
+            user.protect_turns = 0
 
 class Tackle(Attack):
     def __init__(self):
@@ -303,7 +307,7 @@ class Spore(Attack):
         )
 
     def apply_effect(self, user, target, fight):
-        if target.type1 == "Grass" or target.type2 == "Grass":
+        if "Grass" in target.types:
             print(f"{target.name} est de type Plante : Spore échoue.")
             return
         if target.status is None:
@@ -340,3 +344,4 @@ class WeatherBall(Attack):
         else:
             self.type = "Normal"
             self.base_power = 50
+

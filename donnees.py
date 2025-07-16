@@ -1,3 +1,26 @@
+class bcolors:
+    OKWHITE = '\033[97m'
+    OKBLACK = '\033[30m'
+    OKRED = '\033[91m'
+    OKORANGE = '\033[38;5;208m'
+    OKYELLOW = '\033[93m'
+    OKPINK = '\033[95m'
+    OKPURPLE = '\033[95m'
+    OKMAGENTA = '\033[35m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNBOLD = '\033[22m'
+    UNDERLINE = '\033[4m'
+    LIGHT_GREEN = '\033[92m'
+    LIGHT_RED = '\033[91m'
+    LIGHT_BLUE = '\033[94m'
+    GRAY = '\033[90m'
+    LIGHT_YELLOW = '\033[93m'
+    DARK_RED = '\033[31m'
+
 POKEMON_TYPES = ["Normal", "Fighting", "Flying", "Poison", "Ground", "Rock", "Bug", "Ghost", "Steel",
               "Fire", "Water", "Grass", "Electric", "Psychic", "Ice", "Dragon", "Dark", "Fairy", "Null"]
 

@@ -1,6 +1,7 @@
 from pokemon import pokemon
 import random 
 import donnees 
+from donnees import bcolors
 from pokemon_items import trigger_item
 from pokemon_talents import trigger_talent
 from pokemon_attacks import Attack
@@ -232,14 +233,14 @@ class Fight():
 
     ## Printing methods pour debugger
     def print_fight_status(self):
-        print(f"Pokémon 1: {self.active1.name} (HP: {self.active1.current_hp}/{self.active1.max_hp})")
-        print(f"Pokémon 2: {self.active2.name} (HP: {self.active2.current_hp}/{self.active2.max_hp})")
-        print(f"Météo actuelle: {self.weather['current']}, Météo précédente: {self.weather['previous']}")
+        print(f"{bcolors.OKGREEN}Pokémon 1: {self.active1.name} (HP: {self.active1.current_hp}/{self.active1.max_hp})")
+        print(f"Pokémon 2: {self.active2.name} (HP: {self.active2.current_hp}/{self.active2.max_hp}){bcolors.ENDC}")
+        print(f"{bcolors.LIGHT_YELLOW}Météo actuelle: {self.weather['current']}, Météo précédente: {self.weather['previous']}")
         print(f"Effets de terrain actifs: {', '.join(self.field_effects) if self.field_effects else 'Aucun'}")
-        print(f"Écran de protection actif: {self.screen if self.screen else 'Aucun'}")
+        print(f"Écran de protection actif: {self.screen if self.screen else 'Aucun'}{bcolors.ENDC}")
 
     def fight(self):
-        print(f"Le combat oppose {self.active1.name} à {self.active2.name} !")
+        print(f"{bcolors.OKMAGENTA}Le combat oppose {self.active1.name} à {self.active2.name} !{bcolors.ENDC}")
 
     def next_turn(self):
         """
@@ -257,13 +258,13 @@ class Fight():
         self.weather_boost_modifier()
 
         if self.weather['current'] == "Sunny":
-            print("Le soleil brille ! Les attaques de type Feu sont boostées.")
+            print(f"{bcolors.OKRED}Le soleil brille ! Les attaques de type Feu sont boostées.{bcolors.ENDC}")
         elif self.weather['current'] == "Rain":
-            print("Il pleut ! Les attaques de type Eau sont boostées.")
+            print(f"{bcolors.OKBLUE}Il pleut ! Les attaques de type Eau sont boostées.{bcolors.ENDC}")
         elif self.weather['current'] == "Sandstorm":
-            print("Une tempête de sable souffle ! Les Pokémon du mauvais type subissent des dégâts.")
+            print(f"{bcolors.OKYELLOW}Une tempête de sable souffle ! Les Pokémon du mauvais type subissent des dégâts.{bcolors.ENDC}")
         elif self.weather['current'] == "Snow":
-            print("Il neige ! Les Pokémon du mauvais type subissent des dégâts.")
+            print(f"{bcolors.OKCYAN}Il neige ! Les Pokémon du mauvais type subissent des dégâts.{bcolors.ENDC}")
         
         # Gérer les effets de terrain
         self.apply_field_effects()
@@ -316,7 +317,7 @@ class Fight():
             critical = 1.0
             damage = ((22 * base_power * (attack_stat / defense_stat)) / 50 + 2) * burn * screen * type_eff * terrain_boost * weather_boost * critical * stab * rdm * berry
         
-        print(f"Dégâts calculés : {damage} (base_power: {base_power}, attack_stat: {attack_stat}, defense_stat: {defense_stat}, burn: {burn}, screen: {screen}, weather_boost: {weather_boost}, terrain_boost: {terrain_boost}, critical: {critical}, stab: {stab}, rdm: {rdm}, type_eff: {type_eff}, berry: {berry})")
+        print(f"{bcolors.OKMAGENTA}Dégâts calculés : {damage} (base_power: {base_power}, attack_stat: {attack_stat}, defense_stat: {defense_stat}, burn: {burn}, screen: {screen}, weather_boost: {weather_boost}, terrain_boost: {terrain_boost}, critical: {critical}, stab: {stab}, rdm: {rdm}, type_eff: {type_eff}, berry: {berry}){bcolors.ENDC}")
         return damage
     
     ## PRINTING METHODS POUR DEBUGGER
@@ -437,17 +438,22 @@ class Fight():
         if cancel == "nullify":
             print(f"{defender.name} n’est pas affecté grâce à son talent !")
             return
-
+        
+        if defender.protect:
+            print(f"{bcolors.LIGHT_BLUE}{defender.name} se protège !{bcolors.ENDC}")
+            return
 
         # Calcul des dégâts
         trigger_talent(attacker, "on_attack", attack, self)
         damage = self.attack_power(attacker, attack, defender)
         damage = int(damage)
-        print(f"{defender.name} subit {damage} points de dégâts.")
+        print(f"{bcolors.DARK_RED}{defender.name} subit {damage} points de dégâts.{bcolors.ENDC}")
         self.damage_method(defender, damage)
 
         # Effets secondaires de l'attaque
         self.apply_secondary_effects(attacker, defender, attack)
+
+        attacker.protect_turns = 0  # Réinitialiser les tours de protection à chaque tour
 
         if defender.current_hp == 0:
             print(f"{defender.name} est K.O. !")
@@ -598,6 +604,37 @@ class Fight():
         Retourne True s'il peut attaquer, False sinon.
         """
         if attacker.status == "sleep":
+            match attacker.sleep_counter:
+                case 3:
+                    print(f"{attacker.name} se réveille !")
+                    attacker.remove_status()
+                    return True
+                case 2:
+                    if random.random() < 0.75:
+                        print(f"{attacker.name} se réveille !")
+                        attacker.remove_status()
+                        return True
+                    else:
+                        print(f"{attacker.name} tape sa meilleur sieste.")
+                        attacker.sleep_counter += 1
+                        return False
+                case 1:
+                    if random.random() < 0.5:
+                        print(f"{attacker.name} se réveille !")
+                        attacker.remove_status()
+                        return True
+                    else:
+                        print(f"{attacker.name} dort encore.")
+                        attacker.sleep_counter += 1
+                        return False
+                case 0:
+                    print(f"{attacker.name} dort profondément.")
+                    attacker.sleep_counter += 1
+                    return False
+                case _:
+                    raise ValueError(f"Invalid sleep counter value: {attacker.sleep_counter}")
+
+            """
             if attacker.sleep_counter > 0:
                 print(f"{attacker.name} dort encore ({attacker.sleep_counter} tour(s) restant).")
                 attacker.sleep_counter -= 1
@@ -606,6 +643,7 @@ class Fight():
                 print(f"{attacker.name} se réveille !")
                 attacker.remove_status()
                 return True
+            """
 
         if attacker.status == "freeze":
             if random.random() < 0.2:  # 20% chance de dégeler
