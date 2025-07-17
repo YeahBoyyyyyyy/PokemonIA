@@ -929,20 +929,6 @@ pokemon_data = {
         },
         "fully_evolved": True
     },
-    "Porygon": {
-        "name": "Porygon",
-        "types": ["Normal"],
-        "abilities": ["Trace", "Download", "Analytic"],
-        "stats": {
-            "HP": 65,
-            "Attack": 60,
-            "Defense": 70,
-            "Sp. Atk": 85,
-            "Sp. Def": 75,
-            "Speed": 40
-        },
-        "fully_evolved": False  # Evolves into Porygon2
-    },
     "Omastar": {
         "name": "Omastar",
         "types": ["Rock", "Water"],
@@ -1084,3 +1070,4 @@ pokemon_data = {
         "fully_evolved": True
     }
 }
+

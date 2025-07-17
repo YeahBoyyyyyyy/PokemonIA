@@ -91,6 +91,7 @@ class pokemon():
         self.protect = False  # Indique si le Pokémon a utilisé "Protect" ou "Detect" ce tour-ci
         self.protect_turns = 0  # Nombre de tours de protection restants si le Pokémon utilise "Protect" ou "Detect"
         self.leech_seeded_by = None  # Indique si le Pokémon a été "Leech Seeded" par un autre Pokémon
+        self.first_attack = True  # Indique si c'est le premier tour du Pokémon dans le combat
 
 
     def actualize_stats(self):
@@ -105,8 +106,7 @@ class pokemon():
         self.evasion = self.calculate_accuracy_and_evasion(self.ev_and_acc_modifier[0])
         self.accuracy = self.calculate_accuracy_and_evasion(self.ev_and_acc_modifier[1])
 
-        print("déclenchement talents")
-        trigger_item(self, self.fight)
+        trigger_item(self, "modify_stat",self.fight)
         trigger_talent(self, "modify_stat", self.fight)
     
     def set_nature(self, nature):

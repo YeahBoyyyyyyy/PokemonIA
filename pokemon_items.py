@@ -1,43 +1,95 @@
-# item.py
-def leftovers_effect(pokemon, fight=None):
-    if pokemon.current_hp < pokemon.max_hp:
-        heal = int(pokemon.max_hp * 0.0625)
-        print(f"{pokemon.name} récupère {heal} PV grâce à ses Restes.")
-        pokemon.current_hp = min(pokemon.current_hp + heal, pokemon.max_hp)
+class Item:
+    def on_turn_end(self, fight=None):
+        """
+        This method is called at the end of each turn to apply the item's effect.
+        """
+        pass
+    def after_attack(self, poke, fight=None):
+        """
+        This method is called after an attack to apply the item's effect.
+        """
+        pass
 
-def sitrus_berry_effect(pokemon, fight=None):
-    if pokemon.current_hp <= pokemon.max_hp * 0.5:
-        heal = int(pokemon.max_hp * 0.25)
-        print(f"{pokemon.name} consomme une Baie Sitrus et récupère {heal} PV !")
-        pokemon.current_hp = min(pokemon.current_hp + heal, pokemon.max_hp)
-        pokemon.item = None
+    def before_attack(self, poke, attack, fight=None):
+        """
+        This method is called before an attack to apply the item's effect.
+        """
+        pass
+    def on_entry(self, poke, fight=None):
+        """
+        This method is called when the Pokémon enters the battle to apply the item's effect.
+        """
+        pass
+    def modify_stat(self, poke, fight=None):
+        """
+        This method is called to modify the Pokémon's stats based on the item's effect.
+        """
+        return None
+    
 
-def apply_choice_boost(pokemon, fight=None):
-    if pokemon.item == "Choice Band":
-        pokemon.stats["Attack"] += int(pokemon.stats_with_no_modifier["Attack"] * 0.5)
-    elif pokemon.item == "Choice Specs":
-        pokemon.stats["Sp. Atk"] += int(pokemon.stats_with_no_modifier["Sp. Atk"] * 0.5)
-    elif pokemon.item == "Choice Scarf":
-        pokemon.stats["Speed"] += int(pokemon.stats_with_no_modifier["Speed"] * 0.5)
 
-def apply_eviolite(pokemon, fight=None):
-    if not pokemon.fully_evolved and pokemon.item == "Eviolite":
-        pokemon.stats["Defense"] += int(pokemon.stats_with_no_modifier["Defense"] * 0.5)
-        pokemon.stats["Sp. Def"] += int(pokemon.stats_with_no_modifier["Sp. Def"] * 0.5)
+class Leftovers(Item):
+    def on_turn_end(self, poke, fight=None):
+        if poke.current_hp < poke.max_hp:
+            heal = int(poke.max_hp * 0.0625)
+            print(f"{poke.name} récupère {heal} PV grâce à ses Restes.")
+            poke.current_hp = min(poke.current_hp + heal, poke.max_hp)
+
+class SitrusBerry(Item):
+    def after_attack(self, poke, fight=None):
+        if poke.current_hp <= poke.max_hp * 0.5:
+            heal = int(poke.max_hp * 0.25)
+            print(f"{poke.name} consomme une Baie Sitrus et récupère {heal} PV !")
+            poke.current_hp = min(poke.current_hp + heal, poke.max_hp)
+            poke.item = None
+
+class ChoiceBoost(Item):
+    def modify_stat(self, poke, fight=None):
+        if poke.item == "Choice Band":
+            poke.stats["Attack"] += int(poke.stats_with_no_modifier["Attack"] * 0.5)
+        elif poke.item == "Choice Specs":
+            poke.stats["Sp. Atk"] += int(poke.stats_with_no_modifier["Sp. Atk"] * 0.5)
+        elif poke.item == "Choice Scarf":
+            poke.stats["Speed"] += int(poke.stats_with_no_modifier["Speed"] * 0.5)
+
+class Eviolite(Item):
+    def modify_stat(self, poke, fight=None):
+        if not poke.fully_evolved:
+            poke.stats["Defense"] += int(poke.stats_with_no_modifier["Defense"] * 0.5)
+            poke.stats["Sp. Def"] += int(poke.stats_with_no_modifier["Sp. Def"] * 0.5)
+
+class EnergyBooster(Item):
+    def on_entry(self, poke, fight=None):
+        if poke.talent == "Quark Drive" or poke.talent == "Paleosynthesis":
+            stat_max = max(poke.stats, key = poke.stats.get)
+            if stat_max == "Speed":
+                poke.stats["Speed"] = int(poke.stats["Speed"] * 1.5)
+            else:
+                poke.stats[stat_max] = int(poke.stats[stat_max] * 1.3)
+        poke.item = None
 
 item_registry = {
-    "Leftovers": leftovers_effect,
-    "Sitrus Berry": sitrus_berry_effect,
-    "Choice Band": apply_choice_boost,
-    "Choice Specs": apply_choice_boost,
-    "Choice Scarf": apply_choice_boost,
-    "Eviolite": apply_eviolite,
+    "Leftovers": Leftovers(),
+    "Sitrus Berry": SitrusBerry(),
+    "Choice Band": ChoiceBoost(),
+    "Choice Specs": ChoiceBoost(),
+    "Choice Scarf": ChoiceBoost(),
+    "Eviolite": Eviolite(),
+    "Energy Booster": EnergyBooster(),
 }
 
-def trigger_item(pokemon, fight=None):
-    item = item_registry.get(pokemon.item)
-    if item:
-        item(pokemon, fight)
+def trigger_item(poke, event, *args):
+    """    
+    Déclenche l'effet de l'objet en fonction de l'événement.
+
+    :param poke: Le Pokémon utilisant l'objet.
+    :param event: Le nom de l'événement end_turn, after_attack, before_attack, on_entry, modify_stat.
+    :param args: Arguments supplémentaires en fonction de l'événement
+    """
+    item = item_registry.get(poke.item)
+    if item and hasattr(item, event):
+        print(f"[ITEM] {poke.name} uses {poke.item} -> {event}")
+        return getattr(item, event)(poke)
     else:
-        print(f"{pokemon.name} n'a pas d'effet d'objet actif.")
+        print(f"[ITEM] {poke.name} has no effect with {poke.item} on {event}.")
     return None

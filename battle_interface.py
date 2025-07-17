@@ -103,10 +103,10 @@ def import_pokemon(name):
     return pokemon
 
 venusaur = import_pokemon("Venusaur")
-venusaur.talent = "Chlorophyll"
+venusaur.talent = "Flash Fire"
 venusaur.item = "Leftovers"
-venusaur.attack1 = ATTACKES.FlowerTrick()
-venusaur.attack2 = ATTACKES.Spore()
+venusaur.attack1 = ATTACKES.KnockOff()
+venusaur.attack2 = ATTACKES.FakeOut()
 venusaur.attack3 = ATTACKES.Protect()
 venusaur.attack4 = ATTACKES.RainDance()
 print(venusaur.talent)
@@ -114,7 +114,7 @@ print(venusaur.talent)
 charizard = import_pokemon("Charizard")
 charizard.talent = "Drought"
 charizard.item = "Choice Specs"
-charizard.attack2 = ATTACKES.Ember()
+charizard.attack2 = ATTACKES.FlameThrower()
 
 launch_battle([venusaur], [charizard])
 

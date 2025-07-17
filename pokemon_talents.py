@@ -24,7 +24,7 @@ class Talent:
 
 
 class WaterAbsorb(Talent):
-    def on_defense(self, poke, incoming_attack, fight):
+    def on_defense(self, poke, incoming_attack, fight = None):
         if incoming_attack.get("type") == "Water":
             healed = int(poke.max_hp * 0.25)
             poke.current_hp = min(poke.current_hp + healed, poke.max_hp)
@@ -43,13 +43,13 @@ class Chlorophyll(Talent):
 
 
 class Overgrow(Talent):
-    def on_attack(self, poke, attack, fight):
+    def on_attack(self, poke, attack, fight = None):
         if poke.current_hp < poke.max_hp / 3 and attack['type'] == "Grass":
             attack['basePower'] = int(attack['basePower'] * 1.5)
 
 
 class Blaze(Talent):
-    def on_attack(self, poke, attack, fight):
+    def on_attack(self, poke, attack, fight = None):
         if poke.current_hp < poke.max_hp / 3 and attack['type'] == "Fire":
             attack['basePower'] = int(attack['basePower'] * 1.5)
 
@@ -75,10 +75,36 @@ class Intimidate(Talent):
             opponent.actualize_stats()
             print(f"{poke.name} intimide {opponent.name} ! Son Attaque baisse.")
 
+class QuarkDrive(Talent):
+    def on_entry(self, poke, fight):
+        if fight.weather['current'] == "Electric Terrain":
+            stat_max = max(poke.stats, key = poke.stats.get)
+            if stat_max == "Speed":
+                poke.stats["Speed"] = int(poke.stats["Speed"] * 1.5)
+            else:
+                poke.stats[stat_max] = int(poke.stats[stat_max] * 1.3)
+
+class Paleosynthesis(Talent):
+    def on_entry(self, poke, fight):
+        if fight.weather['current'] == "Electric Terrain":
+            stat_max = max(poke.stats, key = poke.stats.get)
+            if stat_max == "Speed":
+                poke.stats["Speed"] = int(poke.stats["Speed"] * 1.5)
+            else:
+                poke.stats[stat_max] = int(poke.stats[stat_max] * 1.3)
+
+class FlashFire(Talent):
+    def on_defense(self, poke, incoming_attack, fight=None):
+        if incoming_attack.type == "Fire":
+            poke.stats_modifier[2] += 1
+            poke.actualize_stats()
+            print(f"{poke.name} absorbe le feu et augmente son Attaque Spéciale !")
+            return "nullify"  # annule les dégâts
+
+
 
 
 # Registre des talents
-
 talent_registry = {
     "Water Absorb": WaterAbsorb(),
     "Intimidate": Intimidate(),
@@ -87,12 +113,21 @@ talent_registry = {
     "Blaze": Blaze(),
     "Torrent": Torrent(),
     "Drought": Drought(),
+    "Quark Drive": QuarkDrive(),
+    "Paleosynthesis": Paleosynthesis(),
+    "Flash Fire": FlashFire(),
 }
 
 
 def trigger_talent(poke, event_name, *args):
+    """
+    Déclenche l'effet du talent en fonction de l'événement.
+
+    :param poke: Le Pokémon utilisant le talent.
+    :param event_name: Le nom de l'événement qui déclenche l'effet du talent.
+    :param args: Arguments supplémentaires à mettre dans cet ordre"""
     talent = talent_registry.get(poke.talent)
     if talent and hasattr(talent, event_name):
         print(f"[TALENT] {poke.name} active {poke.talent} -> {event_name}")
-        getattr(talent, event_name)(poke, *args)
+        return getattr(talent, event_name)(poke, *args)
     return None

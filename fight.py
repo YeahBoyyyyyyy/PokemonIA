@@ -90,6 +90,11 @@ class Fight():
             self.weather_turn_left = duration
         else:
             self.weather_turn_left = None  # Infini
+        
+        for p in [self.active1, self.active2]:
+            trigger_talent(p, "modify_stat", self)
+        self.weather_boost_modifier()
+        
         print(f"La météo change : {weather} pendant {duration} tours.")
         
 
@@ -151,6 +156,10 @@ class Fight():
                 print(f"La météo {self.weather['current']} se dissipe.")
                 self.weather['current'] = None
                 self.weather_turn_left = None
+        else:
+            self.weather['previous'] = self.weather['current']
+            self.weather['current'] = None
+            
 
     """
     INUTILE ?
@@ -295,9 +304,9 @@ class Fight():
         damage = ((22 * base_power * (attack_stat / defense_stat)) / 50 + 2) * burn * screen * weather * FF * critical * item * stab * random * Type1 * Type2 * Berry
         """
         # Le coup critique est déterminé avant car s'il y a un coup critique, on ne prend pas en compte les modificateurs de stats
+        attack_boost = attack.boosted_attack(user_pokemon, target_pokemon, self) if hasattr(attack, 'boosted_attack') else 1.0
         base_power = attack.base_power
         attack_stat = user_pokemon.current_stats()['Attack'] if attack.category == 'Physical' else user_pokemon.current_stats()['Sp. Atk']
-        defense_stat = target_pokemon.current_stats()['Defense'] if attack.category == 'Physical' else target_pokemon.current_stats()['Sp. Def']
         terrain_boost = attack_terrain_boost(attack, self)  # Modificateur de puissance des attaques en fonction du terrain
         weather_boost = attack_weather_boost(attack, self)  # Modificateur de puissance des attaques en fonction de la météo
         berry = berry_boost(target_pokemon, attack)  # Placeholder pour l'effet de la baie, si applicable
@@ -311,13 +320,15 @@ class Fight():
         if is_critical_hit(user_pokemon, attack, target_pokemon):
             print(f"{user_pokemon.name} porte un coup critique avec {attack.name} !")
             critical = 1.5  # Coup critique inflige 1.5x les dégâts
-            damage = ((22 * base_power * (attack_stat / defense_stat)) / 50 + 2) * burn * screen * type_eff * terrain_boost * weather_boost * critical * stab * rdm * berry
+            defense_stat = target_pokemon.stats_with_no_modifier()['Defense'] if attack.category == 'Physical' else target_pokemon.current_stats()['Sp. Def']
+            damage = ((22 * base_power * (attack_stat / defense_stat)) / 50 + 2) * burn * screen * type_eff * terrain_boost * weather_boost * critical * stab * rdm * berry * attack_boost
             # A changer car les crits ne prennent pas en compte les modificateurs de stats
         else:
             critical = 1.0
-            damage = ((22 * base_power * (attack_stat / defense_stat)) / 50 + 2) * burn * screen * type_eff * terrain_boost * weather_boost * critical * stab * rdm * berry
+            defense_stat = target_pokemon.current_stats()['Defense'] if attack.category == 'Physical' else target_pokemon.current_stats()['Sp. Def']
+            damage = ((22 * base_power * (attack_stat / defense_stat)) / 50 + 2) * burn * screen * type_eff * terrain_boost * weather_boost * critical * stab * rdm * berry * attack_boost
         
-        print(f"{bcolors.OKMAGENTA}Dégâts calculés : {damage} (base_power: {base_power}, attack_stat: {attack_stat}, defense_stat: {defense_stat}, burn: {burn}, screen: {screen}, weather_boost: {weather_boost}, terrain_boost: {terrain_boost}, critical: {critical}, stab: {stab}, rdm: {rdm}, type_eff: {type_eff}, berry: {berry}){bcolors.ENDC}")
+        print(f"{bcolors.OKMAGENTA}Dégâts calculés : {damage} (base_power: {base_power}, attack_stat: {attack_stat}, defense_stat: {defense_stat}, burn: {burn}, screen: {screen}, weather_boost: {weather_boost}, terrain_boost: {terrain_boost}, critical: {critical}, stab: {stab}, rdm: {rdm}, type_eff: {type_eff}, berry: {berry}, boost: {attack_boost}){bcolors.ENDC}")
         return damage
     
     ## PRINTING METHODS POUR DEBUGGER
@@ -429,11 +440,12 @@ class Fight():
         #     duration = attack['effect']['weather'].get("duration", 5)
         #     self.set_weather(meteo, duration)
 
-        # Attaque sans puissance (statut, terrain...)
-        if attack.base_power == 0:
-            self.apply_secondary_effects(attacker, defender, attack)
-            return
-
+        # Verification attaques qui se lancent que au tour d'entrée du pokemon
+        if hasattr(attack, 'on_condition_attack'):
+            if not attack.on_condition_attack(attacker):
+                return
+            
+        # Vérification des talents de l'attaquant ex lavabo, etc
         cancel = trigger_talent(defender, "on_defense", attack, self)
         if cancel == "nullify":
             print(f"{defender.name} n’est pas affecté grâce à son talent !")
@@ -454,6 +466,7 @@ class Fight():
         self.apply_secondary_effects(attacker, defender, attack)
 
         attacker.protect_turns = 0  # Réinitialiser les tours de protection à chaque tour
+        attacker.first_attack = False  # Réinitialiser le premier tour d'attaque
 
         if defender.current_hp == 0:
             print(f"{defender.name} est K.O. !")
@@ -563,7 +576,10 @@ class Fight():
                     seeder.current_hp = min(seeder.max_hp, seeder.current_hp + drained)
                 print(f"{pokemon.name} perd {drained} PV à cause de Graine ! {seeder.name} les récupère.")
 
-        
+        for p in [self.active1, self.active2]:
+            self.apply_status_damage(p)  # Appliquer les dégâts liés aux statuts persistants
+            trigger_item(p, "on_turn_end", self)  # Appliquer les effets des objets à la fin du tour
+
         self.next_turn()
 
 

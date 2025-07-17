@@ -54,16 +54,37 @@ class Attack:
     def apply_effect(self, user : PK.pokemon, target : PK.pokemon, fight):
         pass  # Surcharge dans les attaques concrètes
 
-class Ember(Attack):
+    def on_condition_attack(self, user):
+        """
+        Cette méthode est appelée pour vérifier si l'attaque peut être lancée. Sert principalement pour fake out et first impression.
+
+        :param user: Le Pokémon qui lance l'attaque.
+        :return: True si l'attaque peut être lancée, False sinon.
+        """
+        return True  # Par défaut, l'attaque peut être lancée
+    
+    def boosted_attack(self, user, target, fight):
+        """
+        Vérifie si l'attaque est boostée (par ex : knock off quand l'adversaire a un objet)
+        
+        :param user: Le Pokémon qui lance l'attaque.
+        :param target: Le Pokémon ciblé par l'attaque.
+        :param fight: L'instance de combat en cours.
+        :return: le multiplicateur de boost.
+        """
+        return 1.0  # Par défaut, pas de boost
+        
+
+class FlameThrower(Attack):
     def __init__(self):
         super().__init__(
-            name="ember",
+            name="Flamethrower",
             type_="Fire",
             category="Special",
-            power=40,
+            power=90,
             accuracy=100,
             priority=0,
-            pp=25,
+            pp=15,
             flags=["protect", "mirror"],
             target="Foe"
         )
@@ -75,7 +96,7 @@ class Ember(Attack):
 class Protect(Attack):
     def __init__(self):
         super().__init__(
-            name="protect",
+            name="Protect",
             type_="Normal",
             category="Status",
             power=0,
@@ -95,24 +116,10 @@ class Protect(Attack):
             user.protect = False
             user.protect_turns = 0
 
-class Tackle(Attack):
-    def __init__(self):
-        super().__init__(
-            name="tackle",
-            type_="Normal",
-            category="Physical",
-            power=40,
-            accuracy=100,
-            priority=0,
-            pp=35,
-            flags=["contact", "protect", "mirror"],
-            target="Foe"
-        )
-
 class RockSlide(Attack):
     def __init__(self):
         super().__init__(
-            name="rockslide",
+            name="Rockslide",
             type_="Rock",
             category="Physical",
             power=75,
@@ -131,7 +138,7 @@ class RockSlide(Attack):
 class SurgingStrike(Attack):
     def __init__(self):
         super().__init__(
-            name="surging_strike",
+            name="Surging Strike",
             type_="Water",
             category="Physical",
             power=25,
@@ -145,7 +152,7 @@ class SurgingStrike(Attack):
 class LeechSeed(Attack):
     def __init__(self):
         super().__init__(
-            name="leech_seed",
+            name="Leech Seed",
             type_="Grass",
             category="Status",
             power=0,
@@ -167,7 +174,7 @@ class LeechSeed(Attack):
 class FlowerTrick(Attack):
     def __init__(self):
         super().__init__(
-            name="flower_trick",
+            name="Flower Trick",
             type_="Grass",
             category="Physical",
             power=70,
@@ -184,7 +191,7 @@ class FlowerTrick(Attack):
 class RainDance(Attack):
     def __init__(self):
         super().__init__(
-            name="rain_dance",
+            name="Rain Dance",
             type_="Water",
             category="Status",
             power=0,
@@ -202,7 +209,7 @@ class RainDance(Attack):
 class Recover(Attack):
     def __init__(self):
         super().__init__(
-            name="recover",
+            name="Recover",
             type_="Normal",
             category="Status",
             power=0,
@@ -221,7 +228,7 @@ class Recover(Attack):
 class StoneEdge(Attack):
     def __init__(self):
         super().__init__(
-            name="stone_edge",
+            name="Stone Edge",
             type_="Rock",
             category="Physical",
             power=100,
@@ -236,7 +243,7 @@ class StoneEdge(Attack):
 class Nuzzle(Attack):
     def __init__(self):
         super().__init__(
-            name="nuzzle",
+            name="Nuzzle",
             type_="Electric",
             category="Physical",
             power=20,
@@ -255,7 +262,7 @@ class Nuzzle(Attack):
 class FakeOut(Attack):
     def __init__(self):
         super().__init__(
-            name="fake_out",
+            name="Fake Out",
             type_="Normal",
             category="Physical",
             power=40,
@@ -272,11 +279,18 @@ class FakeOut(Attack):
             print(f"{target.name} est flinché par Fake Out !")
         else:
             print(f"{target.name} a déjà été flinché ce tour-ci.")
+    
+    def on_condition_attack(self, user):
+        if user.first_attack:
+            return True
+        else:
+            print("L'attaque échoue !")
+            return False
 
 class Thunderbolt(Attack):
     def __init__(self):
         super().__init__(
-            name="thunderbolt",
+            name="Thunderbolt",
             type_="Electric",
             category="Special",
             power=90,
@@ -295,7 +309,7 @@ class Thunderbolt(Attack):
 class Spore(Attack):
     def __init__(self):
         super().__init__(
-            name="spore",
+            name="Spore",
             type_="Grass",
             category="Status",
             power=0,
@@ -317,7 +331,7 @@ class Spore(Attack):
 class WeatherBall(Attack):
     def __init__(self):
         super().__init__(
-            name="weather_ball",
+            name="Weather Ball",
             type_="Normal",
             category="Special",
             power=50,
@@ -345,3 +359,100 @@ class WeatherBall(Attack):
             self.type = "Normal"
             self.base_power = 50
 
+class KnockOff(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Knock Off",
+            type_="Dark",
+            category="Physical",
+            power=65,
+            accuracy=100,
+            priority=0,
+            pp=20,
+            flags=["contact", "protect", "mirror"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        if target.item:
+            print(f"{target.name} perd son objet {target.item} !")
+            target.item = None
+            target.actualize_stats()
+
+    def boosted_attack(self, user, target, fight):
+        if target.item:
+            return 1.5
+
+class UTurn(Attack):
+    def __init__(self):
+        super().__init__(
+            name="U-Turn",
+            type_="Bug",
+            category="Physical",
+            power=70,
+            accuracy=100,
+            priority=0,
+            pp=20,
+            flags=["contact", "protect", "mirror"],
+            target="Foe"
+        )
+
+   ## def apply_effect(self, user, target, fight): Plus tard
+
+class WillOWisp(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Will-O-Wisp",
+            type_="Fire",
+            category="Status",
+            power=0,
+            accuracy=85,
+            priority=0,
+            pp=15,
+            flags=["protect"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        if target.status is None and "Fire" not in target.types:
+            target.apply_status("burn")
+            print(f"{target.name} est brûlé !")
+
+class Toxic(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Toxic",
+            type_="Poison",
+            category="Status",
+            power=0,
+            accuracy=90,
+            priority=0,
+            pp=10,
+            flags=["protect"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        if target.status is None and "Poison" not in target.types:
+            target.apply_status("toxic")
+            print(f"{target.name} est empoisonné !")
+
+class IceBeam(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Ice Beam",
+            type_="Ice",
+            category="Special",
+            power=90,
+            accuracy=100,
+            priority=0,
+            pp=10,
+            flags=["protect", "mirror"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        if random.randint(1, 100) <= 10:
+            if target.status is None:
+                target.apply_status("frozen")
+                print(f"{target.name} est gelé !")
