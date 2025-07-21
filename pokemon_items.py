@@ -60,12 +60,12 @@ class Eviolite(Item):
 
 class EnergyBooster(Item):
     def on_entry(self, poke, fight=None):
-        if poke.talent == "Quark Drive" or poke.talent == "Paleosynthesis":
+        if poke.talent == "Quark Drive" or poke.talent == "Protosynthesis":
             stat_max = max(poke.stats, key = poke.stats.get)
             if stat_max == "Speed":
-                poke.stats["Speed"] = int(poke.stats["Speed"] * 1.5)
+                poke.hidden_boost[stat_max] *= 1.5
             else:
-                poke.stats[stat_max] = int(poke.stats[stat_max] * 1.3)
+                poke.hidden_boost[stat_max] *= 1.3
         poke.item = None
 
 item_registry = {
@@ -88,8 +88,12 @@ def trigger_item(poke, event, *args):
     """
     item = item_registry.get(poke.item)
     if item and hasattr(item, event):
-        print(f"[ITEM] {poke.name} uses {poke.item} -> {event}")
-        return getattr(item, event)(poke)
-    else:
-        print(f"[ITEM] {poke.name} has no effect with {poke.item} on {event}.")
+        # Vérifier si la méthode de l'objet diffère de la méthode de base (qui ne fait rien)
+        item_method = getattr(item, event)
+        base_method = getattr(Item, event)
+        
+        # Si la méthode a été surchargée (différente de la classe de base)
+        if item_method.__func__ != base_method:
+            print(f"[ITEM] {poke.name} uses {poke.item} -> {event}")
+            return item_method(poke, *args)
     return None

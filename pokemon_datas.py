@@ -17,6 +17,7 @@ pokemon_data = {
             "Sp. Def": 100,
             "Speed": 80
         },
+        "weight": 100.0,
         "fully_evolved": True
     },
     "Charizard": {
@@ -31,6 +32,7 @@ pokemon_data = {
             "Sp. Def": 85,
             "Speed": 100
         },
+        "weight": 90.5,
         "fully_evolved": True
     },
     "Blastoise": {
@@ -45,6 +47,7 @@ pokemon_data = {
             "Sp. Def": 105,
             "Speed": 78
         },
+        "weight": 85.5,
         "fully_evolved": True
     },
     "Butterfree": {
@@ -59,6 +62,7 @@ pokemon_data = {
             "Sp. Def": 80,
             "Speed": 70
         },
+        "weight": 32.0,
         "fully_evolved": True
     },
     "Beedrill": {
@@ -73,6 +77,7 @@ pokemon_data = {
             "Sp. Def": 80,
             "Speed": 75
         },
+        "weight": 29.5,
         "fully_evolved": True
     },
     "Pidgeot": {
@@ -87,6 +92,7 @@ pokemon_data = {
             "Sp. Def": 70,
             "Speed": 101
         },
+        "weight": 39.5,
         "fully_evolved": True
     },
     "Raticate": {
@@ -101,6 +107,7 @@ pokemon_data = {
             "Sp. Def": 70,
             "Speed": 97
         },
+        "weight": 18.5,
         "fully_evolved": True
     },
     "Fearow": {
@@ -115,6 +122,7 @@ pokemon_data = {
             "Sp. Def": 61,
             "Speed": 100
         },
+        "weight": 38.0,
         "fully_evolved": True
     },
     "Arbok": {
@@ -129,6 +137,7 @@ pokemon_data = {
             "Sp. Def": 79,
             "Speed": 80
         },
+        "weight": 65.0,
         "fully_evolved": True
     },
     "Raichu": {
@@ -143,6 +152,7 @@ pokemon_data = {
             "Sp. Def": 80,
             "Speed": 110
         },
+        "weight": 30.0,
         "fully_evolved": True
     },
     "Sandslash": {
@@ -157,6 +167,7 @@ pokemon_data = {
             "Sp. Def": 55,
             "Speed": 65
         },
+        "weight": 29.5,
         "fully_evolved": True
     },
     "Nidoqueen": {
@@ -171,6 +182,7 @@ pokemon_data = {
             "Sp. Def": 85,
             "Speed": 76
         },
+        "weight": 60.0,
         "fully_evolved": True
     },
     "Nidoking": {
@@ -185,6 +197,7 @@ pokemon_data = {
             "Sp. Def": 75,
             "Speed": 85
         },
+        "weight": 62.0,
         "fully_evolved": True
     },
     "Clefable": {
@@ -199,6 +212,7 @@ pokemon_data = {
             "Sp. Def": 90,
             "Speed": 60
         },
+        "weight": 40.0,
         "fully_evolved": True
     },
     "Ninetales": {
@@ -213,6 +227,7 @@ pokemon_data = {
             "Sp. Def": 100,
             "Speed": 100
         },
+        "weight": 19.9,
         "fully_evolved": True
     },
     "Wigglytuff": {
@@ -227,6 +242,7 @@ pokemon_data = {
             "Sp. Def": 50,
             "Speed": 45
         },
+        "weight": 12.0,
         "fully_evolved": True
     },
     "Vileplume": {
@@ -241,6 +257,7 @@ pokemon_data = {
             "Sp. Def": 90,
             "Speed": 50
         },
+        "weight": 18.6,
         "fully_evolved": True
     },
     "Parasect": {
@@ -255,6 +272,7 @@ pokemon_data = {
             "Sp. Def": 80,
             "Speed": 30
         },
+        "weight": 29.5,
         "fully_evolved": True
     },
     "Venomoth": {
@@ -269,6 +287,7 @@ pokemon_data = {
             "Sp. Def": 75,
             "Speed": 90
         },
+        "weight": 12.5,
         "fully_evolved": True
     },
     "Dugtrio": {
@@ -283,6 +302,7 @@ pokemon_data = {
             "Sp. Def": 70,
             "Speed": 120
         },
+        "weight": 33.3,
         "fully_evolved": True
     },
     "Persian": {
@@ -297,6 +317,7 @@ pokemon_data = {
             "Sp. Def": 65,
             "Speed": 115
         },
+        "weight": 32.0,
         "fully_evolved": True
     },
     "Golduck": {
@@ -311,6 +332,7 @@ pokemon_data = {
             "Sp. Def": 80,
             "Speed": 85
         },
+        "weight": 76.6,
         "fully_evolved": True
     },
     "Primeape": {
@@ -325,6 +347,7 @@ pokemon_data = {
             "Sp. Def": 70,
             "Speed": 95
         },
+        "weight": 32.0,
         "fully_evolved": True
     },
     "Arcanine": {
@@ -339,6 +362,7 @@ pokemon_data = {
             "Sp. Def": 80,
             "Speed": 95
         },
+        "weight": 155.0,
         "fully_evolved": True
     },
     "Poliwrath": {
@@ -353,6 +377,7 @@ pokemon_data = {
             "Sp. Def": 90,
             "Speed": 70
         },
+        "weight": 54.0,
         "fully_evolved": True
     },
     "Alakazam": {
@@ -367,6 +392,7 @@ pokemon_data = {
             "Sp. Def": 95,
             "Speed": 120
         },
+        "weight": 48.0,
         "fully_evolved": True
     },
     "Machamp": {
@@ -381,6 +407,7 @@ pokemon_data = {
             "Sp. Def": 85,
             "Speed": 55
         },
+        "weight": 130.0,
         "fully_evolved": True
     },
     "Victreebel": {
@@ -395,6 +422,7 @@ pokemon_data = {
             "Sp. Def": 70,
             "Speed": 70
         },
+        "weight": 15.5,
         "fully_evolved": True
     },
     "Tentacruel": {
@@ -409,6 +437,7 @@ pokemon_data = {
             "Sp. Def": 120,
             "Speed": 100
         },
+        "weight": 55.0,
         "fully_evolved": True
     },
     "Golem": {
@@ -423,6 +452,7 @@ pokemon_data = {
             "Sp. Def": 65,
             "Speed": 45
         },
+        "weight": 300.0,
         "fully_evolved": True
     },
     "Rapidash": {
@@ -437,6 +467,7 @@ pokemon_data = {
             "Sp. Def": 80,
             "Speed": 105
         },
+        "weight": 95.0,
         "fully_evolved": True
     },
     "Slowbro": {
@@ -451,6 +482,7 @@ pokemon_data = {
             "Sp. Def": 80,
             "Speed": 30
         },
+        "weight": 78.5,
         "fully_evolved": True
     },
     "Magneton": {
@@ -465,21 +497,8 @@ pokemon_data = {
             "Sp. Def": 70,
             "Speed": 70
         },
+        "weight": 60.0,
         "fully_evolved": False  # Evolves into Magnezone
-    },
-    "Farfetch'd": {
-        "name": "Farfetch'd",
-        "types": ["Normal", "Flying"],
-        "abilities": ["Keen Eye", "Inner Focus", "Defiant"],
-        "stats": {
-            "HP": 52,
-            "Attack": 90,
-            "Defense": 55,
-            "Sp. Atk": 58,
-            "Sp. Def": 62,
-            "Speed": 60
-        },
-        "fully_evolved": False  # Evolves into Sirfetch'd (Galarian)
     },
     "Dodrio": {
         "name": "Dodrio",
@@ -493,6 +512,7 @@ pokemon_data = {
             "Sp. Def": 60,
             "Speed": 110
         },
+        "weight": 85.2,
         "fully_evolved": True
     },
     "Dewgong": {
@@ -507,6 +527,7 @@ pokemon_data = {
             "Sp. Def": 95,
             "Speed": 70
         },
+        "weight": 120.0,
         "fully_evolved": True
     },
     "Muk": {
@@ -521,6 +542,7 @@ pokemon_data = {
             "Sp. Def": 100,
             "Speed": 50
         },
+        "weight": 30.0,
         "fully_evolved": True
     },
     "Cloyster": {
@@ -535,6 +557,7 @@ pokemon_data = {
             "Sp. Def": 45,
             "Speed": 70
         },
+        "weight": 132.5,
         "fully_evolved": True
     },
     "Gengar": {
@@ -549,6 +572,7 @@ pokemon_data = {
             "Sp. Def": 75,
             "Speed": 110
         },
+        "weight": 40.5,
         "fully_evolved": True
     },
     "Hypno": {
@@ -563,6 +587,7 @@ pokemon_data = {
             "Sp. Def": 115,
             "Speed": 67
         },
+        "weight": 75.6,
         "fully_evolved": True
     },
     "Kingler": {
@@ -577,6 +602,7 @@ pokemon_data = {
             "Sp. Def": 50,
             "Speed": 75
         },
+        "weight": 60.0,
         "fully_evolved": True
     },
     "Electrode": {
@@ -591,6 +617,7 @@ pokemon_data = {
             "Sp. Def": 80,
             "Speed": 150
         },
+        "weight": 66.6,
         "fully_evolved": True
     },
     "Exeggutor": {
@@ -605,6 +632,7 @@ pokemon_data = {
             "Sp. Def": 75,
             "Speed": 55
         },
+        "weight": 120.0,
         "fully_evolved": True
     },
     "Marowak": {
@@ -619,6 +647,7 @@ pokemon_data = {
             "Sp. Def": 80,
             "Speed": 45
         },
+        "weight": 45.0,
         "fully_evolved": True
     },
     "Hitmonlee": {
@@ -633,6 +662,7 @@ pokemon_data = {
             "Sp. Def": 110,
             "Speed": 87
         },
+        "weight": 49.8,
         "fully_evolved": True
     },
     "Hitmonchan": {
@@ -647,6 +677,7 @@ pokemon_data = {
             "Sp. Def": 110,
             "Speed": 76
         },
+        "weight": 50.2,
         "fully_evolved": True
     },
     "Weezing": {
@@ -661,6 +692,7 @@ pokemon_data = {
             "Sp. Def": 70,
             "Speed": 60
         },
+        "weight": 9.5,
         "fully_evolved": True
     },
     "Rhydon": {
@@ -675,6 +707,7 @@ pokemon_data = {
             "Sp. Def": 45,
             "Speed": 40
         },
+        "weight": 120.0,
         "fully_evolved": False  # Evolves into Rhyperior
     },
     "Chansey": {
@@ -689,6 +722,7 @@ pokemon_data = {
             "Sp. Def": 105,
             "Speed": 50
         },
+        "weight": 34.6,
         "fully_evolved": False  # Evolves into Blissey
     },
     "Tangela": {
@@ -703,6 +737,7 @@ pokemon_data = {
             "Sp. Def": 40,
             "Speed": 60
         },
+        "weight": 35.0,
         "fully_evolved": False  # Evolves into Tangrowth
     },
     "Kangaskhan": {
@@ -717,6 +752,7 @@ pokemon_data = {
             "Sp. Def": 80,
             "Speed": 90
         },
+        "weight": 80.0,
         "fully_evolved": True
     },
     "Seaking": {
@@ -731,6 +767,7 @@ pokemon_data = {
             "Sp. Def": 80,
             "Speed": 68
         },
+        "weight": 39.0,
         "fully_evolved": True
     },
     "Starmie": {
@@ -745,6 +782,7 @@ pokemon_data = {
             "Sp. Def": 85,
             "Speed": 115
         },
+        "weight": 80.0,
         "fully_evolved": True
     },
     "Mr. Mime": {
@@ -759,6 +797,7 @@ pokemon_data = {
             "Sp. Def": 120,
             "Speed": 90
         },
+        "weight": 54.5,
         "fully_evolved": True
     },
     "Scyther": {
@@ -773,6 +812,7 @@ pokemon_data = {
             "Sp. Def": 80,
             "Speed": 105
         },
+        "weight": 56.0,
         "fully_evolved": False  # Evolves into Scizor or Kleavor
     },
     "Jynx": {
@@ -787,6 +827,7 @@ pokemon_data = {
             "Sp. Def": 95,
             "Speed": 95
         },
+        "weight": 40.6,
         "fully_evolved": True
     },
     "Electabuzz": {
@@ -801,6 +842,7 @@ pokemon_data = {
             "Sp. Def": 85,
             "Speed": 105
         },
+        "weight": 30.0,
         "fully_evolved": False  # Evolves into Electivire
     },
     "Magmar": {
@@ -815,6 +857,7 @@ pokemon_data = {
             "Sp. Def": 85,
             "Speed": 93
         },
+        "weight": 44.5,
         "fully_evolved": False  # Evolves into Magmortar
     },
     "Pinsir": {
@@ -829,6 +872,7 @@ pokemon_data = {
             "Sp. Def": 70,
             "Speed": 85
         },
+        "weight": 55.0,
         "fully_evolved": True
     },
     "Tauros": {
@@ -843,6 +887,7 @@ pokemon_data = {
             "Sp. Def": 70,
             "Speed": 110
         },
+        "weight": 88.4,
         "fully_evolved": True
     },
     "Gyarados": {
@@ -857,6 +902,7 @@ pokemon_data = {
             "Sp. Def": 100,
             "Speed": 81
         },
+        "weight": 235.0,
         "fully_evolved": True
     },
     "Lapras": {
@@ -871,6 +917,7 @@ pokemon_data = {
             "Sp. Def": 95,
             "Speed": 60
         },
+        "weight": 220.0,
         "fully_evolved": True
     },
     "Ditto": {
@@ -885,6 +932,7 @@ pokemon_data = {
             "Sp. Def": 48,
             "Speed": 48
         },
+        "weight": 4.0,
         "fully_evolved": True
     },
     "Vaporeon": {
@@ -899,6 +947,7 @@ pokemon_data = {
             "Sp. Def": 95,
             "Speed": 65
         },
+        "weight": 29.0,
         "fully_evolved": True
     },
     "Jolteon": {
@@ -913,6 +962,7 @@ pokemon_data = {
             "Sp. Def": 95,
             "Speed": 130
         },
+        "weight": 24.5,
         "fully_evolved": True
     },
     "Flareon": {
@@ -927,6 +977,7 @@ pokemon_data = {
             "Sp. Def": 110,
             "Speed": 65
         },
+        "weight": 25.0,
         "fully_evolved": True
     },
     "Omastar": {
@@ -941,6 +992,7 @@ pokemon_data = {
             "Sp. Def": 70,
             "Speed": 55
         },
+        "weight": 35.0,
         "fully_evolved": True
     },
     "Kabutops": {
@@ -955,6 +1007,7 @@ pokemon_data = {
             "Sp. Def": 70,
             "Speed": 80
         },
+        "weight": 40.5,
         "fully_evolved": True
     },
     "Aerodactyl": {
@@ -969,6 +1022,7 @@ pokemon_data = {
             "Sp. Def": 75,
             "Speed": 130
         },
+        "weight": 59.0,
         "fully_evolved": True
     },
     "Snorlax": {
@@ -983,6 +1037,7 @@ pokemon_data = {
             "Sp. Def": 110,
             "Speed": 30
         },
+        "weight": 460.0,
         "fully_evolved": True
     },
     "Articuno": {
@@ -997,6 +1052,7 @@ pokemon_data = {
             "Sp. Def": 125,
             "Speed": 85
         },
+        "weight": 55.4,
         "fully_evolved": True
     },
     "Zapdos": {
@@ -1011,6 +1067,7 @@ pokemon_data = {
             "Sp. Def": 90,
             "Speed": 100
         },
+        "weight": 52.6,
         "fully_evolved": True
     },
     "Moltres": {
@@ -1025,6 +1082,7 @@ pokemon_data = {
             "Sp. Def": 85,
             "Speed": 90
         },
+        "weight": 60.0,
         "fully_evolved": True
     },
     "Dragonite": {
@@ -1039,6 +1097,7 @@ pokemon_data = {
             "Sp. Def": 100,
             "Speed": 80
         },
+        "weight": 210.0,
         "fully_evolved": True
     },
     "Mewtwo": {
@@ -1053,6 +1112,7 @@ pokemon_data = {
             "Sp. Def": 90,
             "Speed": 130
         },
+        "weight": 122.0,
         "fully_evolved": True
     },
     "Mew": {
@@ -1067,7 +1127,130 @@ pokemon_data = {
             "Sp. Def": 100,
             "Speed": 100
         },
+        "weight": 4.0,
         "fully_evolved": True
-    }
-}
+    },
 
+
+    #########################################################################################""
+    "Duraludon": {
+        "name": "Duraludon",
+        "types": ["Steel", "Dragon"],
+        "abilities": ["Light Metal", "Heavy Metal", "Stalwart"],
+        "stats": {
+            "HP": 70,
+            "Attack": 95,
+            "Defense": 115,
+            "Sp. Atk": 120,
+            "Sp. Def": 50,
+            "Speed": 85
+        },
+        "weight": 40.0,
+        "fully_evolved": False 
+    },
+    "Archaludon": {
+        "name": "Archaludon",
+        "types": ["Steel", "Dragon"],
+        "abilities": ["Stamina", "Sturdy", "Stalwart"],
+        "stats": {
+            "HP": 90,
+            "Attack": 105,
+            "Defense": 130,
+            "Sp. Atk": 125,
+            "Sp. Def": 65,
+            "Speed": 85
+        },
+        "weight": 60.0,
+        "fully_evolved": True
+    },
+    "Raging Bolt": {
+        "name": "Raging Bolt",
+        "types": ["Electric", "Dragon"],
+        "abilities": ["Protosynthesis"],
+        "stats": {
+            "HP": 125,
+            "Attack": 73,
+            "Defense": 91,
+            "Sp. Atk": 137,
+            "Sp. Def": 89,
+            "Speed": 75
+        },
+        "weight": 480.0,
+        "fully_evolved": True
+    },
+    "Iron Crown": {
+        "name": "Iron Crown",
+        "types": ["Steel", "Psychic"],
+        "abilities": ["Quark Drive"],
+        "stats": {
+            "HP": 90,
+            "Attack": 72,
+            "Defense": 100,
+            "Sp. Atk": 122,
+            "Sp. Def": 108,
+            "Speed": 98
+        },
+        "weight": 156.0,
+        "fully_evolved": True
+    },
+    "Gouging Fire": {
+        "name": "Gouging Fire",
+        "types": ["Fire", "Dragon"],
+        "abilities": ["Protosynthesis"],
+        "stats": {
+            "HP": 105,
+            "Attack": 115,
+            "Defense": 121,
+            "Sp. Atk": 65,
+            "Sp. Def": 93,
+            "Speed": 91
+        },
+        "weight": 590.0,
+        "fully_evolved": True
+    },
+    "Iron Boulder": {
+        "name": "Iron Boulder",
+        "types": ["Rock", "Psychic"],
+        "abilities": ["Quark Drive"],
+        "stats": {
+            "HP": 90,
+            "Attack": 120,
+            "Defense": 80,
+            "Sp. Atk": 68,
+            "Sp. Def": 108,
+            "Speed": 124
+        },
+        "weight": 162.5,
+        "fully_evolved": True
+    },
+    "Terapagos": {
+        "name": "Terapagos",
+        "types": ["Normal"],
+        "abilities": ["Tera Shift"],
+        "stats": {
+            "HP": 160,
+            "Attack": 105,
+            "Defense": 110,
+            "Sp. Atk": 130,
+            "Sp. Def": 110,
+            "Speed": 85
+        },
+        "weight": 6.5,
+        "fully_evolved": True
+    },
+    "Pecharunt": {
+        "name": "Pecharunt",
+        "types": ["Poison", "Ghost"],
+        "abilities": ["Poison Puppeteer"],
+        "stats": {
+            "HP": 88,
+            "Attack": 88,
+            "Defense": 160,
+            "Sp. Atk": 88,
+            "Sp. Def": 88,
+            "Speed": 88
+        },
+        "weight": 0.3,
+        "fully_evolved": True
+    },
+}

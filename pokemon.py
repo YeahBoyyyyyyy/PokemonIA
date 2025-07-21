@@ -45,6 +45,8 @@ class pokemon():
         self.stats_modifier = [0, 0, 0, 0, 0]  # Modificateurs de stats pour Attack, Defense, Sp. Atk, Sp. Def, Speed
         self.ev_and_acc_modifier = [0, 0]  # Modificateurs d'évasion et de précision 
 
+        self.hidden_boost = {"Attack": 1, "Defense": 1, "Sp. Atk": 1, "Sp. Def": 1, "Speed": 1}
+
         self.nature_modifier = donnees.nature_chart[self.nature] if self.nature else [1, 1, 1, 1, 1]
         self.stats = {
                 "Attack": int(((2 * self.base_stats['Attack'] + 31 + self.evs['Attack'] // 4) // 2 + 5) * self.nature_modifier[0]),
@@ -81,26 +83,33 @@ class pokemon():
         self.is_confused = False  # Indique si le Pokémon est confus
         self.power = False # Indique si le Pokémon est sous l'effet de puissance (qui booste le taux de crits)
         self.charging = False  # Indique si le Pokémon est en train de charger une attaque (par exemple : "Meteor Beam", "Solar Beam", etc.)
+        self.charging_attack = None  # Indique quelle attaque est en cours de chargement
+        self.must_recharge = False  # Indique si le Pokémon doit récupérer après une attaque de recharge (comme Hyper Beam)
         self.sleep_counter = None  # Nombre de tours de sommeil du Pokémon endormi
         self.poison_counter = 0  # Nombre de tours de poison restants si le Pokémon est gravement empoisonné vu que les degats augmentent à chaque tour
+        self.toxic_counter = 1  # Compteur pour le poison grave (Toxic) - commence à 1
         self.protect_turns = 0  # Nombre de tours de protection restants si le Pokémon utilise "Protect" ou "Detect"
         self.still_confused = False  # Indique si le Pokémon est toujours confus au prochain tour
-        self.locked_move = None  # Pour gérer Choice Band/Specs/Scarf
+        self.locked_attack = None  # Pour gérer Choice Band/Specs/Scarf (stocke l'objet Attack)
         self.fully_evolved = poke['fully_evolved'] if 'fully_evolved' in poke else False  # Indique si le Pokémon est entièrement évolué
         self.flinched = False  # Indique si le Pokémon a été flinché (par exemple : par une attaque comme "Bite" ou "Stomp")
         self.protect = False  # Indique si le Pokémon a utilisé "Protect" ou "Detect" ce tour-ci
         self.protect_turns = 0  # Nombre de tours de protection restants si le Pokémon utilise "Protect" ou "Detect"
         self.leech_seeded_by = None  # Indique si le Pokémon a été "Leech Seeded" par un autre Pokémon
         self.first_attack = True  # Indique si c'est le premier tour du Pokémon dans le combat
+        
+        # Attributs pour les talents
+        self.sturdy_activated = False  # Pour le talent Sturdy (Fermeté)
+        self.weight = poke.get('weight', 100.0)  # Poids du Pokémon en kg depuis les données
 
 
     def actualize_stats(self):
         self.stats = {
-            "Attack": self.calculate_stat(self.base_stats['Attack'], self.evs['Attack'], self.nature_modifier[0], self.stats_modifier[0]),
-            "Defense": self.calculate_stat(self.base_stats['Defense'], self.evs['Defense'], self.nature_modifier[1], self.stats_modifier[1]),
-            "Sp. Atk": self.calculate_stat(self.base_stats['Sp. Atk'], self.evs['Sp. Atk'], self.nature_modifier[2], self.stats_modifier[2]),
-            "Sp. Def": self.calculate_stat(self.base_stats['Sp. Def'], self.evs['Sp. Def'], self.nature_modifier[3], self.stats_modifier[3]),
-            "Speed": self.calculate_stat(self.base_stats['Speed'], self.evs['Speed'], self.nature_modifier[4], self.stats_modifier[4]),
+            "Attack": int(self.calculate_stat(self.base_stats['Attack'], self.evs['Attack'], self.nature_modifier[0], self.stats_modifier[0]) * self.hidden_boost["Attack"]),
+            "Defense": int(self.calculate_stat(self.base_stats['Defense'], self.evs['Defense'], self.nature_modifier[1], self.stats_modifier[1]) * self.hidden_boost["Defense"]),
+            "Sp. Atk": int(self.calculate_stat(self.base_stats['Sp. Atk'], self.evs['Sp. Atk'], self.nature_modifier[2], self.stats_modifier[2]) * self.hidden_boost["Sp. Atk"]),
+            "Sp. Def": int(self.calculate_stat(self.base_stats['Sp. Def'], self.evs['Sp. Def'], self.nature_modifier[3], self.stats_modifier[3]) * self.hidden_boost["Sp. Def"]),
+            "Speed": int(self.calculate_stat(self.base_stats['Speed'], self.evs['Speed'], self.nature_modifier[4], self.stats_modifier[4]) * self.hidden_boost["Speed"]),
         }
 
         self.evasion = self.calculate_accuracy_and_evasion(self.ev_and_acc_modifier[0])
@@ -145,6 +154,26 @@ class pokemon():
     
     def remove_status(self):
         self.status = None
+    
+    def reset_stats_nd_status(self):
+        """
+        Réinitialise les stats et les effets de statut d'un Pokémon lorsque le pokémon est switché.
+        """
+        self.stats_modifier = [0, 0, 0, 0, 0]
+        self.ev_and_acc_modifier = [0, 0]
+        if self.is_confused:
+            self.is_confused = False
+        self.sturdy_activated = False
+        self.flinched = False
+        self.protect = False
+        self.protect_turns = 0
+        self.charging = False
+        self.charging_attack = None  # L'attaque en cours de charge
+        self.must_recharge = False  # Indique si le Pokémon doit se recharger
+        self.power = False
+        self.first_attack = True
+        self.locked_attack = None  # Réinitialise le verrouillage des objets Choice
+        self.actualize_stats()
     
     ## Printing methods pour debugger
     def print_pokemon_status(self):
@@ -200,6 +229,9 @@ class pokemon():
 
     def init_fight(self, fight):
         self.fight = fight  # ← Ajout important
+        self.charging = False  # Booléen pour indiquer si le Pokémon charge
+        self.charging_attack = None  # L'attaque en cours de charge
+        self.must_recharge = False  # Indique si le Pokémon doit se recharger
         self.actualize_stats()
 
     def calculate_stat(self, base, ev, nature, modifier):
@@ -216,7 +248,7 @@ class pokemon():
             modifier = 1 + modifier / 2
         else:
             modifier = 1 / (1 + abs(modifier) / 2)
-        return int(base_value * nature * modifier)
+        return base_value * nature * modifier
 
     def calculate_accuracy_and_evasion(self, stage_mod):
         """
