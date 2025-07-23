@@ -114,6 +114,12 @@ def launch_battle(team1: list[pk.pokemon], team2: list[pk.pokemon]):
                     act1 = (attacker, attacker.locked_attack)
                     break
 
+                # Vérifier si le Pokémon est sous l'effet d'Encore
+                if attacker.encored_turns > 0 and attacker.encored_attack:
+                    print(f"\n{bcolors.OKYELLOW}{attacker.name} est sous l'effet d'Encore et doit utiliser {attacker.encored_attack.name} ! ({attacker.encored_turns} tour(s) restant(s)){bcolors.ENDC}")
+                    act1 = (attacker, attacker.encored_attack)
+                    break
+
                 while True:
                     print(f"\n{bcolors.GRAY}Choisissez une attaque (ou tapez R pour revenir en arrière) :")
                     for i, atk in enumerate(attacks):
@@ -183,6 +189,9 @@ def launch_battle(team1: list[pk.pokemon], team2: list[pk.pokemon]):
             # Vérifier si le Pokémon est en train de charger une attaque (priorité absolue)
             if attacker2.charging and attacker2.charging_attack:
                 atk2 = attacker2.charging_attack
+            # Vérifier si le Pokémon est sous l'effet d'Encore
+            elif attacker2.encored_turns > 0 and attacker2.encored_attack:
+                atk2 = attacker2.encored_attack
             # Vérifier si le Pokémon est verrouillé par un objet Choice
             elif attacker2.locked_attack and attacker2.item and "Choice" in attacker2.item:
                 atk2 = attacker2.locked_attack
@@ -221,9 +230,9 @@ def import_pokemon(name):
 venusaur = import_pokemon("Venusaur")
 venusaur.talent = "Sturdy"
 venusaur.item = "Leftovers"
-venusaur.attack1 = ATTACKES.SuckerPunch()
+venusaur.attack1 = ATTACKES.HydroPump()
 venusaur.attack2 = ATTACKES.LightScreen()
-venusaur.attack3 = ATTACKES.Protect()
+venusaur.attack3 = ATTACKES.Spore()
 venusaur.attack4 = ATTACKES.RainDance()
 
 duraludon = import_pokemon("Duraludon")
@@ -237,11 +246,12 @@ mew = import_pokemon("Mew")
 mew.talent = "Synchronize"
 mew.item = "Choice Scarf"
 mew.attack1 = ATTACKES.Psychic()
-mew.attack2 = ATTACKES.BulkUp()
+mew.attack2 = ATTACKES.Encore()
 
 charizard = import_pokemon("Charizard")
 charizard.talent = "Drought"
-charizard.item = "Choice Specs"
-charizard.attack1 = ATTACKES.Thunderbolt()
+charizard.item = "Sitrus Berry"
+charizard.attack1 = ATTACKES.Substitute()
+charizard.attack2 = ATTACKES.Thunderbolt()
 
 launch_battle([venusaur, duraludon], [charizard, mew])

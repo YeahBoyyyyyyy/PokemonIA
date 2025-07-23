@@ -3,7 +3,7 @@ import random
 import donnees 
 from donnees import bcolors
 from pokemon_items import trigger_item
-from pokemon_talents import trigger_talent
+from pokemon_talents import trigger_talent, apply_stat_changes
 from pokemon_attacks import Attack
 
 class Fight():
@@ -152,13 +152,13 @@ class Fight():
         """
         for pokemon in [self.active1, self.active2]:
             if self.weather["current"] == "Snow" and self.weather["previous"] != "Snow" and "Ice" in pokemon.types:
-                pokemon.stats_modifier[3] += 1
+                pokemon.hidden_boost["Sp. Def"] *= 1.5
             elif self.weather["previous"] == "Snow" and self.weather["current"] != "Snow" and "Ice" in pokemon.types:
-                pokemon.stats_modifier[3] -= 1
+                pokemon.hidden_boost["Sp. Def"] /= 1.5
             elif self.weather["current"] == "Sandstorm" and self.weather["previous"] and "Rock" in pokemon.types:
-                pokemon.stats_modifier[1] += 1
+                pokemon.hidden_boost["Defense"] *= 1.5
             elif self.weather["previous"] == "Sandstorm" and self.weather["current"] != "Sandstorm" and "Rock" in pokemon.types:
-                pokemon.stats_modifier[1] -= 1
+                pokemon.hidden_boost["Defense"] /= 1.5
 
     def weather_update(self):
         """
@@ -275,12 +275,36 @@ class Fight():
             if self.field_turn_left[effect] <= 0:
                 self.remove_field_effect(effect)
 
-    def damage_method(self, pokemon : pokemon, damage : int):
+    def damage_method(self, pokemon : pokemon, damage : int, bypass_substitute=False, is_draining=False):
         """
         Applique les dégâts à un Pokémon.
         :param pokemon: Instance de la classe Pokemon qui subit les dégâts.
         :param damage: Dégâts à infliger.
+        :param bypass_substitute: Si True, ignore le clone (pour les attaques authentic).
+        :param is_draining: Si True, l'attaque draine des PV (mais pas du clone selon les règles officielles).
+        :return: Les dégâts réellement infligés. 0 si l'attaque drainante touche un clone.
         """
+        actual_damage = damage
+        
+        # Si le Pokémon a un clone et l'attaque ne l'ignore pas, le clone intercepte les dégâts
+        if pokemon.has_substitute() and not bypass_substitute:
+            pokemon.substitute_hp -= damage
+            if pokemon.substitute_hp <= 0:
+                actual_damage = pokemon.substitute_hp + damage  # Dégâts effectivement absorbés par le clone
+                pokemon.substitute_hp = 0
+                print(f"Le clone de {pokemon.name} est détruit !")
+                # Les dégâts en surplus ne sont pas transférés au Pokémon
+            else:
+                print(f"Le clone de {pokemon.name} absorbe {damage} dégâts ! ({pokemon.substitute_hp} PV restants)")
+            
+            # Règle officielle : les attaques drainantes ne peuvent pas drainer des PV d'un clone
+            if is_draining:
+                print(f"L'attaque drainante ne peut pas récupérer de PV du clone !")
+                return 0  # Aucun PV récupéré pour l'attaquant
+            
+            return actual_damage  # Retourner les dégâts infligés au clone pour les autres cas
+        
+        # Sinon, appliquer les dégâts normalement
         pokemon.current_hp -= damage
         
         # Vérification du talent Sturdy
@@ -292,6 +316,8 @@ class Fight():
             pokemon.current_hp = 0
         elif pokemon.current_hp > pokemon.max_hp:
             pokemon.current_hp = pokemon.max_hp
+            
+        return actual_damage
 
     ## Printing methods pour debugger
     def print_fight_status(self):
@@ -348,7 +374,7 @@ class Fight():
             trigger_talent(p, "modify_stat", self)
             
     #def attack(pokemon : pokemon, attack : dict, target : pokemon, fight : Fight):
-    def attack_power(self, user_pokemon : pokemon, attack : Attack, target_pokemon : pokemon, multiplier=1.0):
+    def attack_power(self, user_pokemon : pokemon, attack : Attack, target_pokemon : pokemon, multiplier=1.0, talent_mod=None):
         """
         Effectue une attaque d'un Pokémon sur une cible.
 
@@ -367,25 +393,41 @@ class Fight():
         
         # Vérifier si l'attaque a une méthode get_power pour calculer la puissance dynamiquement
         if hasattr(attack, 'get_power'):
-            base_power = attack.get_power(user_pokemon, target_pokemon, self)
+            base_power = attack.get_power(user_pokemon, target_pokemon, self) * talent_mod["power"]
         else:
-            base_power = attack.base_power
+            base_power = attack.base_power * talent_mod["power"]
             
         attack_stat = user_pokemon.current_stats()['Attack'] if attack.category == 'Physical' else user_pokemon.current_stats()['Sp. Atk']
+        attack_stat *= talent_mod["attack"] if talent_mod and talent_mod["attack"] is not None else 1.0  # Modificateur de l'attaque du Pokémon
         terrain_boost = attack_terrain_boost(attack, self)  # Modificateur de puissance des attaques en fonction du terrain
         weather_boost = attack_weather_boost(attack, self)  # Modificateur de puissance des attaques en fonction de la météo
         berry = berry_boost(target_pokemon, attack)  # Placeholder pour l'effet de la baie, si applicable
         burn = burn_effect(user_pokemon, attack)  # Si le Pokémon est brûlé, les dégâts sont réduits de moitié
         rdm = random.uniform(0.85, 1.0)  # Valeur aléatoire entre 0.85 et 1.0
-        stab = is_stab(user_pokemon, attack)
         defender_team_id = self.get_team_id(target_pokemon)
         screen = screen_effect(attack, self, defender_team_id)  # Effet de l'écran de protection actif pour l'équipe du défenseur
-        type_eff = type_effectiveness(attack.type, target_pokemon.types)  # Calcul de l'efficacité du type
+        if talent_mod["type"] != None:
+            type_eff = type_effectiveness(talent_mod["type"], target_pokemon.types)
+            attack_copy = attack.copy()
+            attack_copy.type = talent_mod["type"]  # Changer le type de l'attaque si un talent modifie le type
+            stab = is_stab(user_pokemon, attack_copy)  # Vérifier si l'attaque est STAB
+        else:
+            type_eff = type_effectiveness(attack.type, target_pokemon.types)  # Calcul de l'efficacité du type
+            stab = is_stab(user_pokemon, attack)
 
         if is_critical_hit(user_pokemon, attack, target_pokemon):
             print(f"{user_pokemon.name} porte un coup critique avec {attack.name} !")
             critical = 1.5  # Coup critique inflige 1.5x les dégâts
-            defense_stat = target_pokemon.stats_with_no_modifier['Defense'] if attack.category == 'Physical' else target_pokemon.current_stats()['Sp. Def']
+            if attack.category == 'Physical':
+                if target_pokemon.current_stats()['Defense'] < target_pokemon.stats_with_no_modifier['Defense']:
+                    defense_stat = target_pokemon.current_stats()["Defense"]
+                else:
+                    defense_stat = target_pokemon.stats_with_no_modifier['Defense']
+            else:
+                if target_pokemon.current_stats()['Sp. Def'] < target_pokemon.stats_with_no_modifier['Sp. Def']:
+                    defense_stat = target_pokemon.current_stats()["Sp. Def"]
+                else:
+                    defense_stat = target_pokemon.stats_with_no_modifier['Sp. Def']
             damage = ((22 * base_power * (attack_stat / defense_stat)) / 50 + 2) * burn * screen * type_eff * terrain_boost * weather_boost * critical * stab * rdm * berry * attack_boost * multiplier
             # A changer car les crits ne prennent pas en compte les modificateurs de stats
         else:
@@ -460,11 +502,24 @@ class Fight():
         Gère l'action "Attaquer" d'un Pokémon sur un autre, en prenant en compte les effets de statut, multi-tours et priorités.
         """
 
+        on_attack_mod = trigger_talent(attacker, "on_attack", attack, self)
+
         # Si le Pokémon doit se recharger, il ne peut pas attaquer
         if attacker.must_recharge:
             print(f"{attacker.name} se repose et ne peut pas attaquer ce tour-ci.")
             attacker.must_recharge = False  # Réinitialiser après le tour de repos
             return
+
+        # Gestion de l'effet Encore : force l'utilisation d'une attaque spécifique
+        if attacker.encored_turns > 0 and attacker.encored_attack:
+            if attack != attacker.encored_attack:
+                print(f"{attacker.name} est sous l'effet d'Encore et doit utiliser {attacker.encored_attack.name} !")
+                attack = attacker.encored_attack  # Force l'utilisation de l'attaque encodée
+            # Décrémenter le compteur d'Encore
+            attacker.encored_turns -= 1
+            if attacker.encored_turns == 0:
+                print(f"L'effet d'Encore sur {attacker.name} se dissipe !")
+                attacker.encored_attack = None
 
         # Si le Pokémon est confus, on gère la confusion
         if attacker.is_confused:
@@ -511,7 +566,7 @@ class Fight():
                     return
 
         # Vérification Précision avec modificateurs
-        if not self.calculate_hit_chance(attacker, defender, attack):
+        if not self.calculate_hit_chance(attacker, defender, attack, on_attack_mod):
             print(f"{attacker.name} rate son attaque !")
             return
 
@@ -545,11 +600,14 @@ class Fight():
                 attacker.locked_attack = attack
         
         # Calcul des dégâts
-        self.calculate_and_apply_damage(attacker, attack, defender, multiplier)
+        self.calculate_and_apply_damage(attacker, attack, defender, multiplier, on_attack_mod)
 
         # Effets secondaires de l'attaque (seulement si pas déjà appelé pour les attaques à charge)
         if charging_result != "attack":
             self.apply_secondary_effects(attacker, defender, attack)
+
+        # Enregistrer la dernière attaque utilisée (pour Encore et autres effets)
+        attacker.last_used_attack = attack
 
         attacker.protect_turns = 0  # Réinitialiser les tours de protection à chaque tour
         attacker.first_attack = False  # Réinitialiser le premier tour d'attaque
@@ -571,10 +629,57 @@ class Fight():
             else:
                 target = defender  # Par défaut
             
+            # Vérifier si l'attaque est bloquée par le substitut
+            if self.is_blocked_by_substitute(attack, target):
+                print(f"{target.name} a un clone qui bloque {attack.name} !")
+                return
+            
             # Appliquer l'effet secondaire
             attack.apply_effect(attacker, target, self)
 
-    def calculate_and_apply_damage(self, attacker: pokemon, attack: Attack, defender: pokemon, multiplier: float):
+    def is_blocked_by_substitute(self, attack, target):
+        """
+        Détermine si une attaque est bloquée par un substitut selon les règles officielles.
+        
+        :param attack: L'attaque à vérifier
+        :param target: La cible de l'attaque
+        :return: True si l'attaque est bloquée, False sinon
+        """
+        # Les attaques qui ciblent l'utilisateur ne sont jamais bloquées
+        if attack.target == "User":
+            return False
+            
+        # Si la cible n'a pas de substitut, pas de blocage
+        if not target.has_substitute():
+            return False
+            
+        # Les attaques authentiques ignorent les substituts
+        if "authentic" in attack.flags:
+            return False
+            
+        # Les attaques sonores ignorent les substituts
+        if "sound" in attack.flags:
+            return False
+            
+        # Attaques qui ne sont JAMAIS bloquées par les substituts
+        never_blocked = [
+            "Perish Song", "Taunt", "Disable", "Encore", "Torment", "Spite", 
+            "Haze", "Boost", "Snatch", "Skill Swap", "Transform", "Whirlwind", 
+            "Roar", "Mean Look", "Spider Web", "Block", "Heal Block", "Embargo", 
+            "Psych Up", "Heart Swap"
+        ]
+        
+        if attack.name in never_blocked:
+            return False
+            
+        # Les attaques de dégâts ne sont pas bloquées ici (gérées par damage_method)
+        if attack.category != "Status":
+            return False
+            
+        # Toutes les autres attaques de statut sont bloquées
+        return True
+
+    def calculate_and_apply_damage(self, attacker: pokemon, attack: Attack, defender: pokemon, multiplier: float, on_attack_mod: dict = None):
         """
         Calcule et applique les dégâts d'une attaque si elle n'est pas de type Status.
         
@@ -582,20 +687,22 @@ class Fight():
         :param attack: L'attaque utilisée
         :param defender: Le Pokémon qui défend
         :param multiplier: Multiplicateur de dégâts (provenant des talents défensifs)
+        :param on_attack_mod: Modificateurs de talent pour l'attaque
         """
-        if attack.category != "Status":
-            # Récupérer le boost d'attaque depuis les talents offensifs
-            boost = trigger_talent(attacker, "on_attack", attack, self)
-            if boost is None or isinstance(boost, str):
-                boost = 1.0
+        # Valeur par défaut si on_attack_mod est None
+        if on_attack_mod is None:
+            on_attack_mod = {"attack": 1.0, "power": 1.0, "accuracy": 1.0, "type": None}
             
+        if attack.category != "Status":
             # Calculer les dégâts finaux
-            damage = self.attack_power(attacker, attack, defender, multiplier * boost)
+            damage = self.attack_power(attacker, attack, defender, multiplier, on_attack_mod)
             damage = int(damage)
             
             # Afficher et appliquer les dégâts
             print(f"{bcolors.DARK_RED}{defender.name} subit {damage} points de dégâts.{bcolors.ENDC}")
-            self.damage_method(defender, damage)
+            # Vérifier si l'attaque ignore les substituts
+            bypass_substitute = "authentic" in attack.flags
+            self.damage_method(defender, damage, bypass_substitute)
 
             
 
@@ -709,14 +816,29 @@ class Fight():
 
 
     ### Savoir la probabilité de toucher une attaque ###
-    def calculate_hit_chance(self, attacker, defender, attack):
+    def calculate_hit_chance(self, attacker, defender, attack, talent_mod):
         """
         Calcule si l'attaque touche en tenant compte de la précision de l'attaque,
         de la précision de l'attaquant et de l'évasion du défenseur.
+
+        :param attacker: Instance de la classe Pokemon qui attaque.
+        :param defender: Instance de la classe Pokemon qui défend.
+        :param attack: Instance de la classe Attack qui est utilisée.
+        :param talent_mod: Modificateur de talent pour l'attaque.
+        :return: True si l'attaque touche, False sinon.
         """
-        base_accuracy = attack.accuracy / 100.0
-        effective_accuracy = base_accuracy * attacker.accuracy / defender.evasion
-        return random.random() <= effective_accuracy
+        if talent_mod is None:
+            talent_mod = {"accuracy": 1.0, "power": 1.0, "attack": 1.0, "type": None}
+            
+        if talent_mod["accuracy"] == True:
+            return True 
+        else:
+            if hasattr(attack, 'accuracy'):
+                base_accuracy = attack.accuracy / 100.0 * talent_mod["accuracy"]
+            else:
+                base_accuracy = attack.base_accuracy / 100.0
+            effective_accuracy = base_accuracy * attacker.accuracy / defender.evasion
+            return random.random() <= effective_accuracy
     
 #### appliquer les degats des statuts ####
     def apply_status_damage(self, pokemon):

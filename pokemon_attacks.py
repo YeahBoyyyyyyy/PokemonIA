@@ -1,5 +1,6 @@
 import pokemon_datas as STATS
 import pokemon_talents as TALENTS
+from pokemon_talents import apply_stat_changes
 import pokemon as PK
 import random
 
@@ -27,6 +28,7 @@ pulse: Power is multiplied by 1.5 when used by a Pokemon with the Ability Mega L
 punch: Power is multiplied by 1.2 when used by a Pokemon with the Ability Iron Fist.
 recharge: If this move is successful, the user must recharge on the following turn and cannot make a move.
 reflectable: Bounced back to the original user by Magic Coat or the Ability Magic Bounce.
+sharp: Power is multiplied by 1.5 when used by a Pokemon with the Ability Sharpness.
 snatch: Can be stolen from the original user and instead used by another Pokemon using Snatch.
 sound: Has no effect on Pokemon with the Ability Soundproof.
 
@@ -96,6 +98,20 @@ class FlameThrower(Attack):
     def apply_effect(self, user, target, fight):
         if random.randint(1, 100) <= 10:
             target.apply_status("burn")
+
+class HydroPump(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Hydro Pump",
+            type_="Water",
+            category="Special",
+            power=110,
+            accuracy=80,
+            priority=0,
+            pp=5,
+            flags=["protect", "mirror"],
+            target="Foe"
+        )
 
 class Protect(Attack):
     def __init__(self):
@@ -220,7 +236,7 @@ class Recover(Attack):
             accuracy=100,
             priority=0,
             pp=10,
-            flags=[],
+            flags=["heal"],
             target="User"
         )
 
@@ -559,9 +575,10 @@ class SwordsDance(Attack):
         )
 
     def apply_effect(self, user : PK.pokemon, target, fight):
-        user.stats_modifier[1] += 2
-        user.actualize_stats()
-        print(f"{user.name} utilise Swords Dance ! Son Attaque augmente de 2 niveaux.")
+        stat_changes = {"Attack": 2}
+        success = apply_stat_changes(user, stat_changes, "self", fight)
+        if success:
+            print(f"{user.name} utilise Swords Dance ! Son Attaque augmente de 2 niveaux.")
 
 class CalmMind(Attack):
     def __init__(self):
@@ -578,10 +595,10 @@ class CalmMind(Attack):
         )
 
     def apply_effect(self, user : PK.pokemon, target, fight):
-        user.stats_modifier[2] += 1
-        user.stats_modifier[3] += 1
-        user.actualize_stats()
-        print(f"{user.name} utilise Calm Mind ! Son Attaque Spéciale et sa Défense Spéciale augmentent de 1 niveau.")
+        stat_changes = {"Sp. Atk": 1, "Sp. Def": 1}
+        success = apply_stat_changes(user, stat_changes, "self", fight)
+        if success:
+            print(f"{user.name} utilise Calm Mind ! Son Attaque Spéciale et sa Défense Spéciale augmentent de 1 niveau.")
 
 class BulkUp(Attack):
     def __init__(self):
@@ -598,10 +615,10 @@ class BulkUp(Attack):
         )
 
     def apply_effect(self, user : PK.pokemon, target, fight):
-        user.stats_modifier[1] += 1
-        user.stats_modifier[4] += 1
-        user.actualize_stats()
-        print(f"{user.name} utilise Bulk Up ! Son Attaque et sa Défense augmentent de 1 niveau.")
+        stat_changes = {"Attack": 1, "Defense": 1}
+        success = apply_stat_changes(user, stat_changes, "self", fight)
+        if success:
+            print(f"{user.name} utilise Bulk Up ! Son Attaque et sa Défense augmentent de 1 niveau.")
 
 class CloseCombat(Attack):
     def __init__(self):
@@ -618,8 +635,8 @@ class CloseCombat(Attack):
         )
 
     def apply_effect(self, user, target, fight):
-        user.stats_modifier[1] -= 1
-        user.stats_modifier[4] -= 1
+        stat_changes = {"Defense": -1, "Sp. Def": -1}
+        apply_stat_changes(user, stat_changes, "self", fight)
 
 class Psychic(Attack):
     def __init__(self):
@@ -637,9 +654,10 @@ class Psychic(Attack):
 
     def apply_effect(self, user, target, fight):
         if random.randint(1, 100) <= 10:
-            target.stats_modifier[3] -= 1
-            target.actualize_stats()
-            print(f"{target.name} subit une baisse de sa Défense Spéciale !")
+            stat_changes = {"Sp. Def": -1}
+            success = apply_stat_changes(target, stat_changes, "opponent", fight)
+            if success:
+                print(f"{target.name} subit une baisse de sa Défense Spéciale !")
 
 class DragonPulse(Attack):
     def __init__(self):
@@ -676,8 +694,7 @@ class ElectroShot(Attack):
     def apply_effect(self, user, target, fight):
         # Si c'est sous la pluie, pas de charge et boost direct
         if fight.weather["current"] == "Rain":
-            user.stats_modifier[2] += 1  # +1 Attaque Spéciale
-            user.actualize_stats()
+            apply_stat_changes(user, {"Sp. Atk": 1}, "self", fight)
             print(f"{user.name} absorbe l'électricité de la pluie ! Son Attaque Spéciale augmente !")
             return "attack"  # Attaque immédiatement
         
@@ -685,8 +702,7 @@ class ElectroShot(Attack):
         if not user.charging or user.charging_attack != self:
             user.charging = True
             user.charging_attack = self
-            user.stats_modifier[2] += 1  # +1 Attaque Spéciale
-            user.actualize_stats()
+            apply_stat_changes(user, {"Sp. Atk": 1}, "self", fight)
             print(f"{user.name} se charge d'électricité ! Son Attaque Spéciale augmente !")
             return "charging"  # Indique que l'attaque est en cours de charge
         else:
@@ -879,23 +895,225 @@ class HyperBeam(Attack):
         # Hyper Beam oblige le Pokémon à se reposer au tour suivant
         user.must_recharge = True
         print(f"{user.name} doit se reposer au prochain tour après cette attaque puissante !")
-
-class FrenzyPlant(Attack):
+        
+class Encore(Attack):
     def __init__(self):
         super().__init__(
-            name="Frenzy Plant",
-            type_="Grass",
-            category="Special",
-            power=150,
-            accuracy=90,
+            name="Encore",
+            type_="Normal",
+            category="Status",
+            power=0,
+            accuracy=100,
             priority=0,
             pp=5,
-            flags=["protect", "mirror", "recharge"],
+            flags=["protect", "mirror"],  # Peut être reflété par Magic Coat
             target="Foe"
         )
-    
+
     def apply_effect(self, user, target, fight):
-        # Frenzy Plant oblige le Pokémon à se reposer au tour suivant
-        user.must_recharge = True
-        print(f"{user.name} doit se reposer au prochain tour après cette attaque dévastatrice !")
-        
+            
+        # Assurer que les attributs existent
+        if not hasattr(target, 'encored_turns'):
+            target.encored_turns = 0
+        if not hasattr(target, 'last_used_attack'):
+            target.last_used_attack = None
+        if not hasattr(target, 'encored_attack'):
+            target.encored_attack = None
+            
+        # Vérifier si le Pokémon est déjà sous l'effet d'Encore
+        if target.encored_turns > 0:
+            print(f"{target.name} est déjà sous l'effet d'Encore !")
+            return
+            
+        # Vérifier si le Pokémon a utilisé une attaque récemment
+        if not target.last_used_attack:
+            print(f"{target.name} n'a pas utilisé d'attaque récemment ! Encore échoue.")
+            return
+            
+        # Vérifier si l'attaque peut être répétée (exclure certaines attaques)
+        non_encore_attacks = ["Transform", "Mimic", "Encore", "Struggle"]
+        if target.last_used_attack.name in non_encore_attacks:
+            print(f"{target.last_used_attack.name} ne peut pas être répétée avec Encore !")
+            return
+            
+        # Appliquer l'effet Encore
+        target.encored_turns = 3  # Selon les règles officielles, dure 3 tours
+        target.encored_attack = target.last_used_attack
+        print(f"{target.name} est forcé de répéter {target.last_used_attack.name} pendant 3 tours grâce à Encore !")
+
+class Substitute(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Substitute",
+            type_="Normal",
+            category="Status",
+            power=0,
+            accuracy=100,
+            priority=0,
+            pp=10,
+            flags=[],
+            target="User"
+        )
+
+    def apply_effect(self, user, target, fight):
+        if user.current_hp > user.max_hp // 4 and not user.has_substitute():
+            substitute_hp = user.max_hp // 4
+            fight.damage_method(user, substitute_hp, bypass_substitute=True)  # Le Pokémon sacrifie 1/4 de ses PV
+            user.substitute_hp = substitute_hp
+            print(f"{user.name} crée un clone avec {substitute_hp} PV !")
+        elif user.has_substitute():
+            print(f"{user.name} a déjà un clone !")
+        else:
+            print(f"{user.name} n'a pas assez de PV pour créer un clone !")
+
+class Snarl(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Snarl",
+            type_="Dark",
+            category="Special",
+            power=55,
+            accuracy=95,
+            priority=0,
+            pp=15,
+            flags=["protect", "mirror"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        stat_changes = {"Sp. Atk": -1}
+        success = apply_stat_changes(target, stat_changes, "opponent", fight)
+        if success:
+            print(f"{target.name} subit une baisse de sa Défense Spéciale !")
+
+class Roost(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Roost",
+            type_="Flying",
+            category="Status",
+            power=0,
+            accuracy=100,
+            priority=0,
+            pp=10,
+            flags=["heal"],
+            target="User"
+        )
+
+        ######## FINIR ########
+    def apply_effect(self, user, target, fight):
+        heal_amount = user.max_hp // 2
+        user.current_hp = min(user.max_hp, user.current_hp + heal_amount)
+        user.types.remove("Flying")  # Perd le type Vol pour ce tour
+        print(f"{user.name} se repose et récupère {heal_amount} PV ! Il perd temporairement son type Vol.")
+
+class LeafBlade(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Leaf Blade",
+            type_="Grass",
+            category="Physical",
+            power=90,
+            accuracy=100,
+            priority=0,
+            pp=15,
+            flags=["contact", "protect", "mirror", "sharp"],
+            target="Foe"
+        )
+        self.critical_chance = 12.5  # Taux de critique élevé
+
+    def apply_effect(self, user, target, fight):
+        # Pas d'effet secondaire pour Leaf Blade
+        pass
+
+class ThunderWave(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Thunder Wave",
+            type_="Electric",
+            category="Status",
+            power=0,
+            accuracy=90,
+            priority=0,
+            pp=20,
+            flags=["protect"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        if target.status is None and "Electric" not in target.types:
+            target.apply_status("paralyzed")
+            print(f"{target.name} est paralysé ! Il aura du mal à attaquer.")
+        else:
+            print(f"{target.name} est déjà affecté ou immunisé contre la paralysie.")
+
+class Taunt(Attack):
+    """Attaque qui n'est pas bloquée par les substituts"""
+    def __init__(self):
+        super().__init__(
+            name="Taunt",
+            type_="Dark",
+            category="Status",
+            power=0,
+            accuracy=100,
+            priority=0,
+            pp=20,
+            flags=["protect"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        # Simuler l'effet de Taunt (empêche les attaques de statut)
+        print(f"{target.name} est provoqué et ne peut plus utiliser d'attaques de statut !")
+
+class Absorb(Attack):
+    """Attaque drainante qui draine des PV du clone"""
+    def __init__(self):
+        super().__init__(
+            name="Absorb",
+            type_="Grass",
+            category="Special",
+            power=20,
+            accuracy=100,
+            priority=0,
+            pp=25,
+            flags=["protect", "mirror", "heal"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        # Cette méthode sera appelée après le calcul des dégâts pour le drain
+        pass
+
+class PerishSong(Attack):
+    """Attaque sonore qui ignore les substituts"""
+    def __init__(self):
+        super().__init__(
+            name="Perish Song",
+            type_="Normal",
+            category="Status",
+            power=0,
+            accuracy=100,
+            priority=0,
+            pp=5,
+            flags=["sound"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        print(f"{target.name} entend le Chant Perish ! Il sera K.O. dans 3 tours !")
+
+class Tackle(Attack):
+    """Attaque simple pour les tests"""
+    def __init__(self):
+        super().__init__(
+            name="Tackle",
+            type_="Normal",
+            category="Physical",
+            power=40,
+            accuracy=100,
+            priority=0,
+            pp=35,
+            flags=["contact", "protect", "mirror"],
+            target="Foe"
+        )

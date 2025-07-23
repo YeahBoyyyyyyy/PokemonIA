@@ -68,15 +68,22 @@ class EnergyBooster(Item):
                 poke.hidden_boost[stat_max] *= 1.3
         poke.item = None
 
-class AssaultVest(Item):
-    def modify_stat(self, poke, fight=None):
-        if poke.fully_evolved:
-            poke.stats["Sp. Def"] += int(poke.stats_with_no_modifier["Sp. Def"] * 0.5)
+class ChestoBerry(Item):
+    def on_turn_end(self, poke, fight=None):
+        if poke.status == "Sleep":
+            print(f"{poke.name} se réveille grâce à sa Baie Chesto !")
+            poke.status = None
+            poke.item = None
+    def before_attack(self, poke, attack, fight=None):
+        if poke.status == "Sleep":
+            print(f"{poke.name} utilise sa Baie Chesto pour se réveiller avant l'attaque !")
+            poke.status = None
             poke.item = None
 
 item_registry = {
     "Leftovers": Leftovers(),
     "Sitrus Berry": SitrusBerry(),
+    "Chesto Berry": ChestoBerry(),
     "Choice Band": ChoiceBoost(),
     "Choice Specs": ChoiceBoost(),
     "Choice Scarf": ChoiceBoost(),

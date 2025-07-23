@@ -79,6 +79,9 @@ class pokemon():
         self.max_hp =  int((2 * self.base_stats['HP'] + 31 + self.evs['HP'] / 4) * 0.5 + 60)   # Points de vie maximum
         self.current_hp = self.max_hp  # Points de vie actuels
         
+        # Système de clones (Substitute)
+        self.substitute_hp = 0  # PV du clone
+
         self.status = None  # Statut du Pokémon (par exemple : "Brûlé", "Gelé", etc.)
         self.is_confused = False  # Indique si le Pokémon est confus
         self.power = False # Indique si le Pokémon est sous l'effet de puissance (qui booste le taux de crits)
@@ -97,13 +100,19 @@ class pokemon():
         self.protect_turns = 0  # Nombre de tours de protection restants si le Pokémon utilise "Protect" ou "Detect"
         self.leech_seeded_by = None  # Indique si le Pokémon a été "Leech Seeded" par un autre Pokémon
         self.first_attack = True  # Indique si c'est le premier tour du Pokémon dans le combat
-        self.disabled_attacks = [False, False, False, False]  # Indique si les attaques sont désactivées (pour "Disable")
+        self.disabled_attacks = None  # Indique si les attaques sont désactivées (pour "Disable")
+        self.disabled_turns = 0  # Nombre de tours restants sous l'effet de "Disable"
         self.encored_attack = None  # Indique si le Pokémon est sous l'effet de "Encore" et quelle attaque il doit utiliser
+        self.encored_turns = 0  # Nombre de tours restants sous l'effet de "Encore"
+        self.last_used_attack = None  # Dernière attaque utilisée par le Pokémon, pour les effets de certaines attaques ou talents
         
         # Attributs pour les talents
         self.sturdy_activated = False  # Pour le talent Sturdy (Fermeté)
         self.weight = poke.get('weight', 100.0)  # Poids du Pokémon en kg depuis les données
 
+    def has_substitute(self):
+        """Retourne True si le Pokémon a un clone actif"""
+        return self.substitute_hp > 0
 
     def actualize_stats(self):
         self.stats = {
@@ -117,8 +126,10 @@ class pokemon():
         self.evasion = self.calculate_accuracy_and_evasion(self.ev_and_acc_modifier[0])
         self.accuracy = self.calculate_accuracy_and_evasion(self.ev_and_acc_modifier[1])
 
-        trigger_item(self, "modify_stat",self.fight)
-        trigger_talent(self, "modify_stat", self.fight)
+        # Vérifier si self.fight existe avant de déclencher les événements
+        fight_instance = getattr(self, 'fight', None)
+        trigger_item(self, "modify_stat", fight_instance)
+        trigger_talent(self, "modify_stat", fight_instance)
     
     def set_nature(self, nature):
         """
@@ -131,8 +142,6 @@ class pokemon():
             self.actualize_stats()
         else:
             raise ValueError(f"Nature '{nature}' inconnue.")
-
-
 
     def current_stats(self):
         """
@@ -175,6 +184,13 @@ class pokemon():
         self.power = False
         self.first_attack = True
         self.locked_attack = None  # Réinitialise le verrouillage des objets Choice
+        self.encored_attack = None
+        self.encored_turns = 0
+        self.last_used_attack = None
+        self.disabled_attacks = None  # Réinitialise les attaques désactivées
+        self.disabled_turns = 0  # Réinitialise le nombre de tours restants
+        self.leech_seeded_by = None
+        self.substitute_hp = 0
         self.actualize_stats()
     
     ## Printing methods pour debugger
@@ -263,4 +279,5 @@ class pokemon():
             modifier = 1 / (1 + abs(stage_mod) / 3)
         return base_value * modifier
     
+    # Ancienne méthode remplacée par la nouvelle implémentation plus haut
     

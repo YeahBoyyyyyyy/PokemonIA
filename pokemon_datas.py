@@ -1253,4 +1253,49 @@ pokemon_data = {
         "weight": 0.3,
         "fully_evolved": True
     },
+    "Milotic": {
+        "name": "Milotic",
+        "types": ["Water"],
+        "abilities": ["Marvel Scale", "Competitive", "Cute Charm"],
+        "stats": {
+            "HP": 95,
+            "Attack": 60,
+            "Defense": 79,
+            "Sp. Atk": 100,
+            "Sp. Def": 125,
+            "Speed": 81
+        },
+        "weight": 162.0,
+        "fully_evolved": True
+    },
+    "Metagross": {
+        "name": "Metagross",
+        "types": ["Steel", "Psychic"],
+        "abilities": ["Clear Body", "Light Metal"],
+        "stats": {
+            "HP": 80,
+            "Attack": 135,
+            "Defense": 130,
+            "Sp. Atk": 95,
+            "Sp. Def": 90,
+            "Speed": 70
+        },
+        "weight": 550.0,
+        "fully_evolved": True
+    },
+    "Mightyena": {
+        "name": "Mightyena",
+        "types": ["Dark"],
+        "abilities": ["Intimidate", "Quick Feet"],
+        "stats": {
+            "HP": 70,
+            "Attack": 90,
+            "Defense": 70,
+            "Sp. Atk": 60,
+            "Sp. Def": 70,
+            "Speed": 70
+        },
+        "weight": 37.0,
+        "fully_evolved": True
+    },
 }
