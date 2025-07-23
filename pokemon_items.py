@@ -68,6 +68,12 @@ class EnergyBooster(Item):
                 poke.hidden_boost[stat_max] *= 1.3
         poke.item = None
 
+class AssaultVest(Item):
+    def modify_stat(self, poke, fight=None):
+        if poke.fully_evolved:
+            poke.stats["Sp. Def"] += int(poke.stats_with_no_modifier["Sp. Def"] * 0.5)
+            poke.item = None
+
 item_registry = {
     "Leftovers": Leftovers(),
     "Sitrus Berry": SitrusBerry(),

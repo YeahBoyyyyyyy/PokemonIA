@@ -97,6 +97,8 @@ class pokemon():
         self.protect_turns = 0  # Nombre de tours de protection restants si le Pokémon utilise "Protect" ou "Detect"
         self.leech_seeded_by = None  # Indique si le Pokémon a été "Leech Seeded" par un autre Pokémon
         self.first_attack = True  # Indique si c'est le premier tour du Pokémon dans le combat
+        self.disabled_attacks = [False, False, False, False]  # Indique si les attaques sont désactivées (pour "Disable")
+        self.encored_attack = None  # Indique si le Pokémon est sous l'effet de "Encore" et quelle attaque il doit utiliser
         
         # Attributs pour les talents
         self.sturdy_activated = False  # Pour le talent Sturdy (Fermeté)
