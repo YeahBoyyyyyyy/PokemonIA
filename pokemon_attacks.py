@@ -18,6 +18,7 @@ charge: The user is unable to make a move between turns.
 contact: Makes contact.
 defrost: Thaws the user if executed successfully while the user is frozen.
 gravity: Prevented from being executed or selected during Gravity's effect.
+ground: Ground-type moves whhose power are diminished by grassy terrain.
 heal: Prevented from being executed or selected during Heal Block's effect.
 mirror: Can be copied by Mirror Move.
 nonsky: Prevented from being executed or selected in a Sky Battle.
@@ -31,6 +32,7 @@ reflectable: Bounced back to the original user by Magic Coat or the Ability Magi
 sharp: Power is multiplied by 1.5 when used by a Pokemon with the Ability Sharpness.
 snatch: Can be stolen from the original user and instead used by another Pokemon using Snatch.
 sound: Has no effect on Pokemon with the Ability Soundproof.
+
 
 '''
 
@@ -326,6 +328,7 @@ class Thunderbolt(Attack):
             if target.status == None:
                 target.apply_status("paralyzed")
                 print(f"{target.name} est paralysé ! Il aura du mal à attaquer.")
+
 class Spore(Attack):
     def __init__(self):
         super().__init__(
@@ -417,7 +420,37 @@ class UTurn(Attack):
             target="Foe"
         )
 
-   ## def apply_effect(self, user, target, fight): Plus tard
+    def apply_effect(self, user, target, fight):
+        """
+        U-turn force le changement de Pokémon après l'attaque.
+        Cela ne se produit que si :
+        1. L'utilisateur survit à l'attaque
+        2. Il y a un autre Pokémon disponible dans l'équipe
+        3. L'utilisateur n'est pas piégé (par Arena Trap, Shadow Tag, etc.)
+        """
+        # Vérifier si l'utilisateur est encore en vie
+        if user.current_hp <= 0:
+            print(f"{user.name} est K.O. et ne peut pas utiliser U-turn pour changer !")
+            return
+        
+        # Déterminer quelle équipe possède l'utilisateur
+        team_id = fight.get_team_id(user)
+        if team_id is None:
+            return
+            
+        team = fight.team1 if team_id == 1 else fight.team2
+        
+        # Vérifier s'il y a d'autres Pokémon disponibles
+        available_pokemon = [p for p in team if p.current_hp > 0 and p != user]
+        
+        if not available_pokemon:
+            print(f"{user.name} ne peut pas changer car il n'y a pas d'autre Pokémon disponible !")
+            return
+        
+        # Marquer que le Pokémon doit changer après l'attaque
+        user.must_switch_after_attack = True
+        user.switch_reason = "U-Turn"
+        print(f"{user.name} doit revenir après U-turn !")
 
 class WillOWisp(Attack):
     def __init__(self):
@@ -1026,6 +1059,27 @@ class LeafBlade(Attack):
         # Pas d'effet secondaire pour Leaf Blade
         pass
 
+class WoodHammer(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Wood Hammer",
+            type_="Grass",
+            category="Physical",
+            power=120,
+            accuracy=100,
+            priority=0,
+            pp=15,
+            flags=["contact", "protect", "mirror"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight, damage_dealt=0):
+        # L'utilisateur subit des dégâts de recul à hauteur de 1/3 des dégâts infligés
+        if damage_dealt > 0:
+            recoil_damage = damage_dealt // 3
+            fight.damage_method(user, recoil_damage)
+            print(f"{user.name} subit {recoil_damage} PV de dégâts de recul après avoir utilisé Wood Hammer.")
+
 class ThunderWave(Attack):
     def __init__(self):
         super().__init__(
@@ -1048,7 +1102,7 @@ class ThunderWave(Attack):
             print(f"{target.name} est déjà affecté ou immunisé contre la paralysie.")
 
 class Taunt(Attack):
-    """Attaque qui n'est pas bloquée par les substituts"""
+    """Attaque qui n'est pas bloquée par les substituts et empêche l'usage d'attaques de statut"""
     def __init__(self):
         super().__init__(
             name="Taunt",
@@ -1063,26 +1117,26 @@ class Taunt(Attack):
         )
 
     def apply_effect(self, user, target, fight):
-        # Simuler l'effet de Taunt (empêche les attaques de statut)
-        print(f"{target.name} est provoqué et ne peut plus utiliser d'attaques de statut !")
+        # Taunt dure 3 tours (comme dans les jeux officiels)
+        target.taunted_turns = 3
+        print(f"{target.name} est provoqué et ne peut plus utiliser d'attaques de statut pendant 3 tours !")
 
-class Absorb(Attack):
-    """Attaque drainante qui draine des PV du clone"""
+class Earthquake(Attack):
     def __init__(self):
         super().__init__(
-            name="Absorb",
-            type_="Grass",
-            category="Special",
-            power=20,
+            name="Earthquake",
+            type_="Ground",
+            category="Physical",
+            power=100,
             accuracy=100,
             priority=0,
-            pp=25,
-            flags=["protect", "mirror", "heal"],
-            target="Foe"
+            pp=10,
+            flags=["protect", "mirror", "ground"],
+            target="All"
         )
 
     def apply_effect(self, user, target, fight):
-        # Cette méthode sera appelée après le calcul des dégâts pour le drain
+        # Pas d'effet secondaire pour Earthquake
         pass
 
 class PerishSong(Attack):
@@ -1103,17 +1157,24 @@ class PerishSong(Attack):
     def apply_effect(self, user, target, fight):
         print(f"{target.name} entend le Chant Perish ! Il sera K.O. dans 3 tours !")
 
-class Tackle(Attack):
-    """Attaque simple pour les tests"""
+class Trick(Attack):
     def __init__(self):
         super().__init__(
-            name="Tackle",
-            type_="Normal",
-            category="Physical",
-            power=40,
+            name="Trick",
+            type_="Psychic",
+            category="Status",
+            power=0,
             accuracy=100,
             priority=0,
-            pp=35,
-            flags=["contact", "protect", "mirror"],
+            pp=10,
+            flags=["protect", "mirror"],
             target="Foe"
         )
+
+    def apply_effect(self, user, target, fight):
+        """Échange les objets entre l'utilisateur et la cible. Et ca même si l'un des deux n'a pas d'objet."""
+        user_item = user.item
+        target_item = target.item
+        target.item = user_item
+        user.item = target_item
+

@@ -31,10 +31,10 @@ class Talent:
         :return: None ou un dict avec des modifications à appliquer à l'attaque. De base : {"attack": 1.0, "power": 1.0, "accuracy": 1.0, "type": None}"""
         return ON_ATTACK_MOD_DICT
 
-    def on_defense(self, poke, incoming_attack, fight):
+    def on_defense(self, poke, incoming_attack, attacker_poke=None, fight=None):
         pass
 
-    def modify_stat(self, poke, fight = None):
+    def modify_stat(self, poke, fight=None):
         return None
     
         
@@ -53,7 +53,7 @@ class Talent:
 
 class WaterAbsorb(Talent):
     """ Talent qui absorbe les attaques de type Eau et soigne le Pokémon."""
-    def on_defense(self, poke, incoming_attack, fight = None):
+    def on_defense(self, poke, incoming_attack, attacker_poke=None, fight = None):
         if incoming_attack.get("type") == "Water":
             healed = int(poke.max_hp * 0.25)
             poke.current_hp = min(poke.current_hp + healed, poke.max_hp)
@@ -147,7 +147,7 @@ class Protosynthesis(Talent):
 
 class FlashFire(Talent):
     """ Talent qui absorbe les attaques de type Feu et augmente l'Attaque Spéciale."""
-    def on_defense(self, poke, incoming_attack, fight=None):
+    def on_defense(self, poke, incoming_attack, attacker_poke=None, fight=None):
         if incoming_attack.type == "Fire":
             apply_stat_changes(poke, {"Sp. Atk": 1}, "self", fight)
             print(f"{poke.name} absorbe le feu et augmente son Attaque Spéciale !")
@@ -155,14 +155,14 @@ class FlashFire(Talent):
 
 class ThickFat(Talent):
     """ Talent qui réduit de moitié les dégâts des attaques de type Feu et Glace."""
-    def on_defense(self, poke, incoming_attack, fight=None):
+    def on_defense(self, poke, incoming_attack, attacker_poke=None, fight=None):
         if incoming_attack.type in ["Fire", "Ice"]:
             print(f"{poke.name} réduit de moitié les dégâts grâce à sa graisse !")
             return 0.5
 
 class Stamina(Talent):
     """ Talent qui augmente la Défense de 1 niveau à chaque fois que le Pokémon subit des dégâts."""
-    def on_defense(self, poke, incoming_attack, fight=None):
+    def on_defense(self, poke, incoming_attack, attacker_poke=None, fight=None):
         if incoming_attack.category in ["Physical", "Special"]:
             apply_stat_changes(poke, {"Defense": 1}, "self", fight)
             print(f"{poke.name} augmente sa Défense grâce à Endurance !")
@@ -170,7 +170,7 @@ class Stamina(Talent):
 
 class Sturdy(Talent):
     """ Talent qui permet au Pokémon de survivre à un coup fatal avec 1 PV."""
-    def on_defense(self, poke, incoming_attack, fight=None):
+    def on_defense(self, poke, incoming_attack, attacker_poke=None, fight=None):
         # Si le Pokémon a tous ses PV et que l'attaque pourrait le mettre KO
         if poke.current_hp == poke.max_hp and not poke.sturdy_activated:
             # On ne peut pas vraiment empêcher les dégâts ici, mais on peut marquer le Pokémon
@@ -201,7 +201,7 @@ class PoisonPuppeteer(Talent):
 
 class CursedBody(Talent):
     """ Talent qui a 30% de chance de désactiver l'attaque qui touche le Pokémon."""
-    def on_defense(self, poke, incoming_attack, fight=None):
+    def on_defense(self, poke, incoming_attack, attacker_poke=None, fight=None):
         attacker = fight.active1 if poke == fight.active2 else fight.active2
         if random() < 0.3:  # 30% de chance de désactiver l'attaque
             attacker.disabled_attack = incoming_attack
@@ -263,6 +263,27 @@ class Sharpness(Talent):
             mod_dict["power"] = 1.5
             return mod_dict
         return ON_ATTACK_MOD_DICT
+
+class GrassySurge(Talent):
+    def on_entry(self, poke, fight):
+        """Invoque le terrain herbu quand il entre sur le terrain s'il n'est pas déjà actif."""
+        if fight.field != "Grassy Terrain":
+            fight.set_field("Grassy Terrain")
+            print(f"{poke.name} invoque le terrain herbu !")
+
+class RoughSkin(Talent):
+    def on_defense(self, poke, incoming_attack, attacker_poke=None, fight=None):
+        # Rough Skin ne devrait se déclencher qu'une fois par attaque de contact
+        # On utilise un attribut temporaire pour éviter le double déclenchement
+        if (incoming_attack and "contact" in incoming_attack.flags and 
+            attacker_poke and attacker_poke.current_hp > 0):
+            # Vérifier si ce n'est pas déjà traité (éviter double activation)
+            if not hasattr(attacker_poke, '_rough_skin_triggered'):
+                attacker_poke._rough_skin_triggered = True
+                dmg = int(poke.max_hp * 0.125)
+                fight.damage_method(attacker_poke, dmg)
+                print(f"{attacker_poke.name} subit {dmg} points de dégâts à cause de Rough Skin !")
+        return 1.0  # Pas de modification des dégâts
 
 def apply_stat_changes(target_poke, stat_changes, source="unknown", fight=None):
     """
@@ -360,4 +381,7 @@ talent_registry = {
     "Defiant": Defiant(),
     "No Guard": NoGuard(),
     "Cursed Body": CursedBody(),
+    "Sharpness": Sharpness(),
+    "Grassy Surge": GrassySurge(),
+    "Rough Skin": RoughSkin(),
 }

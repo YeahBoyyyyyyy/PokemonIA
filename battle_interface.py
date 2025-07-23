@@ -5,6 +5,34 @@ import pokemon_datas as STATS
 import random
 from donnees import bcolors
 
+def can_use_attack(pokemon, attack):
+    """
+    Vérifie si un Pokémon peut utiliser une attaque donnée.
+    Retourne (True, "") si l'attaque peut être utilisée, 
+    ou (False, "raison") si elle ne peut pas être utilisée.
+    """
+    # Vérifier Encore : force l'utilisation d'une attaque spécifique
+    if pokemon.encored_turns > 0 and pokemon.encored_attack:
+        if attack != pokemon.encored_attack:
+            return False, f"{pokemon.name} est sous l'effet d'Encore et doit utiliser {pokemon.encored_attack.name} !"
+    
+    # Vérifier Choice items : verrouille sur une attaque spécifique
+    if pokemon.item and "Choice" in pokemon.item and pokemon.locked_attack:
+        if attack != pokemon.locked_attack:
+            return False, f"{pokemon.name} est verrouillé sur {pokemon.locked_attack.name} par {pokemon.item} !"
+    
+    # Vérifier si l'attaque est de type Status
+    if attack.category == "Status":
+        # Vérifier Taunt
+        if pokemon.is_taunted():
+            return False, f"{pokemon.name} est provoqué et ne peut pas utiliser d'attaques de statut !"
+        
+        # Vérifier Assault Vest (Veste de Combat)
+        if pokemon.item == "Assault Vest":
+            return False, f"{pokemon.name} porte une Veste de Combat et ne peut pas utiliser d'attaques de statut !"
+    
+    return True, ""
+
 # Option pour afficher les stats d'un Pokémon
 def print_pokemon_stats(pokemon : pk.pokemon):
 
@@ -30,12 +58,48 @@ def choose_switch_pokemon(fight, team_id):
     team = fight.team1 if team_id == 1 else fight.team2
     team_name = "joueur 1" if team_id == 1 else "joueur 2"
     
-    print(f"\n{bcolors.WARNING}Le Pokémon du {team_name} est KO ! Choisissez un remplaçant :{bcolors.ENDC}")
+    print(f"\n{bcolors.OKYELLOW}Le Pokémon du {team_name} est KO ! Choisissez un remplaçant :{bcolors.ENDC}")
     
     while True:
         available_pokemon = []
         for i, p in enumerate(team):
             if p.current_hp > 0:
+                available_pokemon.append((i, p))
+        
+        if not available_pokemon:
+            return None  # Aucun Pokémon disponible
+        
+        print("\nPokémon disponibles :")
+        for idx, (i, p) in enumerate(available_pokemon):
+            print(f"{idx}. {p.name} (HP: {p.current_hp}/{p.max_hp})")
+        
+        choice = input("Choisissez un Pokémon (numéro) : ").strip()
+        
+        if choice.isdigit():
+            choice_idx = int(choice)
+            if 0 <= choice_idx < len(available_pokemon):
+                pokemon_index = available_pokemon[choice_idx][0]
+                fight.player_switch(team_id, pokemon_index)
+                return pokemon_index
+            else:
+                print("Choix invalide.")
+        else:
+            print("Veuillez entrer un numéro valide.")
+
+
+def choose_uturn_switch_pokemon(fight, team_id):
+    """
+    Permet au joueur de choisir quel Pokémon faire entrer après U-turn.
+    """
+    team = fight.team1 if team_id == 1 else fight.team2
+    current_pokemon = fight.active1 if team_id == 1 else fight.active2
+    
+    print(f"\n{bcolors.OKBLUE}Choisissez le Pokémon à faire entrer après U-turn :{bcolors.ENDC}")
+    
+    while True:
+        available_pokemon = []
+        for i, p in enumerate(team):
+            if p.current_hp > 0 and p != current_pokemon:
                 available_pokemon.append((i, p))
         
         if not available_pokemon:
@@ -65,7 +129,12 @@ def launch_battle(team1: list[pk.pokemon], team2: list[pk.pokemon]):
     # Surcharger la méthode player_choice_switch pour permettre au joueur de choisir
     def player_choice_switch_override(team_id):
         if team_id == 1:  # Joueur humain
-            choose_switch_pokemon(fight, team_id)
+            # Vérifier si c'est un changement forcé par U-turn
+            current_pokemon = fight.active1 if team_id == 1 else fight.active2
+            if current_pokemon.must_switch_after_attack:
+                choose_uturn_switch_pokemon(fight, team_id)
+            else:
+                choose_switch_pokemon(fight, team_id)
         else:  # IA
             fight.auto_switch(team_id)
     
@@ -104,33 +173,47 @@ def launch_battle(team1: list[pk.pokemon], team2: list[pk.pokemon]):
 
                 # Vérifier si le Pokémon est en train de charger une attaque
                 if attacker.charging and attacker.charging_attack:
-                    print(f"\n{bcolors.OKYELLOW}{attacker.name} termine sa charge avec {attacker.charging_attack.name} !{bcolors.ENDC}")
-                    act1 = (attacker, attacker.charging_attack)
-                    break
+                    # Vérifier si l'attaque de charge peut être utilisée
+                    can_use, reason = can_use_attack(attacker, attacker.charging_attack)
+                    if not can_use:
+                        print(f"\n{bcolors.OKRED}{reason}")
+                        print(f"{attacker.name} ne peut pas terminer sa charge !{bcolors.ENDC}")
+                        # Dans ce cas, on laisse le joueur choisir une autre attaque
+                    else:
+                        print(f"\n{bcolors.OKYELLOW}{attacker.name} termine sa charge avec {attacker.charging_attack.name} !{bcolors.ENDC}")
+                        act1 = (attacker, attacker.charging_attack)
+                        break
 
-                # Vérifier si le Pokémon est verrouillé par un objet Choice
-                if attacker.item and "Choice" in attacker.item and attacker.locked_attack:
-                    print(f"\n{bcolors.OKYELLOW}{attacker.name} est verrouillé sur {attacker.locked_attack.name} à cause de {attacker.item} !{bcolors.ENDC}")
-                    act1 = (attacker, attacker.locked_attack)
-                    break
-
-                # Vérifier si le Pokémon est sous l'effet d'Encore
+                # Afficher des messages informatifs pour Encore et Choice items
                 if attacker.encored_turns > 0 and attacker.encored_attack:
-                    print(f"\n{bcolors.OKYELLOW}{attacker.name} est sous l'effet d'Encore et doit utiliser {attacker.encored_attack.name} ! ({attacker.encored_turns} tour(s) restant(s)){bcolors.ENDC}")
-                    act1 = (attacker, attacker.encored_attack)
-                    break
+                    print(f"\n{bcolors.OKYELLOW}{attacker.name} est sous l'effet d'Encore ! ({attacker.encored_turns} tour(s) restant(s)){bcolors.ENDC}")
+                
+                if attacker.item and "Choice" in attacker.item and attacker.locked_attack:
+                    print(f"\n{bcolors.OKYELLOW}{attacker.name} est verrouillé par {attacker.item} !{bcolors.ENDC}")
 
                 while True:
                     print(f"\n{bcolors.GRAY}Choisissez une attaque (ou tapez R pour revenir en arrière) :")
                     for i, atk in enumerate(attacks):
                         if atk:
-                            print(f"{i+1}. {atk.name}")
+                            can_use, reason = can_use_attack(attacker, atk)
+                            if can_use:
+                                print(f"{i+1}. {atk.name}")
+                            else:
+                                print(f"{i+1}. {bcolors.DARK_RED}{atk.name} (BLOQUÉE){bcolors.ENDC}")
+                                print(f"    {bcolors.GRAY}Raison: {reason}{bcolors.ENDC}")
                     print(f"{bcolors.ENDC}")
                     choice = input("Numéro d'attaque : ").strip()
                     if choice.lower() == "r":
                         break  # Retour au menu principal
                     if choice.isdigit() and 1 <= int(choice) <= len(attacks) and attacks[int(choice)-1]:
                         atk1 = attacks[int(choice) - 1]
+                        
+                        # Vérifier si l'attaque peut être utilisée (Taunt, Assault Vest, etc.)
+                        can_use, reason = can_use_attack(attacker, atk1)
+                        if not can_use:
+                            print(f"{bcolors.OKRED}{reason}{bcolors.ENDC}")
+                            continue  # Demander une autre attaque
+                        
                         act1 = (attacker, atk1)
                         break
                     else:
@@ -228,8 +311,8 @@ def import_pokemon(name):
     return pokemon
 
 venusaur = import_pokemon("Venusaur")
-venusaur.talent = "Sturdy"
-venusaur.item = "Leftovers"
+venusaur.talent = "Chlorophyll"
+venusaur.item = "Choice Band"  # Test Choice Band
 venusaur.attack1 = ATTACKES.HydroPump()
 venusaur.attack2 = ATTACKES.LightScreen()
 venusaur.attack3 = ATTACKES.Spore()
@@ -244,14 +327,27 @@ duraludon.attack3 = ATTACKES.Protect()
 
 mew = import_pokemon("Mew")
 mew.talent = "Synchronize"
-mew.item = "Choice Scarf"
-mew.attack1 = ATTACKES.Psychic()
-mew.attack2 = ATTACKES.Encore()
+mew.item = "Rocky Helmet"  # Test Rocky Helmet
+mew.attack1 = ATTACKES.HydroPump()
+mew.attack2 = ATTACKES.Taunt()
+mew.attack3 = ATTACKES.Encore()
 
 charizard = import_pokemon("Charizard")
 charizard.talent = "Drought"
 charizard.item = "Sitrus Berry"
 charizard.attack1 = ATTACKES.Substitute()
 charizard.attack2 = ATTACKES.Thunderbolt()
+charizard.attack3 = ATTACKES.Taunt()
 
-launch_battle([venusaur, duraludon], [charizard, mew])
+rillaboom = import_pokemon("Rillaboom")
+rillaboom.talent = "Grassy Surge"
+rillaboom.item = "Assault Vest"
+rillaboom.attack1 = ATTACKES.WoodHammer()
+rillaboom.attack2 = ATTACKES.UTurn()
+
+garchomp = import_pokemon("Garchomp")
+garchomp.talent = "Rough Skin"
+garchomp.item = "Rocky Helmet"
+garchomp.attack1 = ATTACKES.Earthquake()
+
+launch_battle([rillaboom, venusaur, duraludon], [garchomp])

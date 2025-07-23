@@ -104,7 +104,12 @@ class pokemon():
         self.disabled_turns = 0  # Nombre de tours restants sous l'effet de "Disable"
         self.encored_attack = None  # Indique si le Pokémon est sous l'effet de "Encore" et quelle attaque il doit utiliser
         self.encored_turns = 0  # Nombre de tours restants sous l'effet de "Encore"
+        self.taunted_turns = 0  # Nombre de tours restants sous l'effet de "Taunt"
         self.last_used_attack = None  # Dernière attaque utilisée par le Pokémon, pour les effets de certaines attaques ou talents
+        
+        # Attributs pour U-turn et autres attaques de changement forcé
+        self.must_switch_after_attack = False  # Indique si le Pokémon doit changer après son attaque (U-turn, Volt Switch, etc.)
+        self.switch_reason = None  # Raison du changement forcé ("U-Turn", "Volt Switch", etc.)
         
         # Attributs pour les talents
         self.sturdy_activated = False  # Pour le talent Sturdy (Fermeté)
@@ -113,6 +118,10 @@ class pokemon():
     def has_substitute(self):
         """Retourne True si le Pokémon a un clone actif"""
         return self.substitute_hp > 0
+
+    def is_taunted(self):
+        """Retourne True si le Pokémon est sous l'effet de Taunt"""
+        return self.taunted_turns > 0
 
     def actualize_stats(self):
         self.stats = {
@@ -186,6 +195,7 @@ class pokemon():
         self.locked_attack = None  # Réinitialise le verrouillage des objets Choice
         self.encored_attack = None
         self.encored_turns = 0
+        self.taunted_turns = 0
         self.last_used_attack = None
         self.disabled_attacks = None  # Réinitialise les attaques désactivées
         self.disabled_turns = 0  # Réinitialise le nombre de tours restants
@@ -278,6 +288,4 @@ class pokemon():
         else:
             modifier = 1 / (1 + abs(stage_mod) / 3)
         return base_value * modifier
-    
-    # Ancienne méthode remplacée par la nouvelle implémentation plus haut
     

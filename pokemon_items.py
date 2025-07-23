@@ -37,7 +37,7 @@ class Leftovers(Item):
 
 class SitrusBerry(Item):
     def after_attack(self, poke, fight=None):
-        if poke.current_hp <= poke.max_hp * 0.5:
+        if poke.current_hp <= poke.max_hp * 0.5 and poke.current_hp > 0:
             heal = int(poke.max_hp * 0.25)
             print(f"{poke.name} consomme une Baie Sitrus et récupère {heal} PV !")
             poke.current_hp = min(poke.current_hp + heal, poke.max_hp)
@@ -70,16 +70,29 @@ class EnergyBooster(Item):
 
 class ChestoBerry(Item):
     def on_turn_end(self, poke, fight=None):
-        if poke.status == "Sleep":
+        if poke.status == "sleep":
             print(f"{poke.name} se réveille grâce à sa Baie Chesto !")
             poke.status = None
             poke.item = None
     def before_attack(self, poke, attack, fight=None):
-        if poke.status == "Sleep":
+        if poke.status == "sleep":
             print(f"{poke.name} utilise sa Baie Chesto pour se réveiller avant l'attaque !")
             poke.status = None
             poke.item = None
 
+class AssaultVest(Item):
+    def modify_stat(self, poke, fight=None):
+        poke.stats["Sp. Def"] += int(poke.stats_with_no_modifier["Sp. Def"] * 0.5)
+
+class RockyHelmet(Item):
+    def after_attack(self, poke, fight=None):
+        """
+        Rocky Helmet inflige des dégâts à l'attaquant si l'attaque était de contact.
+        Cet effet se déclenche après que le porteur ait subi une attaque de contact.
+        """
+        # Cette méthode sera appelée avec fight comme argument supplémentaire
+        # contenant les informations sur l'attaque qui vient d'être subie
+        pass  # L'effet sera géré différemment car on a besoin de l'attaquant et de l'attaque
 item_registry = {
     "Leftovers": Leftovers(),
     "Sitrus Berry": SitrusBerry(),
@@ -89,6 +102,8 @@ item_registry = {
     "Choice Scarf": ChoiceBoost(),
     "Eviolite": Eviolite(),
     "Energy Booster": EnergyBooster(),
+    "Assault Vest": AssaultVest(),
+    "Rocky Helmet": RockyHelmet(),
 }
 
 def trigger_item(poke, event, *args):

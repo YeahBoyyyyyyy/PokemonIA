@@ -1298,4 +1298,34 @@ pokemon_data = {
         "weight": 37.0,
         "fully_evolved": True
     },
+    "Rillaboom": {
+        "name": "Rillaboom",
+        "types": ["Grass"],
+        "abilities": ["Overgrow", "Grassy Surge"],
+        "stats": {
+            "HP": 100,
+            "Attack": 125,
+            "Defense": 90,
+            "Sp. Atk": 60,
+            "Sp. Def": 80,
+            "Speed": 85
+        },
+        "weight": 90.0,
+        "fully_evolved": True
+    },
+    "Garchomp": {
+        "name": "Garchomp",
+        "types": ["Dragon", "Ground"],
+        "abilities": ["Rough Skin", "Sand Veil"],
+        "stats": {
+            "HP": 108,
+            "Attack": 130,
+            "Defense": 95,
+            "Sp. Atk": 80,
+            "Sp. Def": 85,
+            "Speed": 102
+        },
+        "weight": 95.0,
+        "fully_evolved": True
+    },
 }

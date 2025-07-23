@@ -22,7 +22,7 @@ class Fight():
         # Peut juste être un entier puisqu'il n'y a qu'une seule météo active à la fois
 
         ## Terrain ##
-        self.field_effects = None  # Effets de terrain actifs (par exemple : "Champ Electrique", "Champ Herbu", etc.) sera juste une chaine de caractères
+        self.field = None  # Effets de terrain actifs (par exemple : "Champ Electrique", "Champ Herbu", etc.) sera juste une chaine de caractères
         self.field_turn_left = None  # Nombre de tours restants pour le terrain actuel, si il est actif
         # Peut être juste un entier vu que un seul terrain peut être actif à la fois
 
@@ -194,15 +194,15 @@ class Fight():
     """
 
 ###### Méthodes pour gérer les effets de terrain #######
-    def add_field_effect(self, effect):
-        self.field_effects.append(effect)
+    def set_field(self, effect):
+        self.field = effect
         self.field_turn_left = 5  # Classiquement les effets de terrain durent 5 tours, on ignore la Light Clay pour l'instant
     
     def remove_field_effect(self):
-        self.field_effects = None  # Supprimer l'effet de terrain
+        self.field = None  # Supprimer l'effet de terrain
         self.field_turn_left = None  # Réinitialiser le compteur de tours
 
-    def actualize_field_effects(self):
+    def actualize_field(self):
         """
         Met à jour les effets de terrain actifs en décrémentant le nombre de tours restants.
         Supprime les effets de terrain qui ont expiré.
@@ -212,16 +212,17 @@ class Fight():
             if self.field_turn_left <= 0:
                 self.remove_field_effect()
     
-    def apply_field_effects(self):
+    def apply_field(self):
         """
         Applique les effets de terrain actifs sur les Pokémon.
         Par exemple, si le terrain est herbeux, tous les Pokémons sur le terrain regagnent des PV à chaque tour.
         """
-        if "Grassy Terrain" == self.field_effects:
-            # Regénérer des PV pour les Pokémon de type Plante
+        if "Grassy Terrain" == self.field:
+            # Regénérer des PV pour tous les Pokémon (bypass substitute car la guérison affecte directement le Pokémon)
             for pokemon in [self.active1, self.active2]:
-                damage = -int(pokemon.max_hp * 0.0625)  # Régénération de 1/16 des PV max
-                self.damage_method(pokemon, damage)  # Utiliser la méthode de dégâts pour régénérer les PV (dégâts "négatifs")
+                heal_amount = int(pokemon.max_hp * 0.0625)  # Régénération de 1/16 des PV max
+                pokemon.current_hp = min(pokemon.max_hp, pokemon.current_hp + heal_amount)
+                print(f"{pokemon.name} regagne {heal_amount} PV grâce au terrain herbeux !")
 
 ###### Méthodes pour gérer les screens et la gravité #######
     def add_screen(self, effect, team_id):
@@ -264,20 +265,11 @@ class Fight():
             if self.screen_turn_left_team2[effect] <= 0:
                 self.remove_screen(effect, 2)
                 print(f"L'écran {effect} de l'équipe 2 a expiré.")
-    
-    def actualize_field_effects(self):
-        """
-        Met à jour les effets de terrain actifs en décrémentant le nombre de tours restants.
-        Supprime les effets de terrain qui ont expiré.
-        """
-        for effect in list(self.field_turn_left.keys()):
-            self.field_turn_left[effect] -= 1
-            if self.field_turn_left[effect] <= 0:
-                self.remove_field_effect(effect)
 
     def damage_method(self, pokemon : pokemon, damage : int, bypass_substitute=False, is_draining=False):
         """
         Applique les dégâts à un Pokémon.
+
         :param pokemon: Instance de la classe Pokemon qui subit les dégâts.
         :param damage: Dégâts à infliger.
         :param bypass_substitute: Si True, ignore le clone (pour les attaques authentic).
@@ -323,10 +315,22 @@ class Fight():
     def print_fight_status(self):
         print(f"{bcolors.OKGREEN}Pokémon 1: {self.active1.name} (HP: {self.active1.current_hp}/{self.active1.max_hp})")
         print(f"Pokémon 2: {self.active2.name} (HP: {self.active2.current_hp}/{self.active2.max_hp}){bcolors.ENDC}")
-        print(f"{bcolors.LIGHT_YELLOW}Météo actuelle: {self.weather['current']}, Météo précédente: {self.weather['previous']}")
-        print(f"Effets de terrain actifs: {', '.join(self.field_effects) if self.field_effects else 'Aucun'}")
-        print(f"Écrans équipe 1: {self.screen_team1 if self.screen_team1 else 'Aucun'}")
+        print(f"{bcolors.OKYELLOW}Météo actuelle: {self.weather['current']} pendant encore {self.weather_turn_left} tours" if self.weather['current'] else "Aucune météo active")
+        print(f"Écrans équipe 1: {self.screen_team1 if self.screen_team1 else 'Aucun'}{bcolors.ENDC}")
+        print(f"{bcolors.LIGHT_YELLOW}", end="")
+        if self.screen_team1 != []:
+            for screen in self.screen_team1:
+                print(f"Écran actif: {screen} ({self.screen_turn_left_team1[screen]} tours restants)")
+        print(f"{bcolors.OKYELLOW}", end="")
         print(f"Écrans équipe 2: {self.screen_team2 if self.screen_team2 else 'Aucun'}{bcolors.ENDC}")
+        print(f"{bcolors.LIGHT_YELLOW}", end="")
+        if self.screen_team2 != []:
+            for screen in self.screen_team2:
+                print(f"Écran actif: {screen} ({self.screen_turn_left_team2[screen]} tours restants)")
+        # Afficher les effets de terrain s'il y en a
+        if self.field and self.field_turn_left:
+            print(f"Effet de terrain actif: {self.field} ({self.field_turn_left} tours restants)")
+        print(f"{bcolors.ENDC}", end="")
 
     def fight(self):
         print(f"{bcolors.OKMAGENTA}Le combat oppose {self.active1.name} à {self.active2.name} !{bcolors.ENDC}")
@@ -356,22 +360,33 @@ class Fight():
             print(f"{bcolors.OKCYAN}Il neige ! Les Pokémon du mauvais type subissent des dégâts.{bcolors.ENDC}")
         
         # Gérer les effets de terrain
-        self.apply_field_effects()
+        self.apply_field()
+        self.actualize_field()  # Décrémenter le compteur du terrain
         
         # Gérer les écrans de protection
         self.update_screens()
 
-        if "Grassy Terrain" == self.field_effects:
-            print("Le terrain est herbeux ! Tous les Pokémon regagnent des PV.")
-        elif "Electric Terrain" == self.field_effects:
+        if "Electric Terrain" == self.field:
             print("Le terrain est électrique ! Les Pokémon ne peuvent pas dormir.")
-        elif "Psychic Terrain" == self.field_effects:
+        elif "Psychic Terrain" == self.field:
             print("Le terrain est psychique ! Les attaques de priorité sont neutralisées.")
-        elif "Misty Terrain" == self.field_effects:
+        elif "Misty Terrain" == self.field:
             print("Le terrain est brumeux ! Les attaques de type Dragon sont neutralisées.")
         
         for p in [self.active1, self.active2]:
             trigger_talent(p, "modify_stat", self)
+            
+            # Décrémenter les effets de durée limitée
+            if p.taunted_turns > 0:
+                p.taunted_turns -= 1
+                if p.taunted_turns == 0:
+                    print(f"L'effet de Taunt sur {p.name} se dissipe !")
+            
+            if p.encored_turns > 0:
+                p.encored_turns -= 1
+                if p.encored_turns == 0:
+                    print(f"L'effet d'Encore sur {p.name} se dissipe !")
+                    p.encored_attack = None
             
     #def attack(pokemon : pokemon, attack : dict, target : pokemon, fight : Fight):
     def attack_power(self, user_pokemon : pokemon, attack : Attack, target_pokemon : pokemon, multiplier=1.0, talent_mod=None):
@@ -502,8 +517,6 @@ class Fight():
         Gère l'action "Attaquer" d'un Pokémon sur un autre, en prenant en compte les effets de statut, multi-tours et priorités.
         """
 
-        on_attack_mod = trigger_talent(attacker, "on_attack", attack, self)
-
         # Si le Pokémon doit se recharger, il ne peut pas attaquer
         if attacker.must_recharge:
             print(f"{attacker.name} se repose et ne peut pas attaquer ce tour-ci.")
@@ -520,6 +533,15 @@ class Fight():
             if attacker.encored_turns == 0:
                 print(f"L'effet d'Encore sur {attacker.name} se dissipe !")
                 attacker.encored_attack = None
+
+        # Gestion de l'effet Taunt : empêche l'utilisation d'attaques de statut
+        if attacker.is_taunted() and attack.category == "Status":
+            print(f"{attacker.name} est provoqué et ne peut pas utiliser {attack.name} !")
+            return  # L'attaque échoue
+        
+        if attacker.item == "Assault Vest" and attack.category == "Status":
+            print(f"{attacker.name} ne peut pas utiliser d'attaque de Statut à cause de la Veste de Combat !")
+            return
 
         # Si le Pokémon est confus, on gère la confusion
         if attacker.is_confused:
@@ -565,6 +587,8 @@ class Fight():
                     attacker.charging_attack = attack
                     return
 
+        on_attack_mod = trigger_talent(attacker, "on_attack", attack, self)
+
         # Vérification Précision avec modificateurs
         if not self.calculate_hit_chance(attacker, defender, attack, on_attack_mod):
             print(f"{attacker.name} rate son attaque !")
@@ -582,12 +606,10 @@ class Fight():
                 return
 
         # Vérification des talents de l'attaquant ex lavabo, etc.
-        multiplier = trigger_talent(defender, "on_defense", attack, self)
+        multiplier = trigger_talent(defender, "on_defense", attack, attacker, self)
         if multiplier == 0:
             print(f"{defender.name} n’est pas affecté grâce à son talent !")
             return 
-        if multiplier is None or isinstance(multiplier, str):
-            multiplier = 1.0
         
         # Vérifie si l'objet de choix le verrouille sur une attaque
         if attacker.item and "Choice" in attacker.item:
@@ -600,11 +622,13 @@ class Fight():
                 attacker.locked_attack = attack
         
         # Calcul des dégâts
-        self.calculate_and_apply_damage(attacker, attack, defender, multiplier, on_attack_mod)
+        dmg = self.calculate_damage(attacker, attack, defender)
+        if dmg:
+            self.apply_damage(dmg, defender, attack, attacker)
 
         # Effets secondaires de l'attaque (seulement si pas déjà appelé pour les attaques à charge)
         if charging_result != "attack":
-            self.apply_secondary_effects(attacker, defender, attack)
+            self.apply_secondary_effects(attacker, defender, attack, dmg if dmg else 0)
 
         # Enregistrer la dernière attaque utilisée (pour Encore et autres effets)
         attacker.last_used_attack = attack
@@ -612,10 +636,14 @@ class Fight():
         attacker.protect_turns = 0  # Réinitialiser les tours de protection à chaque tour
         attacker.first_attack = False  # Réinitialiser le premier tour d'attaque
 
+        # Nettoyer les attributs temporaires pour éviter les doubles activations de talents
+        if hasattr(attacker, '_rough_skin_triggered'):
+            delattr(attacker, '_rough_skin_triggered')
+
         if defender.current_hp == 0:
             print(f"{defender.name} est K.O. !")
 
-    def apply_secondary_effects(self, attacker, defender, attack):
+    def apply_secondary_effects(self, attacker, defender, attack, damage_dealt=0):
         """
         Applique les effets secondaires d'une attaque : statut, flinch, etc.
         """
@@ -635,7 +663,12 @@ class Fight():
                 return
             
             # Appliquer l'effet secondaire
-            attack.apply_effect(attacker, target, self)
+            # Essayer d'abord avec le paramètre damage_dealt, sinon utiliser l'ancienne signature
+            try:
+                attack.apply_effect(attacker, target, self, damage_dealt)
+            except TypeError:
+                # Ancienne signature sans damage_dealt
+                attack.apply_effect(attacker, target, self)
 
     def is_blocked_by_substitute(self, attack, target):
         """
@@ -679,7 +712,7 @@ class Fight():
         # Toutes les autres attaques de statut sont bloquées
         return True
 
-    def calculate_and_apply_damage(self, attacker: pokemon, attack: Attack, defender: pokemon, multiplier: float, on_attack_mod: dict = None):
+    def calculate_damage(self, attacker: pokemon, attack: Attack, defender: pokemon):
         """
         Calcule et applique les dégâts d'une attaque si elle n'est pas de type Status.
         
@@ -689,22 +722,48 @@ class Fight():
         :param multiplier: Multiplicateur de dégâts (provenant des talents défensifs)
         :param on_attack_mod: Modificateurs de talent pour l'attaque
         """
+
+        multiplier = trigger_talent(defender, "on_defense", attack, attacker, self)
+        on_attack_mod = trigger_talent(attacker, "on_attack", attack, self)
+
         # Valeur par défaut si on_attack_mod est None
         if on_attack_mod is None:
             on_attack_mod = {"attack": 1.0, "power": 1.0, "accuracy": 1.0, "type": None}
-            
+        
+        damage = None
+
         if attack.category != "Status":
             # Calculer les dégâts finaux
             damage = self.attack_power(attacker, attack, defender, multiplier, on_attack_mod)
             damage = int(damage)
             
-            # Afficher et appliquer les dégâts
-            print(f"{bcolors.DARK_RED}{defender.name} subit {damage} points de dégâts.{bcolors.ENDC}")
-            # Vérifier si l'attaque ignore les substituts
-            bypass_substitute = "authentic" in attack.flags
-            self.damage_method(defender, damage, bypass_substitute)
+        return damage
 
+    def apply_damage(self, damage:int, defender:pokemon, attack:Attack, attacker:pokemon = None):
+        """Applique les dégâts à un Pokémon et gère les effets de statut.
+        
+        :param damage: Dégâts à infliger.
+        :param defender: Instance de la classe Pokemon qui subit les dégâts.
+        :param attack: Instance de la classe Attack qui est utilisée.
+        :param attacker: Instance de la classe Pokemon qui attaque (pour Rocky Helmet).
+        """
+        # Afficher et appliquer les dégâts
+        print(f"{bcolors.DARK_RED}{defender.name} subit {damage} points de dégâts.{bcolors.ENDC}")
+        # Vérifier si l'attaque ignore les substituts
+        bypass_substitute = "authentic" in attack.flags
+        self.damage_method(defender, damage, bypass_substitute)
+        
+        # Effet Rocky Helmet : si le défenseur porte Rocky Helmet et l'attaque est de contact
+        if (defender.item == "Rocky Helmet" and 
+            attacker and 
+            attacker.current_hp > 0 and  # L'attaquant doit être vivant
+            "contact" in attack.flags and 
+            not defender.has_substitute()):  # Rocky Helmet ne fonctionne pas à travers un substitute
             
+            # Rocky Helmet inflige 1/6 des PV max de l'attaquant
+            helmet_damage = max(1, attacker.max_hp // 6)
+            print(f"{bcolors.OKRED}{attacker.name} subit {helmet_damage} dégâts à cause du Rocky Helmet de {defender.name} !{bcolors.ENDC}")
+            self.damage_method(attacker, helmet_damage, bypass_substitute=True)
 
     def compute_priority(self, pokemon, attack = Attack):
         """
@@ -722,6 +781,44 @@ class Fight():
         if pokemon.talent == "Quick Draw" and random.random() < 0.3:
             base_priority += 7
         return base_priority
+
+    def handle_forced_switches(self):
+        """
+        Gère les changements forcés après les attaques comme U-turn, Volt Switch, etc.
+        """
+        # Vérifier le Pokémon actif de l'équipe 1
+        if self.active1.must_switch_after_attack and self.active1.current_hp > 0:
+            team_id = 1
+            team = self.team1
+            available_pokemon = [p for p in team if p.current_hp > 0 and p != self.active1]
+            
+            if available_pokemon:
+                print(f"{self.active1.name} revient grâce à {self.active1.switch_reason} !")
+                if team_id == 1:  # Joueur humain
+                    self.player_choice_switch(team_id)
+                else:  # IA
+                    self.auto_switch(team_id)
+            
+            # Réinitialiser les attributs
+            self.active1.must_switch_after_attack = False
+            self.active1.switch_reason = None
+        
+        # Vérifier le Pokémon actif de l'équipe 2
+        if self.active2.must_switch_after_attack and self.active2.current_hp > 0:
+            team_id = 2
+            team = self.team2
+            available_pokemon = [p for p in team if p.current_hp > 0 and p != self.active2]
+            
+            if available_pokemon:
+                print(f"{self.active2.name} revient grâce à {self.active2.switch_reason} !")
+                if team_id == 1:  # Joueur humain
+                    self.player_choice_switch(team_id)
+                else:  # IA
+                    self.auto_switch(team_id)
+            
+            # Réinitialiser les attributs
+            self.active2.must_switch_after_attack = False
+            self.active2.switch_reason = None
 
     def resolve_turn(self, action1, action2):
         """
@@ -770,6 +867,9 @@ class Fight():
         
         for p in [self.active1, self.active2]:
             trigger_item(p, "after_attack", self)  # Appliquer les effets des objets après l'attaque
+        
+        # Gérer les changements forcés après attaque (U-turn, Volt Switch, etc.)
+        self.handle_forced_switches()
         
         if second.current_hp == 0:
             print(f"{second.name} est K.O. !")
@@ -829,7 +929,7 @@ class Fight():
         """
         if talent_mod is None:
             talent_mod = {"accuracy": 1.0, "power": 1.0, "attack": 1.0, "type": None}
-            
+
         if talent_mod["accuracy"] == True:
             return True 
         else:
@@ -1005,21 +1105,26 @@ def is_critical_hit(pokemon, attack : Attack, target):
 def attack_terrain_boost(attack : Attack, fight : Fight):
     """
     Applique les modificateurs de puissance des attaques en fonction du terrain.
+
     :param attack: Instance de la classe Attack.
     :param fight: Instance de la classe Fight contenant toutes les informations sur le combat, y compris le terrain actuel.
     :return: Modificateur de puissance des attaques en fonction du terrain.
     """
-    match fight.field_effects, attack.type:
-        case (["Grassy Terrain"], "Grass"):
+    match fight.field, attack.type:
+        case ("Grassy Terrain", "Grass"):
             return 1.3
-        case (["Electric Terrain"], "Electric"):
+        case ("Electric Terrain", "Electric"):
             return 1.3
-        case (["Psychic Terrain"], "Psychic"):
+        case ("Psychic Terrain", "Psychic"):
             return 1.3
-        case (["Misty Terrain"], "Dragon"):
+        case ("Misty Terrain", "Dragon"):
             return 0.5
-        case _ :
-            return 1.0  # Pas de boost si le terrain ne correspond pas à l'attaque ou s'il n'y a pas d'effet de terrain actif
+        
+    if fight.field == "Grassy Terrain" and "ground" in attack.flags:
+        return 0.5
+    else:
+        return 1.0
+    
         
 #### Regarder si le Pokémon en face tient une baie qui le fait resister à l'attaque ####
 def berry_boost(pokemon, attack : Attack):
