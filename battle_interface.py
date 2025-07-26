@@ -5,12 +5,33 @@ import pokemon_datas as STATS
 import random
 from donnees import bcolors
 
+def can_terastallize(pokemon, fight, team_id):
+    """
+    Vérifie si un Pokémon peut téracristaliser.
+    """
+    # Vérifier si déjà téracristallisé
+    if pokemon.tera_activated:
+        return False, f"{pokemon.name} est déjà téracristallisé !"
+    
+    # Vérifier si l'équipe a déjà utilisé sa téracristalisation
+    if hasattr(fight, 'tera_used_team1') and hasattr(fight, 'tera_used_team2'):
+        if team_id == 1 and fight.tera_used_team1:
+            return False, "L'équipe 1 a déjà utilisé sa téracristalisation ce combat !"
+        if team_id == 2 and fight.tera_used_team2:
+            return False, "L'équipe 2 a déjà utilisé sa téracristalisation ce combat !"
+    
+    return True, ""
+
 def can_use_attack(pokemon, attack):
     """
     Vérifie si un Pokémon peut utiliser une attaque donnée.
     Retourne (True, "") si l'attaque peut être utilisée, 
     ou (False, "raison") si elle ne peut pas être utilisée.
     """
+    # Vérifier Heal Block : empêche l'utilisation d'attaques de soin
+    if getattr(pokemon, 'heal_blocked', False) and "heal" in attack.flags:
+        return False, f"{pokemon.name} ne peut pas utiliser {attack.name} car il est sous l'effet de Heal Block !"
+    
     # Vérifier Encore : force l'utilisation d'une attaque spécifique
     if pokemon.encored_turns > 0 and pokemon.encored_attack:
         if attack != pokemon.encored_attack:
@@ -40,6 +61,13 @@ def print_pokemon_stats(pokemon : pk.pokemon):
     print(f"Talent: {pokemon.talent}")
     print(f"Objet: {pokemon.item}")
     print(f"PV: {pokemon.current_hp}/{pokemon.max_hp}")
+    
+    # Afficher les types avec indication Tera
+    if pokemon.tera_activated:
+        print(f"Types: {', '.join(pokemon.types)} {bcolors.OKMAGENTA}(Tera actif: {pokemon.tera_type}) ✨{bcolors.ENDC}")
+    else:
+        print(f"Types: {', '.join(pokemon.types)} {bcolors.GRAY}(Tera: {pokemon.tera_type}){bcolors.ENDC}")
+    
     for stat in ["Attack", "Defense", "Sp. Atk", "Sp. Def", "Speed"]:
         print(f"{stat}: {pokemon.stats[stat]}")
     print(f"Modificateurs de stats: {pokemon.stats_modifier}")
@@ -94,7 +122,7 @@ def choose_uturn_switch_pokemon(fight, team_id):
     team = fight.team1 if team_id == 1 else fight.team2
     current_pokemon = fight.active1 if team_id == 1 else fight.active2
     
-    print(f"\n{bcolors.OKBLUE}Choisissez le Pokémon à faire entrer après U-turn :{bcolors.ENDC}")
+    print(f"\n{bcolors.OKBLUE}Choisissez le Pokémon à faire entrer :{bcolors.ENDC}")
     
     while True:
         available_pokemon = []
@@ -125,6 +153,10 @@ def choose_uturn_switch_pokemon(fight, team_id):
 
 def launch_battle(team1: list[pk.pokemon], team2: list[pk.pokemon]):
     fight = Fight(team1, team2)
+    
+    # Initialiser les variables de téracristalisation
+    fight.tera_used_team1 = False
+    fight.tera_used_team2 = False
     
     # Surcharger la méthode player_choice_switch pour permettre au joueur de choisir
     def player_choice_switch_override(team_id):
@@ -214,7 +246,27 @@ def launch_battle(team1: list[pk.pokemon], team2: list[pk.pokemon]):
                             print(f"{bcolors.OKRED}{reason}{bcolors.ENDC}")
                             continue  # Demander une autre attaque
                         
-                        act1 = (attacker, atk1)
+                        # Après avoir choisi une attaque valide, proposer la téracristalisation
+                        can_tera, tera_reason = can_terastallize(attacker, fight, 1)
+                        if can_tera:
+                            print(f"\n{bcolors.OKCYAN}Voulez-vous téracristaliser {attacker.name} avant d'attaquer ?")
+                            print(f"Type Tera : {attacker.tera_type}")
+                            print(f"Types actuels : {', '.join(attacker.types)}")
+                            print(f"{bcolors.ENDC}")
+                            tera_choice = input("Téracristaliser ? (o/n) : ").strip().lower()
+                            if tera_choice in ['o', 'oui', 'y', 'yes']:
+                                success = attacker.terastallize(attacker.tera_type)
+                                if success:
+                                    fight.tera_used_team1 = True
+                                    print(f"\n{bcolors.OKMAGENTA}✨ {attacker.name} téracristallise en type {attacker.tera_type} ! ✨{bcolors.ENDC}")
+                                    act1 = ("terastallize_attack", attacker.tera_type, attacker, atk1)
+                                else:
+                                    print(f"{bcolors.OKRED}Échec de la téracristalisation !{bcolors.ENDC}")
+                                    act1 = (attacker, atk1)
+                            else:
+                                act1 = (attacker, atk1)
+                        else:
+                            act1 = (attacker, atk1)
                         break
                     else:
                         print("Choix invalide.")
@@ -222,7 +274,7 @@ def launch_battle(team1: list[pk.pokemon], team2: list[pk.pokemon]):
                     continue  # En cas de retour, on retourne au menu principal
 
                 if 'act1' in locals():
-                    break  # Sortie de la boucle d'action principale
+                    break
 
             elif action1 == "2":
                 while True:
@@ -268,6 +320,18 @@ def launch_battle(team1: list[pk.pokemon], team2: list[pk.pokemon]):
         attacks2 = [attacker2.attack1, attacker2.attack2, attacker2.attack3, attacker2.attack4]
         valid_attacks = [atk for atk in attacks2 if atk is not None]
         
+        # L'IA peut téracristaliser de façon aléatoire (20% de chance si possible)
+        ai_tera_action = None
+        if random.random() < 0.2:  # 20% de chance
+            can_tera, _ = can_terastallize(attacker2, fight, 2)
+            if can_tera:
+                # L'IA utilise son type Tera prédéfini
+                success = attacker2.terastallize(attacker2.tera_type)
+                if success:
+                    fight.tera_used_team2 = True
+                    print(f"\n{bcolors.OKMAGENTA}✨ L'IA fait téracristaliser {attacker2.name} en type {attacker2.tera_type} ! ✨{bcolors.ENDC}")
+                    ai_tera_action = True  # Simplement marquer que l'IA a téracristallisé
+        
         if valid_attacks:
             # Vérifier si le Pokémon est en train de charger une attaque (priorité absolue)
             if attacker2.charging and attacker2.charging_attack:
@@ -291,6 +355,32 @@ def launch_battle(team1: list[pk.pokemon], team2: list[pk.pokemon]):
                 fight.player_attack(fight.active2, atk2, fight.active1)
                 # Incrémenter le tour après un switch + attaque
                 fight.next_turn()
+            elif isinstance(act1, tuple) and act1[0] == "terastallize_attack":
+                # Téracristalisation + Attaque : traiter comme une attaque normale
+                _, tera_type, pokemon, attack = act1
+                print(f"\n{bcolors.OKMAGENTA}{pokemon.name} téracristallise et attaque !{bcolors.ENDC}")
+                act1 = (pokemon, attack)
+                
+                if ai_tera_action:
+                    # Les deux téracristallisent ce tour
+                    print(f"\n{bcolors.OKMAGENTA}Les deux Pokémon téracristallisent en même temps !{bcolors.ENDC}")
+                
+                fight.resolve_turn(act1, act2)
+            elif isinstance(act1, tuple) and act1[0] == "terastallize":
+                # Téracristalisation pure (sans attaque) - ne devrait plus arriver
+                if ai_tera_action:
+                    # Les deux téracristallisent ce tour
+                    print(f"\n{bcolors.OKMAGENTA}Les deux Pokémon téracristallisent en même temps !{bcolors.ENDC}")
+                    fight.player_attack(fight.active2, atk2, fight.active1)
+                else:
+                    print(f"\n{fight.active2.name} attaque {fight.active1.name} téracristallisé !")
+                    fight.player_attack(fight.active2, atk2, fight.active1)
+                # Incrémenter le tour après téracristalisation + attaque adverse
+                fight.next_turn()
+            elif ai_tera_action:
+                # Seulement l'IA téracristallise
+                print(f"\n{bcolors.OKMAGENTA}L'IA téracristallise !{bcolors.ENDC}")
+                fight.resolve_turn(act1, act2)
             else:
                 fight.resolve_turn(act1, act2)
         else:
@@ -313,7 +403,8 @@ def import_pokemon(name):
 venusaur = import_pokemon("Venusaur")
 venusaur.talent = "Chlorophyll"
 venusaur.item = "Choice Band"  # Test Choice Band
-venusaur.attack1 = ATTACKES.HydroPump()
+venusaur.tera_type = "Fire"  # Type Tera personnalisé
+venusaur.attack1 = ATTACKES.TeraBlast()
 venusaur.attack2 = ATTACKES.LightScreen()
 venusaur.attack3 = ATTACKES.Spore()
 venusaur.attack4 = ATTACKES.RainDance()
@@ -321,33 +412,49 @@ venusaur.attack4 = ATTACKES.RainDance()
 duraludon = import_pokemon("Duraludon")
 duraludon.talent = "Light Metal"
 duraludon.item = "Eviolite"
+duraludon.tera_type = "Steel"  # Type Tera personnalisé
 duraludon.attack1 = ATTACKES.DragonPulse()
 duraludon.attack2 = ATTACKES.ElectroShot()
-duraludon.attack3 = ATTACKES.Protect()
+duraludon.attack3 = ATTACKES.TeraBlast()
 
 mew = import_pokemon("Mew")
 mew.talent = "Synchronize"
 mew.item = "Rocky Helmet"  # Test Rocky Helmet
+mew.tera_type = "Fairy"  # Type Tera personnalisé
 mew.attack1 = ATTACKES.HydroPump()
 mew.attack2 = ATTACKES.Taunt()
-mew.attack3 = ATTACKES.Encore()
+mew.attack3 = ATTACKES.TeraBlast()
 
 charizard = import_pokemon("Charizard")
 charizard.talent = "Drought"
 charizard.item = "Sitrus Berry"
+charizard.tera_type = "Dragon"  # Type Tera personnalisé
 charizard.attack1 = ATTACKES.Substitute()
 charizard.attack2 = ATTACKES.Thunderbolt()
-charizard.attack3 = ATTACKES.Taunt()
+charizard.attack3 = ATTACKES.TeraBlast()
+
+# Test Pokémon pour Roost
+pidgeot = import_pokemon("Pidgeot")
+pidgeot.talent = "Keen Eye"
+pidgeot.item = "Leftovers"
+pidgeot.tera_type = "Electric"  # Type Tera personnalisé
+pidgeot.attack1 = ATTACKES.Roost()
+pidgeot.attack2 = ATTACKES.Hurricane()
+pidgeot.attack3 = ATTACKES.TeraBlast()
 
 rillaboom = import_pokemon("Rillaboom")
 rillaboom.talent = "Grassy Surge"
-rillaboom.item = "Assault Vest"
+rillaboom.item = "Leftovers"  # Changé pour permettre les attaques de statut
+rillaboom.tera_type = "Fire"  # Type Tera personnalisé
 rillaboom.attack1 = ATTACKES.WoodHammer()
 rillaboom.attack2 = ATTACKES.UTurn()
+rillaboom.attack3 = ATTACKES.ShedTail()
+rillaboom.attack4 = ATTACKES.TeraBlast()
 
 garchomp = import_pokemon("Garchomp")
 garchomp.talent = "Rough Skin"
 garchomp.item = "Rocky Helmet"
+garchomp.tera_type = "Steel"  # Type Tera personnalisé
 garchomp.attack1 = ATTACKES.Earthquake()
 
-launch_battle([rillaboom, venusaur, duraludon], [garchomp])
+launch_battle([pidgeot, venusaur, duraludon, rillaboom], [garchomp])

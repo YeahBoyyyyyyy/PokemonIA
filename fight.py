@@ -13,7 +13,7 @@ class Fight():
         self.active1 = team1[0]  # Pokémon actuellement en combat
         self.active2 = team2[0]
 
-####### Effets de combats : Terrain, Météo, Murs #######
+####### Effets de combats : Terrain, Météo, Murs, Hazards #######
 
         ## Météo ##
         self.weather = {"current" : None, "previous" : None}  # Météo actuelle (par exemple : "Ensoleillé", "Pluvieux", etc.) sera un dictionnaire 
@@ -26,6 +26,10 @@ class Fight():
         self.field_turn_left = None  # Nombre de tours restants pour le terrain actuel, si il est actif
         # Peut être juste un entier vu que un seul terrain peut être actif à la fois
 
+        ## Hazards ##
+        self.hazards_team1 = {"Spikes" : 0, "Toxic Spikes" : 0, "Stealth Rock" : False, "Sticky Web" : False}  # Dangers actifs pour l'équipe 1
+        self.hazards_team2 = {"Spikes" : 0, "Toxic Spikes" : 0, "Stealth Rock" : False, "Sticky Web" : False}  # Dangers actifs pour l'équipe 2
+
         ## Murs de protection ##
         self.screen_team1 = []  # Écrans de protection actifs pour l'équipe 1
         self.screen_team2 = []  # Écrans de protection actifs pour l'équipe 2
@@ -33,6 +37,10 @@ class Fight():
         self.screen_turn_left_team2 = {}  # Nombre de tours restants pour les écrans de l'équipe 2
 
         self.turn = 0  # Compteur de tours pour suivre le nombre de tours écoulés dans le combat
+
+        ## Shed Tail substitute en attente ##
+        self.pending_substitute_team1 = 0  # Substitute en attente pour l'équipe 1
+        self.pending_substitute_team2 = 0  # Substitute en attente pour l'équipe 2
 
         """
         self.check_ability_weather(self.active1)
@@ -132,13 +140,17 @@ class Fight():
             case "Rain":
                 for pokemon in [self.active1, self.active2]:
                     # Si l'un des Pokémons a le talent "Rain Dish", il regagne des PV
-                    if pokemon.talent == "Rain Dish":
+                    if pokemon.talent == "Rain Dish" and not getattr(pokemon, 'heal_blocked', False):
                         heal_amount = int(pokemon.max_hp * 0.0625) # Régénération de 1/16 des PV max
                         self.damage_method(pokemon, -heal_amount)
+                    elif pokemon.talent == "Rain Dish" and getattr(pokemon, 'heal_blocked', False):
+                        print(f"{pokemon.name} ne peut pas bénéficier de Rain Dish à cause de Heal Block !")
                     # Si l'un des Pokémons a le talent "Dry Skin", il perd des PV
-                    if pokemon.talent == "Dry Skin":
+                    if pokemon.talent == "Dry Skin" and not getattr(pokemon, 'heal_blocked', False):
                         heal_amount = int(pokemon.max_hp * 0.125)
                         self.damage_method(pokemon, -heal_amount)  # Régénération de 1/8 des PV max
+                    elif pokemon.talent == "Dry Skin" and getattr(pokemon, 'heal_blocked', False):
+                        print(f"{pokemon.name} ne peut pas bénéficier de Dry Skin à cause de Heal Block !")
             case "Sunny":
                 for pokemon in [self.active1, self.active2]:
                     # Si l'un des Pokémons a le talent "Dry Skin", il perd des PV
@@ -220,9 +232,12 @@ class Fight():
         if "Grassy Terrain" == self.field:
             # Regénérer des PV pour tous les Pokémon (bypass substitute car la guérison affecte directement le Pokémon)
             for pokemon in [self.active1, self.active2]:
-                heal_amount = int(pokemon.max_hp * 0.0625)  # Régénération de 1/16 des PV max
-                pokemon.current_hp = min(pokemon.max_hp, pokemon.current_hp + heal_amount)
-                print(f"{pokemon.name} regagne {heal_amount} PV grâce au terrain herbeux !")
+                if not getattr(pokemon, 'heal_blocked', False):
+                    heal_amount = int(pokemon.max_hp * 0.0625)  # Régénération de 1/16 des PV max
+                    pokemon.current_hp = min(pokemon.max_hp, pokemon.current_hp + heal_amount)
+                    print(f"{pokemon.name} regagne {heal_amount} PV grâce au terrain herbeux !")
+                else:
+                    print(f"{pokemon.name} ne peut pas bénéficier du terrain herbeux à cause de Heal Block !")
 
 ###### Méthodes pour gérer les screens et la gravité #######
     def add_screen(self, effect, team_id):
@@ -314,7 +329,11 @@ class Fight():
     ## Printing methods pour debugger
     def print_fight_status(self):
         print(f"{bcolors.OKGREEN}Pokémon 1: {self.active1.name} (HP: {self.active1.current_hp}/{self.active1.max_hp})")
+        if self.active1.has_substitute():
+            print(f"   Clone: {self.active1.substitute_hp} PV")
         print(f"Pokémon 2: {self.active2.name} (HP: {self.active2.current_hp}/{self.active2.max_hp}){bcolors.ENDC}")
+        if self.active2.has_substitute():
+            print(f"   Clone: {self.active2.substitute_hp} PV")
         print(f"{bcolors.OKYELLOW}Météo actuelle: {self.weather['current']} pendant encore {self.weather_turn_left} tours" if self.weather['current'] else "Aucune météo active")
         print(f"Écrans équipe 1: {self.screen_team1 if self.screen_team1 else 'Aucun'}{bcolors.ENDC}")
         print(f"{bcolors.LIGHT_YELLOW}", end="")
@@ -388,6 +407,14 @@ class Fight():
                     print(f"L'effet d'Encore sur {p.name} se dissipe !")
                     p.encored_attack = None
             
+            # Restaurer le type Vol perdu par Roost à la fin du tour
+            if hasattr(p, 'lost_flying_from_roost') and p.lost_flying_from_roost:
+                if hasattr(p, 'original_types'):
+                    p.types = p.original_types.copy()  # Restaurer les types originaux
+                    delattr(p, 'original_types')  # Nettoyer l'attribut temporaire
+                p.lost_flying_from_roost = False
+                print(f"{p.name} récupère son type Vol !")
+            
     #def attack(pokemon : pokemon, attack : dict, target : pokemon, fight : Fight):
     def attack_power(self, user_pokemon : pokemon, attack : Attack, target_pokemon : pokemon, multiplier=1.0, talent_mod=None):
         """
@@ -422,13 +449,14 @@ class Fight():
         defender_team_id = self.get_team_id(target_pokemon)
         screen = screen_effect(attack, self, defender_team_id)  # Effet de l'écran de protection actif pour l'équipe du défenseur
         if talent_mod["type"] != None:
-            type_eff = type_effectiveness(talent_mod["type"], target_pokemon.types)
+            type_eff = type_effectiveness(talent_mod["type"], target_pokemon)
             attack_copy = attack.copy()
             attack_copy.type = talent_mod["type"]  # Changer le type de l'attaque si un talent modifie le type
             stab = is_stab(user_pokemon, attack_copy)  # Vérifier si l'attaque est STAB
         else:
-            type_eff = type_effectiveness(attack.type, target_pokemon.types)  # Calcul de l'efficacité du type
+            type_eff = type_effectiveness(attack.type, target_pokemon)  # Calcul de l'efficacité du type
             stab = is_stab(user_pokemon, attack)
+        
 
         if is_critical_hit(user_pokemon, attack, target_pokemon):
             print(f"{user_pokemon.name} porte un coup critique avec {attack.name} !")
@@ -502,7 +530,15 @@ class Fight():
                 self.active1.reset_stats_nd_status()  # Réinitialiser les stats et les effets de statut du Pokémon actif
                 self.active1 = self.team1[index]
                 self.active1.init_fight(self)  # Initialiser l'attribut fight
+                
+                # Appliquer le substitute de Shed Tail si en attente
+                if hasattr(self, 'pending_substitute_team1') and self.pending_substitute_team1 > 0:
+                    self.active1.substitute_hp = self.pending_substitute_team1
+                    print(f"{self.active1.name} hérite du clone avec {self.pending_substitute_team1} PV !")
+                    self.pending_substitute_team1 = 0  # Reset
+                
                 trigger_talent(self.active1, "on_entry", self)
+                on_entry_hazards(self.active1, self)
 
         elif team == 2:
             if self.team2[index].current_hp > 0:
@@ -510,7 +546,15 @@ class Fight():
                 self.active2.reset_stats_nd_status()  # Réinitialiser les stats et les effets de statut du Pokémon actif
                 self.active2 = self.team2[index]
                 self.active2.init_fight(self)  # Initialiser l'attribut fight
-                trigger_talent(self.active2, "on_entry", self)          
+
+                # Appliquer le substitut de Shed Tail si en attente
+                if hasattr(self, 'pending_substitute_team2') and self.pending_substitute_team2 > 0:
+                    self.active2.substitute_hp = self.pending_substitute_team2
+                    print(f"{self.active2.name} hérite du clone avec {self.pending_substitute_team2} PV !")
+                    self.pending_substitute_team2 = 0  # Reset
+                
+                trigger_talent(self.active2, "on_entry", self)
+                on_entry_hazards(self.active2, self)       
 
     def player_attack(self, attacker : pokemon, attack : Attack, defender : pokemon, defender_attack : Attack = None):
         """
@@ -630,6 +674,10 @@ class Fight():
         if charging_result != "attack":
             self.apply_secondary_effects(attacker, defender, attack, dmg if dmg else 0)
 
+        # Restaurer les propriétés originales des attaques modifiables (comme Tera Blast)
+        if hasattr(attack, 'restore_original_properties'):
+            attack.restore_original_properties()
+
         # Enregistrer la dernière attaque utilisée (pour Encore et autres effets)
         attacker.last_used_attack = attack
 
@@ -722,6 +770,10 @@ class Fight():
         :param multiplier: Multiplicateur de dégâts (provenant des talents défensifs)
         :param on_attack_mod: Modificateurs de talent pour l'attaque
         """
+        
+        # Appliquer les modifications spéciales d'attaque (comme Tera Blast)
+        if hasattr(attack, 'apply_before_damage'):
+            attack.apply_before_damage(attacker, defender, self)
 
         multiplier = trigger_talent(defender, "on_defense", attack, attacker, self)
         on_attack_mod = trigger_talent(attacker, "on_attack", attack, self)
@@ -911,9 +963,90 @@ class Fight():
         for p in [self.active1, self.active2]:
             self.apply_status_damage(p)  # Appliquer les dégâts liés aux statuts persistants
             trigger_item(p, "on_turn_end", self)  # Appliquer les effets des objets à la fin du tour
+            
+            # Gérer les statuts temporaires
+            self.manage_temporary_status(p)
 
         self.next_turn()
 
+    def check_magic_coat_reflection(self, attacker, defender, attack):
+        """
+        Vérifie si Magic Coat est actif et renvoie l'attaque si nécessaire.
+        Retourne True si l'attaque a été renvoyée, False sinon.
+        """
+        if (getattr(defender, 'magic_coat_active', False) and
+            attack.category == "Status" and 
+            "reflectable" in attack.flags):
+            
+            print(f"Le voile magique de {defender.name} renvoie {attack.name} à {attacker.name} !")
+            
+            # Vérifier si l'attaquant a une protection
+            has_protection = (
+                (hasattr(attacker, 'talent') and attacker.talent == "Magic Bounce") or
+                getattr(attacker, 'magic_coat_active', False)
+            )
+            
+            if has_protection:
+                print(f"Mais {attacker.name} est aussi protégé ! L'attaque échoue.")
+                return True
+            
+            # Renvoyer l'attaque vers l'attaquant
+            target = attacker if attack.target == "Foe" else defender
+            
+            if hasattr(attack, 'apply_effect'):
+                try:
+                    attack.apply_effect(defender, target, self)
+                    print(f"{attack.name} a été renvoyée avec succès !")
+                except Exception as e:
+                    print(f"Erreur lors du renvoi de l'attaque : {e}")
+            
+            return True  # L'attaque a été renvoyée
+        
+        return False  # Pas de renvoi
+
+    def manage_temporary_status(self, pokemon):
+        """
+        Gère les statuts temporaires comme Magic Coat, Focus Energy, etc.
+        """
+        # Magic Coat (dure 1 tour)
+        if hasattr(pokemon, 'magic_coat_active') and pokemon.magic_coat_active:
+            if hasattr(pokemon, 'magic_coat_turns'):
+                pokemon.magic_coat_turns -= 1
+                if pokemon.magic_coat_turns <= 0:
+                    pokemon.magic_coat_active = False
+                    delattr(pokemon, 'magic_coat_turns')
+                    print(f"Le voile magique de {pokemon.name} disparaît.")
+        
+        # Ajouter d'autres statuts temporaires ici si nécessaire...
+
+
+    def manage_temporary_status(self, pokemon):
+        """
+        Gère les statuts temporaires comme Magic Coat qui durent un certain nombre de tours.
+        """
+        # Gérer Magic Coat
+        if getattr(pokemon, 'magic_coat_active', False):
+            magic_coat_turns = getattr(pokemon, 'magic_coat_turns', 0)
+            if magic_coat_turns <= 1:
+                pokemon.magic_coat_active = False
+                pokemon.magic_coat_turns = 0
+                print(f"L'effet du voile magique de {pokemon.name} se dissipe !")
+            else:
+                pokemon.magic_coat_turns -= 1
+        
+        # Gérer Heal Block (Psychic Noise)
+        if getattr(pokemon, 'heal_blocked', False):
+            heal_blocked_turns = getattr(pokemon, 'heal_blocked_turns', 0)
+            if heal_blocked_turns <= 1:
+                pokemon.heal_blocked = False
+                pokemon.heal_blocked_turns = 0
+                print(f"{pokemon.name} peut à nouveau se soigner !")
+            else:
+                pokemon.heal_blocked_turns -= 1
+                print(f"{pokemon.name} ne peut toujours pas se soigner ({pokemon.heal_blocked_turns} tours restants)")
+        
+        # Ici on peut ajouter d'autres statuts temporaires si nécessaire
+        # ex: Focus Energy, Taunt, etc.
 
     ### Savoir la probabilité de toucher une attaque ###
     def calculate_hit_chance(self, attacker, defender, attack, talent_mod):
@@ -930,15 +1063,21 @@ class Fight():
         if talent_mod is None:
             talent_mod = {"accuracy": 1.0, "power": 1.0, "attack": 1.0, "type": None}
 
+        # Vérifier les talents qui garantissent la précision (comme No Guard)
         if talent_mod["accuracy"] == True:
             return True 
-        else:
-            if hasattr(attack, 'accuracy'):
-                base_accuracy = attack.accuracy / 100.0 * talent_mod["accuracy"]
-            else:
-                base_accuracy = attack.base_accuracy / 100.0
-            effective_accuracy = base_accuracy * attacker.accuracy / defender.evasion
-            return random.random() <= effective_accuracy
+        
+        # Utiliser la précision effective de l'attaque (conditions météo, etc.)
+        effective_accuracy = attack.get_effective_accuracy(attacker, defender, self) if hasattr(attack, 'get_effective_accuracy') else attack.accuracy
+        
+        # Si l'attaque garantit la précision dans certaines conditions
+        if effective_accuracy == True:
+            return True
+        
+        # Calcul normal de précision
+        base_accuracy = effective_accuracy / 100.0 * talent_mod["accuracy"]
+        final_accuracy = base_accuracy * attacker.accuracy / defender.evasion
+        return random.random() <= final_accuracy
     
 #### appliquer les degats des statuts ####
     def apply_status_damage(self, pokemon):
@@ -1034,7 +1173,20 @@ class Fight():
 # Utilisées dans la méthode attack_power de la classe Fight.
 #
 
-def type_effectiveness(attack_type, target_types):
+def type_effectiveness(attack_type, target):
+    """
+    Calcule l'efficacité du type en tenant compte de la Téracristalisation.
+    
+    :param attack_type: Type de l'attaque
+    :param target: Pokémon cible (instance, pas liste de types)
+    :return: Multiplicateur d'efficacité
+    """
+    # Utiliser les types effectifs pour la défense (Tera ou originaux)
+    if hasattr(target, 'get_effective_types_for_defense'):
+        target_types = target.get_effective_types_for_defense()
+    else:
+        target_types = target.types
+        
     modifier = 1.0
     for t in target_types:
         modifier *= donnees.type_chart[donnees.POKEMON_TYPES_ID[attack_type]][donnees.POKEMON_TYPES_ID[t]]
@@ -1042,10 +1194,10 @@ def type_effectiveness(attack_type, target_types):
 
 #### Gerer le STAB ####
 def is_stab(pokemon : pokemon, attack : Attack):
-    if attack.type in pokemon.types:
-        return 1.5
-    else:
-        return 1.0
+    """
+    Calcule le STAB (Same Type Attack Bonus) en tenant compte de la Téracristalisation.
+    """
+    return pokemon.is_tera_stab(attack.type)
 
 #### Regarder si c'est un coup critique ####
 import random
@@ -1225,3 +1377,68 @@ def protect_update(pokemon : pokemon, attack : Attack):
     if not "protection" in attack.flags:
         pokemon.protect = False
         pokemon.protect_turns = 0
+
+def on_entry_hazards(pokemon, fight):
+    """
+    Applique les effets des pièges d'entrée (Spikes, Stealth Rock, etc.) sur un Pokémon à son entrée dans le combat.
+    
+    :param pokemon: Instance de la classe Pokemon qui entre dans le combat.
+    :param fight: Instance de la classe Fight contenant les informations sur les pièges d'entrée.
+    """
+    team = fight.get_team_id(pokemon)
+    # IMPORTANT : Les hazards affectent l'équipe OPPOSÉE à celle qui les a posés
+    match team:
+        case 1:
+            hazards = fight.hazards_team1  # L'équipe 1 subit les hazards posés par l'équipe 2
+        case 2:
+            hazards = fight.hazards_team2  # L'équipe 2 subit les hazards posés par l'équipe 1
+        case _:
+            raise ValueError("Invalid team ID")
+    
+    if pokemon.has_substitute():
+        print(f"{pokemon.name} a un clone qui bloque les pièges d'entrée !")
+        return
+    
+    if pokemon.item == "Heavy-Duty Boots":
+        print(f"{pokemon.name} porte des Heavy-Duty Boots et ignore les pièges d'entrée !")
+        return
+
+    # Vérifier les pièges d'entrée
+    if hazards["Spikes"] > 0 and "Flying" not in pokemon.types and pokemon.talent != "Levitate":
+        damage = int(pokemon.max_hp * 0.0625 * hazards["Spikes"])  # 1/16 par couche de Spikes
+        print(f"{pokemon.name} subit {damage} points de dégâts à cause des Spikes !")
+        fight.damage_method(pokemon, damage)
+
+    if hazards["Stealth Rock"]:
+        rock_damage = int(pokemon.max_hp * 0.125)  # 1/8 des PV max
+        type_eff = type_effectiveness("Rock", pokemon)
+        total_damage = int(rock_damage * type_eff)
+        print(f"{pokemon.name} subit {total_damage} points de dégâts à cause des Piège de Roc !")
+        fight.damage_method(pokemon, total_damage)
+
+    if hazards["Toxic Spikes"] > 0:
+        if "Poison" in pokemon.types or "Steel" in pokemon.types:
+            if "Poison" in pokemon.types:
+                hazards["Toxic Spikes"] = 0  # Neutralisé par les Pokémon Poison
+                print(f"{pokemon.name} absorbe les Toxic Spikes !")
+            else:
+                print(f"{pokemon.name} est immunisé contre les Toxic Spikes !")
+        elif "Flying" in pokemon.types or pokemon.talent == "Levitate":
+            pass  # Ignoré par Flying et Levitate
+        else:
+            if hazards["Toxic Spikes"] == 1:
+                pokemon.apply_status("poison")
+                print(f"{pokemon.name} est empoisonné par les Toxic Spikes !")
+            elif hazards["Toxic Spikes"] >= 2:
+                pokemon.apply_status("badly_poisoned")
+                print(f"{pokemon.name} est gravement empoisonné par les Toxic Spikes !")
+    
+    if hazards["Sticky Web"]:
+        if pokemon.talent != "Levitate" and "Flying" not in pokemon.types:
+            if pokemon.stats_modifier[4] > -6:  # Vérifier qu'on peut encore réduire (Speed est l'index 4)
+                pokemon.stats_modifier[4] -= 1  # Réduit la vitesse de 1 stage
+                print(f"{pokemon.name} est ralenti par Sticky Web ! Sa vitesse est réduite !")
+            else:
+                print(f"La vitesse de {pokemon.name} ne peut pas être réduite davantage !")
+        else:
+            print(f"{pokemon.name} évite Sticky Web grâce à son type/talent !")

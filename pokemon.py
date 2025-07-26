@@ -115,6 +115,10 @@ class pokemon():
         self.sturdy_activated = False  # Pour le talent Sturdy (Fermeté)
         self.weight = poke.get('weight', 100.0)  # Poids du Pokémon en kg depuis les données
 
+        # Téracristalisation
+        self.tera_type = random.choice(self.types)  # Type de la Téracristalisation
+        self.tera_activated = False  # Indique si le Pokémon a été Téracristalisé
+
     def has_substitute(self):
         """Retourne True si le Pokémon a un clone actif"""
         return self.substitute_hp > 0
@@ -122,6 +126,73 @@ class pokemon():
     def is_taunted(self):
         """Retourne True si le Pokémon est sous l'effet de Taunt"""
         return self.taunted_turns > 0
+
+    def terastallize(self, tera_type):
+        """
+        Téracristallise le Pokémon avec le type spécifié.
+        
+        :param tera_type: Le type Tera (ex: "Fire", "Water", "Stellar", etc.)
+        """
+        if self.tera_activated:
+            print(f"{self.name} est déjà téracristallisé !")
+            return False
+            
+        self.tera_type = tera_type
+        self.tera_activated = True
+        self.original_types = self.types.copy()  # Sauvegarder les types originaux
+        
+        # Le type Stellar garde tous les types et ajoute des bonus spéciaux
+        if tera_type != "Stellar":
+            self.types = [tera_type]  # Remplacer par le type Tera uniquement
+        
+        print(f"{self.name} téracristallise en type {tera_type} !")
+        return True
+
+    def get_effective_types_for_defense(self):
+        """
+        Retourne les types effectifs pour le calcul de l'efficacité des attaques reçues.
+        """
+        if self.tera_activated and self.tera_type != "Stellar":
+            return [self.tera_type]
+        return self.types
+
+    def is_tera_stab(self, attack_type):
+        """
+        Détermine si une attaque bénéficie du STAB Tera.
+        
+        :param attack_type: Type de l'attaque
+        :return: Multiplicateur STAB (1.0, 1.5, ou 2.0)
+        """
+        if not self.tera_activated:
+            # STAB normal si pas téracristallisé
+            return 1.5 if attack_type in self.types else 1.0
+            
+        if self.tera_type == "Stellar":
+            # Type Stellar : STAB 2.0x pour tous les types une fois chacun
+            if hasattr(self, '_stellar_used_types'):
+                if attack_type in self._stellar_used_types:
+                    return 1.5 if attack_type in self.original_types else 1.0
+            else:
+                self._stellar_used_types = set()
+            
+            if attack_type not in self._stellar_used_types:
+                self._stellar_used_types.add(attack_type)
+                return 2.0
+                
+            return 1.5 if attack_type in self.original_types else 1.0
+        else:
+            # Type Tera normal
+            if attack_type == self.tera_type:
+                # Si le type Tera correspond à un type original : 2.0x
+                if attack_type in self.original_types:
+                    return 2.0
+                # Sinon : 1.5x
+                return 1.5
+            # STAB adaptatif : garde 1.5x sur les types originaux
+            elif attack_type in self.original_types:
+                return 1.5
+            
+            return 1.0
 
     def actualize_stats(self):
         self.stats = {
@@ -198,6 +269,13 @@ class pokemon():
         self.taunted_turns = 0
         self.last_used_attack = None
         self.disabled_attacks = None  # Réinitialise les attaques désactivées
+        
+        # Nettoyer les effets de Roost lors du changement
+        if hasattr(self, 'lost_flying_from_roost') and self.lost_flying_from_roost:
+            if hasattr(self, 'original_types'):
+                self.types = self.original_types.copy()  # Restaurer les types originaux
+                delattr(self, 'original_types')
+            self.lost_flying_from_roost = False
         self.disabled_turns = 0  # Réinitialise le nombre de tours restants
         self.leech_seeded_by = None
         self.substitute_hp = 0

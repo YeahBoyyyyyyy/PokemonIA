@@ -78,9 +78,20 @@ class Attack:
         :param user: Le Pokémon qui lance l'attaque.
         :param target: Le Pokémon ciblé par l'attaque.
         :param fight: L'instance de combat en cours.
-        :return: le multiplicateur de boost.
+        :return: Le multiplicateur de puissance (par défaut 1.0).
         """
         return 1.0  # Par défaut, pas de boost
+    
+    def get_effective_accuracy(self, user, target, fight):
+        """
+        Calcule la précision effective de l'attaque en tenant compte des conditions.
+        
+        :param user: Le Pokémon qui lance l'attaque.
+        :param target: Le Pokémon ciblé par l'attaque.
+        :param fight: L'instance de combat en cours.
+        :return: La précision effective (peut être True pour une précision garantie).
+        """
+        return self.accuracy  # Par défaut, retourne la précision de base
         
 
 class FlameThrower(Attack):
@@ -217,7 +228,7 @@ class RainDance(Attack):
             type_="Water",
             category="Status",
             power=0,
-            accuracy=100,
+            accuracy=True,
             priority=0,
             pp=5,
             flags=[],
@@ -235,7 +246,7 @@ class Recover(Attack):
             type_="Normal",
             category="Status",
             power=0,
-            accuracy=100,
+            accuracy=True,
             priority=0,
             pp=10,
             flags=["heal"],
@@ -243,6 +254,11 @@ class Recover(Attack):
         )
 
     def apply_effect(self, user, target, fight):
+        # Vérifier si l'utilisateur est sous l'effet de Heal Block
+        if getattr(user, 'heal_blocked', False):
+            print(f"{user.name} ne peut pas utiliser {self.name} car il est sous l'effet de Heal Block !")
+            return
+            
         heal_amount = user.max_hp // 2
         user.current_hp = min(user.max_hp, user.current_hp + heal_amount)
         print(f"{user.name} récupère {heal_amount} PV grâce à Recover.")
@@ -344,7 +360,10 @@ class Spore(Attack):
         )
 
     def apply_effect(self, user, target, fight):
-        if "Grass" in target.types:
+        # Utiliser les types effectifs pour la défense (incluant Tera)
+        effective_types = target.get_effective_types_for_defense()
+        
+        if "Grass" in effective_types:
             print(f"{target.name} est de type Plante : Spore échoue.")
             return
         if target.status is None:
@@ -452,6 +471,53 @@ class UTurn(Attack):
         user.switch_reason = "U-Turn"
         print(f"{user.name} doit revenir après U-turn !")
 
+class FlipTurn(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Flip Turn",
+            type_="Water",
+            category="Physical",
+            power=60,
+            accuracy=100,
+            priority=0,
+            pp=20,
+            flags=["contact", "protect", "mirror"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        Flip Turn force le changement de Pokémon après l'attaque.
+        Cela ne se produit que si :
+        1. L'utilisateur survit à l'attaque
+        2. Il y a un autre Pokémon disponible dans l'équipe
+        3. L'utilisateur n'est pas piégé (par Arena Trap, Shadow Tag, etc.)
+        """
+        # Vérifier si l'utilisateur est encore en vie
+        if user.current_hp <= 0:
+            print(f"{user.name} est K.O. et ne peut pas utiliser Flip Turn pour changer !")
+            return
+        
+        # Déterminer quelle équipe possède l'utilisateur
+        team_id = fight.get_team_id(user)
+        if team_id is None:
+            return
+            
+        team = fight.team1 if team_id == 1 else fight.team2
+        
+        # Vérifier s'il y a d'autres Pokémon disponibles
+        available_pokemon = [p for p in team if p.current_hp > 0 and p != user]
+        
+        if not available_pokemon:
+            print(f"{user.name} ne peut pas changer car il n'y a pas d'autre Pokémon disponible !")
+            return
+        
+        # Marquer que le Pokémon doit changer après l'attaque
+        user.must_switch_after_attack = True
+        user.switch_reason = "Flip Turn"
+        print(f"{user.name} doit revenir après Flip Turn !")
+
+
 class WillOWisp(Attack):
     def __init__(self):
         super().__init__(
@@ -486,7 +552,10 @@ class Toxic(Attack):
         )
 
     def apply_effect(self, user, target, fight):
-        if target.status is None and "Poison" not in target.types:
+        # Utiliser les types effectifs pour la défense (incluant Tera)
+        effective_types = target.get_effective_types_for_defense()
+        
+        if target.status is None and "Poison" not in effective_types and "Steel" not in effective_types:
             target.apply_status("toxic")
             print(f"{target.name} est empoisonné !")
 
@@ -558,7 +627,7 @@ class LightScreen(Attack):
             type_="Psychic",
             category="Status",
             power=0,
-            accuracy=100,
+            accuracy=True,
             priority=0,
             pp=20,
             flags=[],
@@ -580,7 +649,7 @@ class AuroraVeil(Attack):
             type_="Ice",
             category="Status",
             power=0,
-            accuracy=100,
+            accuracy=True,
             priority=0,
             pp=20,
             flags=[],
@@ -600,7 +669,7 @@ class SwordsDance(Attack):
             type_="Normal",
             category="Status",
             power=0,
-            accuracy=100,
+            accuracy=True,
             priority=0,
             pp=20,
             flags=[],
@@ -620,7 +689,7 @@ class CalmMind(Attack):
             type_="Psychic",
             category="Status",
             power=0,
-            accuracy=100,
+            accuracy=True,
             priority=0,
             pp=20,
             flags=[],
@@ -640,7 +709,7 @@ class BulkUp(Attack):
             type_="Fighting",
             category="Status",
             power=0,
-            accuracy=100,
+            accuracy=True,
             priority=0,
             pp=20,
             flags=[],
@@ -820,68 +889,6 @@ class SolarBeam(Attack):
             user.charging_attack = None
             return "attack"  # Indique que l'attaque est exécutée
 
-class SkyAttack(Attack):
-    def __init__(self):
-        super().__init__(
-            name="Sky Attack",
-            type_="Flying",
-            category="Physical",
-            power=140,
-            accuracy=90,
-            priority=0,
-            pp=5,
-            flags=["protect", "mirror", "charge"],
-            target="Foe"
-        )
-        self.critical_chance = 12.5  # Taux de critique élevé
-    
-    def apply_effect(self, user, target, fight):
-        # Au premier tour : se charge
-        if not user.charging or user.charging_attack != self:
-            user.charging = True
-            user.charging_attack = self
-            print(f"{user.name} s'élève haut dans le ciel !")
-            return "charging"
-        else:
-            # Au deuxième tour : attaque avec chance de flinch
-            user.charging = False
-            user.charging_attack = None
-            if random.randint(1, 100) <= 30:
-                target.apply_status("flinch")
-                print(f"{target.name} est flinché par l'attaque surprise !")
-            return "attack"
-
-class Bounce(Attack):
-    def __init__(self):
-        super().__init__(
-            name="Bounce",
-            type_="Flying",
-            category="Physical",
-            power=85,
-            accuracy=85,
-            priority=0,
-            pp=5,
-            flags=["contact", "protect", "mirror", "charge"],
-            target="Foe"
-        )
-    
-    def apply_effect(self, user, target, fight):
-        # Au premier tour : s'envole
-        if not user.charging or user.charging_attack != self:
-            user.charging = True
-            user.charging_attack = self
-            print(f"{user.name} s'envole dans les airs !")
-            return "charging"
-        else:
-            # Au deuxième tour : attaque avec chance de paralyser
-            user.charging = False
-            user.charging_attack = None
-            if random.randint(1, 100) <= 30:
-                if target.status is None:
-                    target.apply_status("paralyzed")
-                    print(f"{target.name} est paralysé par l'impact !")
-            return "attack"
-
 class Dig(Attack):
     def __init__(self):
         super().__init__(
@@ -936,7 +943,7 @@ class Encore(Attack):
             type_="Normal",
             category="Status",
             power=0,
-            accuracy=100,
+            accuracy=True,
             priority=0,
             pp=5,
             flags=["protect", "mirror"],  # Peut être reflété par Magic Coat
@@ -981,7 +988,7 @@ class Substitute(Attack):
             type_="Normal",
             category="Status",
             power=0,
-            accuracy=100,
+            accuracy=True,
             priority=0,
             pp=10,
             flags=[],
@@ -1026,7 +1033,7 @@ class Roost(Attack):
             type_="Flying",
             category="Status",
             power=0,
-            accuracy=100,
+            accuracy=True,
             priority=0,
             pp=10,
             flags=["heal"],
@@ -1035,10 +1042,29 @@ class Roost(Attack):
 
         ######## FINIR ########
     def apply_effect(self, user, target, fight):
+        # Vérifier si l'utilisateur est sous l'effet de Heal Block
+        if getattr(user, 'heal_blocked', False):
+            print(f"{user.name} ne peut pas utiliser {self.name} car il est sous l'effet de Heal Block !")
+            return
+            
+        # Soigner 50% des PV max
         heal_amount = user.max_hp // 2
         user.current_hp = min(user.max_hp, user.current_hp + heal_amount)
-        user.types.remove("Flying")  # Perd le type Vol pour ce tour
-        print(f"{user.name} se repose et récupère {heal_amount} PV ! Il perd temporairement son type Vol.")
+        
+        # Gérer la perte temporaire du type Vol
+        if "Flying" in user.types:
+            # Marquer que le Pokémon a perdu son type Vol pour ce tour
+            user.lost_flying_from_roost = True
+            user.original_types = user.types.copy()  # Sauvegarder les types originaux
+            user.types = [t for t in user.types if t != "Flying"]  # Retirer temporairement Flying
+            
+            # Si le Pokémon n'a plus de type après avoir retiré Flying, il devient Normal
+            if len(user.types) == 0:
+                user.types = ["Normal"]
+            
+            print(f"{user.name} se repose et récupère {heal_amount} PV ! Il perd temporairement son type Vol.")
+        else:
+            print(f"{user.name} se repose et récupère {heal_amount} PV !")
 
 class LeafBlade(Attack):
     def __init__(self):
@@ -1109,7 +1135,7 @@ class Taunt(Attack):
             type_="Dark",
             category="Status",
             power=0,
-            accuracy=100,
+            accuracy=True,
             priority=0,
             pp=20,
             flags=["protect"],
@@ -1147,7 +1173,7 @@ class PerishSong(Attack):
             type_="Normal",
             category="Status",
             power=0,
-            accuracy=100,
+            accuracy=True,
             priority=0,
             pp=5,
             flags=["sound"],
@@ -1164,7 +1190,7 @@ class Trick(Attack):
             type_="Psychic",
             category="Status",
             power=0,
-            accuracy=100,
+            accuracy=True,
             priority=0,
             pp=10,
             flags=["protect", "mirror"],
@@ -1178,3 +1204,660 @@ class Trick(Attack):
         target.item = user_item
         user.item = target_item
 
+class Hurricane(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Hurricane",
+            type_="Flying",
+            category="Special",
+            power=110,
+            accuracy=70,
+            priority=0,
+            pp=10,
+            flags=["protect", "mirror"],
+            target="Foe"
+        )
+
+    def get_effective_accuracy(self, user, target, fight):
+        """Hurricane ne peut pas rater sous la pluie."""
+        if fight and fight.weather.get("current") == "Rain":
+            return True  # Précision garantie sous la pluie
+        return self.accuracy  # Précision normale (70%) sinon
+
+    def apply_effect(self, user, target, fight):
+        if random.random() < 0.3:
+            target.apply_status("confused")
+            print(f"{target.name} est confus !")
+
+class Thunder(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Thunder",
+            type_="Electric",
+            category="Special",
+            power=110,
+            accuracy=70,
+            priority=0,
+            pp=10,
+            flags=["protect", "mirror"],
+            target="Foe"
+        )
+
+    def get_effective_accuracy(self, user, target, fight):
+        """Thunder ne peut pas rater sous la pluie, précision réduite au soleil."""
+        if fight and fight.weather.get("current") == "Rain":
+            return True  # Précision garantie sous la pluie
+        elif fight and fight.weather.get("current") == "Sunny":
+            return 50  # Précision réduite au soleil
+        return self.accuracy  # Précision normale (70%) sinon
+
+    def apply_effect(self, user, target, fight):
+        if random.random() < 0.3:
+            target.apply_status("paralyzed")
+            print(f"{target.name} est paralysé !")
+
+class Blizzard(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Blizzard",
+            type_="Ice",
+            category="Special",
+            power=110,
+            accuracy=70,
+            priority=0,
+            pp=5,
+            flags=["protect", "mirror"],
+            target="All Foes"
+        )
+
+    def get_effective_accuracy(self, user, target, fight):
+        """Blizzard ne peut pas rater pendant la grêle."""
+        if fight and fight.weather.get("current") in ["Hail", "Snow"]:
+            return True  # Précision garantie pendant la grêle/neige
+        return self.accuracy  # Précision normale (70%) sinon
+
+    def apply_effect(self, user, target, fight):
+        if random.random() < 0.1:
+            target.apply_status("frozen")
+            print(f"{target.name} est gelé !")
+
+class Aerial_Ace(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Aerial Ace",
+            type_="Flying",
+            category="Physical",
+            power=60,
+            accuracy=100,  # Ne rate jamais
+            priority=0,
+            pp=20,
+            flags=["contact", "protect", "mirror"],
+            target="Foe"
+        )
+
+    def get_effective_accuracy(self, user, target, fight):
+        """Aerial Ace ne peut jamais rater."""
+        return True
+
+class Shock_Wave(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Shock Wave",
+            type_="Electric",
+            category="Special",
+            power=60,
+            accuracy=100,  # Ne rate jamais
+            priority=0,
+            pp=20,
+            flags=["protect", "mirror"],
+            target="Foe"
+        )
+
+    def get_effective_accuracy(self, user, target, fight):
+        """Shock Wave ne peut jamais rater."""
+        return True
+
+class Dynamic_Punch(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Dynamic Punch",
+            type_="Fighting",
+            category="Physical",
+            power=100,
+            accuracy=50,  # Très faible précision
+            priority=0,
+            pp=5,
+            flags=["contact", "protect", "mirror", "punch"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        # 100% de chance de rendre confus si l'attaque touche
+        target.apply_status("confused")
+        print(f"{target.name} est confus à cause de Dynamic Punch !")
+
+class TeraBlast(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Tera Blast",
+            type_="Normal",  # Type par défaut, sera modifié selon le Tera Type
+            category="Special",  # Catégorie par défaut, sera modifiée selon les stats
+            power=80,
+            accuracy=100,
+            priority=0,
+            pp=5,
+            flags=["protect", "mirror"],
+            target="Foe"
+        )
+
+    def get_effective_type(self, user, target, fight):
+        """
+        Détermine le type effectif de Tera Blast.
+        
+        :param user: Le Pokémon qui lance l'attaque.
+        :param target: Le Pokémon ciblé.
+        :param fight: L'instance de combat.
+        :return: Le type effectif de l'attaque.
+        """
+        if user.tera_activated and user.tera_type:
+            # Type Stellar spécial : Tera Blast devient le premier type du Pokémon
+            if user.tera_type == "Stellar":
+                return user.original_types[0] if hasattr(user, 'original_types') and user.original_types else user.types[0]
+            return user.tera_type
+        return "Normal"
+
+    def get_effective_category(self, user, target, fight):
+        """
+        Détermine la catégorie effective de Tera Blast.
+        
+        :param user: Le Pokémon qui lance l'attaque.
+        :param target: Le Pokémon ciblé.
+        :param fight: L'instance de combat.
+        :return: La catégorie effective ("Physical" ou "Special").
+        """
+        # Tera Blast devient Physique si l'Attaque > Attaque Spéciale
+        if user.stats["Attack"] > user.stats["Sp. Atk"]:
+            return "Physical"
+        return "Special"
+
+    def apply_before_damage(self, user, target, fight):
+        """
+        Applique les modifications de type et catégorie avant le calcul des dégâts.
+        """
+        # Sauvegarder les valeurs originales si pas déjà fait
+        if not hasattr(self, '_original_type'):
+            self._original_type = self.type
+        if not hasattr(self, '_original_category'):
+            self._original_category = self.category
+        
+        # Modifier le type selon le Tera Type
+        new_type = self.get_effective_type(user, target, fight)
+        if new_type != self.type:
+            self.type = new_type
+            print(f"Tera Blast devient de type {self.type} !")
+        
+        # Modifier la catégorie selon les stats
+        new_category = self.get_effective_category(user, target, fight)
+        if new_category != self.category:
+            self.category = new_category
+            print(f"Tera Blast devient une attaque {self.category.lower()} !")
+    
+    def restore_original_properties(self):
+        """
+        Restaure les propriétés originales de l'attaque après utilisation.
+        """
+        if hasattr(self, '_original_type'):
+            self.type = self._original_type
+        if hasattr(self, '_original_category'):
+            self.category = self._original_category
+    
+    def apply_effect(self, user, target, fight):
+        # Appliquer les modifications avant les dégâts
+        self.apply_before_damage(user, target, fight)
+        # Pas d'effet secondaire pour Tera Blast
+
+class ShedTail(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Shed Tail",
+            type_="Normal",
+            category="Status",
+            power=0,
+            accuracy=True,
+            priority=0,
+            pp=10,
+            flags=["protect", "mirror"],
+            target="User"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        Shed Tail crée un substitute (clone) et force le changement de Pokémon.
+        L'utilisateur sacrifie 1/4 de ses PV max pour créer le substitute.
+        Le substitute sera transféré au Pokémon qui entre.
+        """
+        # Vérifier si l'utilisateur a assez de PV
+        if user.current_hp <= user.max_hp // 4:
+            print(f"{user.name} n'a pas assez de PV pour utiliser Shed Tail !")
+            return
+        
+        # Vérifier si le Pokémon a déjà un substitute
+        if user.has_substitute():
+            print(f"{user.name} a déjà un clone !")
+            return
+        
+        # Créer le substitute (même mécanique que Substitute)
+        substitute_hp = user.max_hp // 4
+        fight.damage_method(user, substitute_hp, bypass_substitute=True)  # Le Pokémon sacrifie 1/4 de ses PV
+        
+        # Stocker le substitute pour le transfert (attribut temporaire sur fight)
+        team_id = fight.get_team_id(user)
+        if team_id == 1:
+            fight.pending_substitute_team1 = substitute_hp
+        else:
+            fight.pending_substitute_team2 = substitute_hp
+        
+        print(f"{user.name} crée un clone avec {substitute_hp} PV qui sera transféré !")
+        
+        # Déterminer quelle équipe possède l'utilisateur
+        if team_id is None:
+            return
+            
+        team = fight.team1 if team_id == 1 else fight.team2
+        
+        # Vérifier s'il y a d'autres Pokémon disponibles
+        available_pokemon = [p for p in team if p.current_hp > 0 and p != user]
+        
+        if not available_pokemon:
+            print(f"{user.name} ne peut pas changer car il n'y a pas d'autre Pokémon disponible !")
+            return
+        
+        # Marquer que l'utilisateur doit changer après l'attaque
+        user.must_switch_after_attack = True
+        user.switch_reason = "Shed Tail"
+        print(f"{user.name} doit revenir après avoir utilisé Shed Tail !")
+
+class Spikes(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Spikes",
+            type_="Ground",
+            category="Status",
+            power=0,
+            accuracy=True,
+            priority=0,
+            pp=20,
+            flags=["protect", "reflectable"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        Pose des piques qui blessent les Pokémon ennemis à leur entrée.
+        Peut être posé jusqu'à 3 fois pour augmenter les dégâts.
+        """
+        # Déterminer l'équipe adverse
+        user_team_id = fight.get_team_id(user)
+        opponent_hazards = fight.hazards_team2 if user_team_id == 1 else fight.hazards_team1
+        
+        if opponent_hazards["Spikes"] < 3:
+            opponent_hazards["Spikes"] += 1
+            layers = opponent_hazards["Spikes"]
+            print(f"{user.name} pose des Spikes ! (Couche {layers}/3)")
+        else:
+            print(f"Il y a déjà le maximum de Spikes sur le terrain !")
+
+class StealthRock(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Stealth Rock",
+            type_="Rock",
+            category="Status",
+            power=0,
+            accuracy=True,
+            priority=0,
+            pp=20,
+            flags=["protect", "reflectable"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        Pose des pierres pointues flottantes qui blessent les Pokémon ennemis à leur entrée.
+        Efficacité basée sur le type Rock.
+        """
+        # Déterminer l'équipe adverse
+        user_team_id = fight.get_team_id(user)
+        opponent_hazards = fight.hazards_team2 if user_team_id == 1 else fight.hazards_team1
+        
+        if not opponent_hazards["Stealth Rock"]:
+            opponent_hazards["Stealth Rock"] = True
+            print(f"{user.name} pose des Piège-de-Roc flottants !")
+        else:
+            print(f"Il y a déjà des Piège-de-Roc sur le terrain !")
+
+class ToxicSpikes(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Toxic Spikes",
+            type_="Poison",
+            category="Status",
+            power=0,
+            accuracy=True,
+            priority=0,
+            pp=20,
+            flags=["protect", "reflectable"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        Pose des piques toxiques qui empoisonnent les Pokémon ennemis à leur entrée.
+        1 couche = poison normal, 2 couches = poison grave.
+        """
+        # Déterminer l'équipe adverse
+        user_team_id = fight.get_team_id(user)
+        opponent_hazards = fight.hazards_team2 if user_team_id == 1 else fight.hazards_team1
+        
+        if opponent_hazards["Toxic Spikes"] < 2:
+            opponent_hazards["Toxic Spikes"] += 1
+            layers = opponent_hazards["Toxic Spikes"]
+            effect = "empoisonnement" if layers == 1 else "empoisonnement grave"
+            print(f"{user.name} pose des Toxic Spikes ! (Couche {layers}/2 - {effect})")
+        else:
+            print(f"Il y a déjà le maximum de Toxic Spikes sur le terrain !")
+
+class StickyWeb(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Sticky Web",
+            type_="Bug",
+            category="Status",
+            power=0,
+            accuracy=True,
+            priority=0,
+            pp=20,
+            flags=["protect", "reflectable"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        Pose une toile collante qui réduit la vitesse des Pokémon ennemis à leur entrée.
+        """
+        # Déterminer l'équipe adverse
+        user_team_id = fight.get_team_id(user)
+        opponent_hazards = fight.hazards_team2 if user_team_id == 1 else fight.hazards_team1
+        
+        if not opponent_hazards["Sticky Web"]:
+            opponent_hazards["Sticky Web"] = True
+            print(f"{user.name} tisse une Toile Gluante !")
+        else:
+            print(f"Il y a déjà une Toile Gluante sur le terrain !")
+
+class RapidSpin(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Rapid Spin",
+            type_="Normal",
+            category="Physical",
+            power=50,
+            accuracy=100,
+            priority=0,
+            pp=40,
+            flags=["protect", "mirror", "contact"],
+            target="Single"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        Attaque qui supprime tous les Entry Hazards de son côté du terrain.
+        Augmente aussi la vitesse de l'utilisateur d'un niveau.
+        """
+        # Déterminer l'équipe de l'utilisateur
+        user_team_id = fight.get_team_id(user)
+        user_hazards = fight.hazards_team1 if user_team_id == 1 else fight.hazards_team2
+        
+        # Vérifier s'il y a des hazards à supprimer
+        has_hazards = (user_hazards["Spikes"] > 0 or 
+                      user_hazards["Stealth Rock"] or 
+                      user_hazards["Toxic Spikes"] > 0 or 
+                      user_hazards["Sticky Web"])
+        
+        if has_hazards:
+            # Supprimer tous les hazards
+            user_hazards["Spikes"] = 0
+            user_hazards["Stealth Rock"] = False
+            user_hazards["Toxic Spikes"] = 0
+            user_hazards["Sticky Web"] = False
+            print(f"{user.name} supprime tous les pièges de son côté avec Rapid Spin !")
+        
+        # Augmenter la vitesse (depuis la Gen VIII)
+        if user.stats_modifier[5] < 6:  # Speed est à l'index 5
+            user.stats_modifier[5] += 1
+            print(f"La vitesse de {user.name} augmente !")
+
+class Defog(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Defog",
+            type_="Flying",
+            category="Status",
+            power=0,
+            accuracy=True,
+            priority=0,
+            pp=15,
+            flags=["protect", "reflectable", "mirror"],
+            target="Single"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        Supprime TOUS les Entry Hazards des deux côtés du terrain.
+        Réduit l'esquive de la cible d'un niveau.
+        """
+        # Supprimer tous les hazards des deux équipes
+        for hazards in [fight.hazards_team1, fight.hazards_team2]:
+            hazards["Spikes"] = 0
+            hazards["Stealth Rock"] = False
+            hazards["Toxic Spikes"] = 0
+            hazards["Sticky Web"] = False
+        
+        print(f"{user.name} dissipe tous les pièges du terrain avec Débrouillard !")
+        
+        # Réduire l'esquive de la cible
+        if target.stats_modifier[7] > -6:  # Evasion est à l'index 7
+            target.stats_modifier[7] -= 1
+            print(f"L'esquive de {target.name} diminue !")
+
+class MagicCoat(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Magic Coat",
+            type_="Psychic",
+            category="Status",
+            power=0,
+            accuracy=True,
+            priority=4,
+            pp=15,
+            flags=["protect"],
+            target="User"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        Renvoie les attaques de statut à l'adversaire pendant ce tour.
+        Même effet que Magic Bounce mais activé par une attaque.
+        """
+        user.magic_coat_active = True
+        user.magic_coat_turns = 1
+        print(f"{user.name} se couvre d'un voile magique ! Les attaques de statut seront renvoyées !")
+
+class ThunderWave(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Thunder Wave",
+            type_="Electric",
+            category="Status",
+            power=0,
+            accuracy=90,
+            priority=0,
+            pp=20,
+            flags=["protect", "reflectable", "mirror"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        Paralyse la cible. Test parfait pour Magic Bounce !
+        """
+        if target.current_hp <= 0:
+            return
+            
+        # Immunité type (Électrique immunisé à la paralysie)
+        if "Electric" in target.types:
+            print(f"{target.name} est immunisé à la paralysie car il est de type Électrique !")
+            return
+            
+        if target.status == "normal":
+            target.status = "paralysis"
+            print(f"{target.name} est paralysé !")
+        else:
+            print(f"{target.name} a déjà un statut et ne peut pas être paralysé !")
+
+class PsychicNoise(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Psychic Noise",
+            type_="Psychic",
+            category="Special",
+            power=75,
+            accuracy=100,
+            priority=0,
+            pp=10,
+            flags=["protect", "mirror", "sound"],  # Ajout du flag "sound"
+            target="Foe"  # Une seule cible, pas "All Foes"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        Empêche le Pokémon ciblé d'utiliser des attaques de soin pendant 2 tours.
+        Les objets comme les Restes ne soignent plus et les terrains/talents non plus.
+        """
+        if target.current_hp <= 0:
+            return
+            
+        # Appliquer l'effet Heal Block
+        target.heal_blocked = True
+        target.heal_blocked_turns = 2  # Durée de l'effet selon les règles officielles
+        print(f"{target.name} ne peut plus se soigner pendant 2 tours à cause de Psychic Noise !")
+
+class HealBell(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Heal Bell",
+            type_="Normal",
+            category="Status",
+            power=0,
+            accuracy=True,
+            priority=0,
+            pp=5,
+            flags=["heal", "sound"],  # Attaque de soin sonore
+            target="All Allies"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        Soigne tous les statuts de l'équipe (comme Aromatherapy).
+        Bloquée par Heal Block.
+        """
+        # Cette vérification sera automatiquement faite par can_use_attack()
+        # grâce au flag "heal" et à la vérification dans battle_interface.py
+        
+        # Déterminer l'équipe de l'utilisateur
+        team_id = fight.get_team_id(user)
+        team = fight.team1 if team_id == 1 else fight.team2
+        
+        healed_pokemon = []
+        for pokemon in team:
+            if pokemon.current_hp > 0 and pokemon.status != "normal":
+                pokemon.status = "normal"
+                pokemon.status_turns = 0
+                healed_pokemon.append(pokemon.name)
+        
+        if healed_pokemon:
+            print(f"Heal Bell soigne les statuts de : {', '.join(healed_pokemon)} !")
+        else:
+            print(f"Aucun Pokémon de l'équipe n'avait de statut à soigner.")
+
+class PartingShot(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Parting Shot",
+            type_="Dark",
+            category="Status",
+            power=0,
+            accuracy=True,
+            priority=0,
+            pp=20,
+            flags=["protect", "mirror"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        Réduit l'Attaque et l'Attaque Spéciale de la cible d'un niveau.
+        Force l'utilisateur à changer de Pokémon.
+        """
+        if target.current_hp <= 0:
+            return
+            
+        # Appliquer les changements de stats
+        stat_changes = {"Attack": -1, "Sp. Def": -1}
+        success = apply_stat_changes(target, stat_changes, "opponent", fight)
+        
+        if success:
+            print(f"{target.name} subit une baisse de son Attaque et de sa Défense Spéciale !")
+        
+        # Forcer le changement de Pokémon
+        user.must_switch_after_attack = True
+        user.switch_reason = "Parting Shot"
+        print(f"{user.name} doit changer après avoir utilisé Parting Shot !")
+
+class HeavySlam(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Heavy Slam",
+            type_="Steel",
+            category="Physical",
+            power=0,  # La puissance est déterminée par le poids
+            accuracy=100,
+            priority=0,
+            pp=10,
+            flags=["contact", "protect", "mirror"],
+            target="Foe"
+        )
+        self.weight_factor = 0.5  # Facteur de poids pour le calcul de la puissance
+
+    def get_power(self, user, target, fight):
+        """
+        Calcule la puissance de Heavy Slam en fonction du poids des Pokémon.
+        Plus l'utilisateur est lourd par rapport à la cible, plus la puissance est élevée.
+        """
+        user_weight = getattr(user, 'weight', 100)  # Poids par défaut si non défini
+        target_weight = getattr(target, 'weight', 100)  # Poids par défaut si non défini
+        
+        rapport = int((user_weight / target_weight) * 120 * self.weight_factor)
+        match rapport:
+            case 0:
+                return 40
+            case 1:
+                return 40
+            case 2:
+                return 60
+            case 3:
+                return 80
+            case 4:
+                return 100
+            case _:
+                return 120

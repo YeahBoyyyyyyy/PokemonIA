@@ -358,6 +358,89 @@ def trigger_talent(poke, event_name, *args):
             return result
     return None
 
+class CompoundEyes(Talent):
+    """Talent qui augmente la précision des attaques de 30%."""
+    def on_attack(self, poke, attack, fight):
+        mod_dict = ON_ATTACK_MOD_DICT.copy()
+        mod_dict["accuracy"] = 1.3
+        return mod_dict
+
+class VictoryStar(Talent):
+    """Talent qui augmente la précision de l'équipe de 10%."""
+    def on_attack(self, poke, attack, fight):
+        mod_dict = ON_ATTACK_MOD_DICT.copy()
+        mod_dict["accuracy"] = 1.1
+        return mod_dict
+
+class SandVeil(Talent):
+    """Talent qui augmente l'évasion de 20% pendant une tempête de sable."""
+    def modify_stat(self, poke, fight=None):
+        if fight and fight.weather.get("current") == "Sandstorm":
+            poke.evasion = poke.evasion_with_no_modifier * 1.25
+            return "activated"
+        return None
+
+class SnowCloak(Talent):
+    """Talent qui augmente l'évasion de 20% pendant la grêle."""
+    def modify_stat(self, poke, fight=None):
+        if fight and fight.weather.get("current") in ["Hail", "Snow"]:
+            poke.evasion = poke.evasion_with_no_modifier * 1.25
+            return "activated"
+        return None
+
+class Static(Talent):
+    """Talent qui paralyse l'adversaire si une attaque de contact le touche."""
+    def on_defense(self, poke, incoming_attack, attacker_poke=None, fight=None):
+        if incoming_attack and "contact" in incoming_attack.flags:
+            if random.random() < 0.3:  # 30% de chance de paralyser
+                attacker_poke.status = "paralysis"
+                print(f"{attacker_poke.name} est paralysé par {poke.name}'s Static !")
+
+class FlameBody(Talent):
+    """Talent qui brûle l'adversaire si une attaque de contact le touche."""
+    def on_defense(self, poke, incoming_attack, attacker_poke=None, fight=None):
+        if incoming_attack and "contact" in incoming_attack.flags:
+            if random.random() < 0.3:  # 30% de chance de brûler
+                attacker_poke.status = "burn"
+                print(f"{attacker_poke.name} est brûlé par {poke.name}'s Flame Body !")
+
+class MagicBounce(Talent):
+    """Talent qui renvoie les attaques de statut à l'adversaire."""
+    def on_defense(self, poke, incoming_attack, attacker_poke=None, fight=None):
+        # Magic Bounce renvoie seulement les attaques de statut avec le flag "reflectable"
+        if (incoming_attack and 
+            incoming_attack.category == "Status" and 
+            "reflectable" in incoming_attack.flags and
+            attacker_poke and attacker_poke.current_hp > 0):
+            
+            print(f"{poke.name} renvoie {incoming_attack.name} à {attacker_poke.name} grâce à Magic Bounce !")
+            
+            # Vérifier si l'attaquant original a aussi Magic Bounce (éviter boucle infinie)
+            if (hasattr(attacker_poke, 'talent') and 
+                attacker_poke.talent == "Magic Bounce"):
+                print(f"Mais {attacker_poke.name} a aussi Magic Bounce ! L'attaque échoue.")
+                return 0  # Annule complètement l'attaque
+            
+            # Vérifier si l'attaquant a Magic Coat actif
+            if getattr(attacker_poke, 'magic_coat_active', False):
+                print(f"Mais {attacker_poke.name} a un voile magique actif ! L'attaque échoue.")
+                return 0
+            
+            # Renvoyer l'attaque vers l'attaquant original
+            print(f"{incoming_attack.name} est renvoyée vers {attacker_poke.name} !")
+            
+            # Déterminer la nouvelle cible
+            target = attacker_poke if incoming_attack.target == "Foe" else poke
+            
+            # Appliquer l'effet de l'attaque sur l'attaquant original
+            if hasattr(incoming_attack, 'apply_effect'):
+                try:
+                    incoming_attack.apply_effect(poke, target, fight)
+                except Exception as e:
+                    print(f"Erreur lors du renvoi de l'attaque : {e}")
+            
+            return 0  # Annule l'attaque originale sur le Pokémon avec Magic Bounce
+
 # Registre des talents
 talent_registry = {
     "Water Absorb": WaterAbsorb(),
@@ -384,4 +467,11 @@ talent_registry = {
     "Sharpness": Sharpness(),
     "Grassy Surge": GrassySurge(),
     "Rough Skin": RoughSkin(),
+    "Compound Eyes": CompoundEyes(),
+    "Victory Star": VictoryStar(),
+    "Sand Veil": SandVeil(),
+    "Snow Cloak": SnowCloak(),
+    "Static": Static(),
+    "Flame Body": FlameBody(),
+    "Magic Bounce": MagicBounce(),
 }

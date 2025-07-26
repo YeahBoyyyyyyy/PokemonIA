@@ -31,17 +31,24 @@ class Item:
 class Leftovers(Item):
     def on_turn_end(self, poke, fight=None):
         if poke.current_hp < poke.max_hp:
-            heal = int(poke.max_hp * 0.0625)
-            print(f"{poke.name} récupère {heal} PV grâce à ses Restes.")
-            poke.current_hp = min(poke.current_hp + heal, poke.max_hp)
+            if not getattr(poke, 'heal_blocked', False):
+                heal = int(poke.max_hp * 0.0625)
+                print(f"{poke.name} récupère {heal} PV grâce à ses Restes.")
+                poke.current_hp = min(poke.current_hp + heal, poke.max_hp)
+            else:
+                print(f"{poke.name} ne peut pas bénéficier de ses Restes à cause de Heal Block !")
 
 class SitrusBerry(Item):
     def after_attack(self, poke, fight=None):
         if poke.current_hp <= poke.max_hp * 0.5 and poke.current_hp > 0:
-            heal = int(poke.max_hp * 0.25)
-            print(f"{poke.name} consomme une Baie Sitrus et récupère {heal} PV !")
-            poke.current_hp = min(poke.current_hp + heal, poke.max_hp)
-            poke.item = None
+            if not getattr(poke, 'heal_blocked', False):
+                heal = int(poke.max_hp * 0.25)
+                print(f"{poke.name} consomme une Baie Sitrus et récupère {heal} PV !")
+                poke.current_hp = min(poke.current_hp + heal, poke.max_hp)
+                poke.item = None
+            else:
+                print(f"{poke.name} ne peut pas utiliser sa Baie Sitrus à cause de Heal Block !")
+                # La baie n'est pas consommée si elle ne peut pas être utilisée
 
 class ChoiceBoost(Item):
     def modify_stat(self, poke, fight=None):
@@ -90,9 +97,16 @@ class RockyHelmet(Item):
         Rocky Helmet inflige des dégâts à l'attaquant si l'attaque était de contact.
         Cet effet se déclenche après que le porteur ait subi une attaque de contact.
         """
-        # Cette méthode sera appelée avec fight comme argument supplémentaire
-        # contenant les informations sur l'attaque qui vient d'être subie
-        pass  # L'effet sera géré différemment car on a besoin de l'attaquant et de l'attaque
+        pass
+
+class HeavyDutyBoots(Item):
+    def on_entry(self, poke, fight=None):
+        """
+        Heavy-Duty Boots permet au Pokémon de ne pas subir de dégâts de Pièges d'Entrée.
+        Cet effet se déclenche lorsque le Pokémon entre dans le combat.
+        """
+        print(f"{poke.name} porte des Heavy-Duty Boots et ignore les Pièges d'Entrée !")
+
 item_registry = {
     "Leftovers": Leftovers(),
     "Sitrus Berry": SitrusBerry(),
@@ -104,6 +118,7 @@ item_registry = {
     "Energy Booster": EnergyBooster(),
     "Assault Vest": AssaultVest(),
     "Rocky Helmet": RockyHelmet(),
+    "Heavy-Duty Boots": HeavyDutyBoots(),
 }
 
 def trigger_item(poke, event, *args):
