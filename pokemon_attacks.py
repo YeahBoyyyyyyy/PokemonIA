@@ -1116,7 +1116,7 @@ class ThunderWave(Attack):
             accuracy=90,
             priority=0,
             pp=20,
-            flags=["protect"],
+            flags=["protect", "reflectable"],
             target="Foe"
         )
 
@@ -1622,7 +1622,8 @@ class RapidSpin(Attack):
         has_hazards = (user_hazards["Spikes"] > 0 or 
                       user_hazards["Stealth Rock"] or 
                       user_hazards["Toxic Spikes"] > 0 or 
-                      user_hazards["Sticky Web"])
+                      user_hazards["Sticky Web"] or 
+                      user.leech_seeded_by != None)
         
         if has_hazards:
             # Supprimer tous les hazards
@@ -1630,12 +1631,14 @@ class RapidSpin(Attack):
             user_hazards["Stealth Rock"] = False
             user_hazards["Toxic Spikes"] = 0
             user_hazards["Sticky Web"] = False
+            user.leech_seeded_by = None  # Enlever le Leech Seed si présent
             print(f"{user.name} supprime tous les pièges de son côté avec Rapid Spin !")
         
         # Augmenter la vitesse (depuis la Gen VIII)
-        if user.stats_modifier[5] < 6:  # Speed est à l'index 5
-            user.stats_modifier[5] += 1
-            print(f"La vitesse de {user.name} augmente !")
+        stats_changes = {"Speed": 1}
+        success = apply_stat_changes(user, stats_changes, "self", fight)
+        if success:
+            print(f"{user.name} augmente sa Vitesse !")
 
 class Defog(Attack):
     def __init__(self):
@@ -1662,6 +1665,10 @@ class Defog(Attack):
             hazards["Stealth Rock"] = False
             hazards["Toxic Spikes"] = 0
             hazards["Sticky Web"] = False
+
+        # Enlever le Leech Seed si présent
+        if user.leech_seeded_by is not None:
+            user.leech_seeded_by = None
         
         print(f"{user.name} dissipe tous les pièges du terrain avec Débrouillard !")
         
@@ -1669,6 +1676,43 @@ class Defog(Attack):
         if target.stats_modifier[7] > -6:  # Evasion est à l'index 7
             target.stats_modifier[7] -= 1
             print(f"L'esquive de {target.name} diminue !")
+
+class MortalSpin(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Mortal Spin",
+            type_="Poison",
+            category="Physical",
+            power=70,
+            accuracy=100,
+            priority=0,
+            pp=10,
+            flags=["protect", "mirror", "contact"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        Supprime les Entry Hazards de son côté du terrain.
+        Empoisonne la cible si elle n'est pas immunisée.
+        """
+        # Supprimer les hazards de l'utilisateur
+        user_hazards = fight.hazards_team1 if fight.get_team_id(user) == 1 else fight.hazards_team2
+        user_hazards["Spikes"] = 0
+        user_hazards["Stealth Rock"] = False
+        user_hazards["Toxic Spikes"] = 0
+        user_hazards["Sticky Web"] = False
+
+        # Enlever le Leech Seed si présent
+        if user.leech_seeded_by is not None:
+            user.leech_seeded_by = None
+        
+        print(f"{user.name} supprime tous les pièges de son côté avec Mortal Spin !")
+        
+        # Empoisonner la cible si possible
+        if target.status is None and "Poison" not in target.types:
+            target.apply_status("poisoned")
+            print(f"{target.name} est empoisonné par Mortal Spin !")
 
 class MagicCoat(Attack):
     def __init__(self):
@@ -1692,38 +1736,6 @@ class MagicCoat(Attack):
         user.magic_coat_active = True
         user.magic_coat_turns = 1
         print(f"{user.name} se couvre d'un voile magique ! Les attaques de statut seront renvoyées !")
-
-class ThunderWave(Attack):
-    def __init__(self):
-        super().__init__(
-            name="Thunder Wave",
-            type_="Electric",
-            category="Status",
-            power=0,
-            accuracy=90,
-            priority=0,
-            pp=20,
-            flags=["protect", "reflectable", "mirror"],
-            target="Foe"
-        )
-
-    def apply_effect(self, user, target, fight):
-        """
-        Paralyse la cible. Test parfait pour Magic Bounce !
-        """
-        if target.current_hp <= 0:
-            return
-            
-        # Immunité type (Électrique immunisé à la paralysie)
-        if "Electric" in target.types:
-            print(f"{target.name} est immunisé à la paralysie car il est de type Électrique !")
-            return
-            
-        if target.status == "normal":
-            target.status = "paralysis"
-            print(f"{target.name} est paralysé !")
-        else:
-            print(f"{target.name} a déjà un statut et ne peut pas être paralysé !")
 
 class PsychicNoise(Attack):
     def __init__(self):
@@ -1861,3 +1873,418 @@ class HeavySlam(Attack):
                 return 100
             case _:
                 return 120
+            
+class Crunch(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Crunch",
+            type_="Dark",
+            category="Physical",
+            power=80,
+            accuracy=100,
+            priority=0,
+            pp=15,
+            flags=["contact", "protect", "mirror"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        A 20 % de chance de baisser la Défense de la cible d'un niveau.
+        """
+        if random.random() < 0.2:
+            stat_changes = {"Defense": -1}
+            apply_stat_changes(target, stat_changes, "opponent", fight)
+
+class FlareBlitz(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Flare Blitz",
+            type_="Fire",
+            category="Physical",
+            power=120,
+            accuracy=100,
+            priority=0,
+            pp=15,
+            flags=["contact", "protect", "mirror"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight, damage_dealt=0):
+        """
+        L'utilisateur subit des dégâts de recul à hauteur de 1/3 des dégâts infligés.
+        """
+        if damage_dealt > 0:
+            recoil_damage = damage_dealt // 3
+            fight.damage_method(user, recoil_damage)
+            print(f"{user.name} subit {recoil_damage} PV de dégâts de recul après avoir utilisé Flare Blitz.")
+
+class EarthPower(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Earth Power",
+            type_="Ground",
+            category="Special",
+            power=90,
+            accuracy=100,
+            priority=0,
+            pp=10,
+            flags=["protect", "mirror"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        A 10 % de chance de baisser la Défense Spéciale de la cible d'un niveau.
+        """
+        if random.random() < 0.1:
+            stat_changes = {"Sp. Def": -1}
+            apply_stat_changes(target, stat_changes, "opponent", fight)
+
+class PowerGem(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Power Gem",
+            type_="Rock",
+            category="Special",
+            power=80,
+            accuracy=100,
+            priority=0,
+            pp=20,
+            flags=["protect", "mirror"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        Pas d'effet secondaire pour Power Gem.
+        """
+        pass
+
+class KowtowCleave(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Kowtow Cleave",
+            type_="Dark",
+            category="Physical",
+            power=85,
+            accuracy=True,
+            priority=0,
+            pp=10,
+            flags=["contact", "protect", "mirror"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        Pas d'effet secondaire pour Kowtow Cleave.
+        """
+        pass
+
+class SludgeBomb(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Sludge Bomb",
+            type_="Poison",
+            category="Special",
+            power=90,
+            accuracy=100,
+            priority=0,
+            pp=10,
+            flags=["protect", "mirror"],
+            target="Foe"
+        )
+    
+    def apply_effect(self, user, target, fight):
+        """
+        A 30 % de chance de provoquer un empoisonnement de la cible.
+        """
+        if random.random() < 0.3:
+            target.status = "poisoned"
+            print(f"{target.name} est empoisonné !")
+
+class DarkPulse(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Dark Pulse",
+            type_="Dark",
+            category="Special",
+            power=80,
+            accuracy=100,
+            priority=0,
+            pp=15,
+            flags=["protect", "mirror"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        A 20 % de chance de faire flancher la cible.
+        """
+        if random.random() < 0.2:
+            target.apply_status("flinched")
+            print(f"{target.name} est fléchi par Dark Pulse !")
+
+class FocusBlast(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Focus Blast",
+            type_="Fighting",
+            category="Special",
+            power=120,
+            accuracy=70,
+            priority=0,
+            pp=5,
+            flags=["protect", "mirror"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        A 10 % de chance de baisser la Défense Spéciale de la cible d'un niveau.
+        """
+        if random.random() < 0.1:
+            stat_changes = {"Sp. Def": -1}
+            apply_stat_changes(target, stat_changes, "opponent", fight)
+
+class IceBeam(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Ice Beam",
+            type_="Ice",
+            category="Special",
+            power=90,
+            accuracy=100,
+            priority=0,
+            pp=10,
+            flags=["protect", "mirror"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        A 10 % de chance de geler la cible.
+        """
+        if random.random() < 0.1:
+            target.apply_status("frozen")
+            print(f"{target.name} est gelé par Ice Beam !")
+
+class Roar(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Roar",
+            type_="Normal",
+            category="Status",
+            power=0,
+            accuracy=True,
+            priority=0,
+            pp=20,
+            flags=["protect", "mirror"],
+            target="All Foes"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        Force le Pokémon adverse à changer de Pokémon.
+        Ignore les effets de protection comme Protect ou Substitute.
+        """
+        if target.current_hp <= 0:
+            return
+            
+        # Forcer le changement de Pokémon
+        target.must_switch_after_attack = True
+        target.switch_reason = "Roar"
+
+class BodyPress(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Body Press",
+            type_="Fighting",
+            category="Physical",
+            power=80,
+            accuracy=100,
+            priority=0,
+            pp=10,
+            flags=["contact", "protect", "mirror"],
+            target="Foe"
+        )
+
+    def get_power(self, user, target, fight):
+        """
+        La puissance de Body Press est basée sur la Défense de l'utilisateur.
+        """
+        return int(user.stats["Defense"])  # Puissance basée sur la Défense
+
+class DragonDance(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Dragon Dance",
+            type_="Dragon",
+            category="Status",
+            power=0,
+            accuracy=True,
+            priority=0,
+            pp=20,
+            flags=["protect", "mirror"],
+            target="User"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        Augmente l'Attaque et la Vitesse de l'utilisateur d'un niveau.
+        """
+        stat_changes = {"Attack": 1, "Speed": 1}
+        success = apply_stat_changes(user, stat_changes, "self", fight)
+        
+        if success:
+            print(f"{user.name} danse pour augmenter son Attaque et sa Vitesse !")
+
+class ExtremeSpeed(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Extreme Speed",
+            type_="Normal",
+            category="Physical",
+            power=80,
+            accuracy=100,
+            priority=2,  # Priorité élevée
+            pp=5,
+            flags=["contact", "protect", "mirror"],
+            target="Foe"
+        )
+    def apply_effect(self, user, target, fight):
+        """        Pas d'effet secondaire pour Extreme Speed.
+        """        
+        pass
+
+class IceSpinner(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Ice Spinner",
+            type_="Ice",
+            category="Physical",
+            power=80,
+            accuracy=100,
+            priority=0,
+            pp=10,
+            flags=["contact", "protect", "mirror"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        Supprime les terrains de type Ice (comme Icy Terrain).
+        """
+        if fight.field:
+            fight.field = None  # Supprimer le terrain
+        print(f"{user.name} utilise Ice Spinner et met fin au terrain !")
+
+class MoonBlast(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Moon Blast",
+            type_="Fairy",
+            category="Special",
+            power=95,
+            accuracy=100,
+            priority=0,
+            pp=10,
+            flags=["protect", "mirror"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        A 30 % de chance de baisser l'Attaque Spéciale de la cible d'un niveau.
+        """
+        if random.random() < 0.3:
+            stat_changes = {"Sp. Atk": -1}
+            apply_stat_changes(target, stat_changes, "opponent", fight)
+
+class ShadowBall(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Shadow Ball",
+            type_="Ghost",
+            category="Special",
+            power=80,
+            accuracy=100,
+            priority=0,
+            pp=15,
+            flags=["protect", "mirror"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        A 20 % de chance de baisser la Défense Spéciale de la cible d'un niveau.
+        """
+        if random.random() < 0.2:
+            stat_changes = {"Sp. Def": -1}
+            apply_stat_changes(target, stat_changes, "opponent", fight)
+
+class VacuumWave(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Vacuum Wave",
+            type_="Fighting",
+            category="Special",
+            power=40,
+            accuracy=100,
+            priority=1,
+            pp=30,
+            flags=["protect", "mirror"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        Pas d'effet secondaire pour Vacuum Wave.
+        """
+        pass
+
+class IronHead(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Iron Head",
+            type_="Steel",
+            category="Physical",
+            power=80,
+            accuracy=100,
+            priority=0,
+            pp=15,
+            flags=["contact", "protect", "mirror"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        A 30 % de chance de faire flancher la cible.
+        """
+        if random.random() < 0.3:
+            target.apply_status("flinched")
+            print(f"{target.name} est fléchi par Iron Head !")
+
+class IronDefense(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Iron Defense",
+            type_="Steel",
+            category="Status",
+            power=0,
+            accuracy=True,
+            priority=0,
+            pp=15,
+            flags=["protect", "mirror"],
+            target="User"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        Augmente la Défense de l'utilisateur de 2 niveaux.
+        """
+        stat_changes = {"Defense": 2}
+        success = apply_stat_changes(user, stat_changes, "self", fight)
+        
+        if success:
+            print(f"{user.name} renforce sa Défense avec Iron Defense !")

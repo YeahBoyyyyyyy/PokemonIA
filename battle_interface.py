@@ -71,7 +71,7 @@ def print_pokemon_stats(pokemon : pk.pokemon):
     for stat in ["Attack", "Defense", "Sp. Atk", "Sp. Def", "Speed"]:
         print(f"{stat}: {pokemon.stats[stat]}")
     print(f"Modificateurs de stats: {pokemon.stats_modifier}")
-    print(f"Modificateurs de stats cachés: {pokemon.hidden_boost}")
+    print(f"Modificateurs de stats cachés: {pokemon.hidden_modifier}")
     print(f"{bcolors.LIGHT_RED}Attaques:")
     for i, atk in enumerate([pokemon.attack1, pokemon.attack2, pokemon.attack3, pokemon.attack4], 1):
         if atk:
@@ -392,69 +392,4 @@ def launch_battle(team1: list[pk.pokemon], team2: list[pk.pokemon]):
             print(f"{attacker2.name} n'a pas d'attaque disponible !")
 
 
-def import_pokemon(name):
-    raw_pokemon = STATS.pokemon_data["Charizard"]
-    pokemon = pk.pokemon(STATS.pokemon_data[name])
-    stats_list = raw_pokemon["stats"] # Dictionnaire avec pour clé HP, Attack, Defense, Special Attack, Special Defense, Speed
-    for i in stats_list: 
-        pokemon.stats[i] = stats_list[i]
-    return pokemon
 
-venusaur = import_pokemon("Venusaur")
-venusaur.talent = "Chlorophyll"
-venusaur.item = "Choice Band"  # Test Choice Band
-venusaur.tera_type = "Fire"  # Type Tera personnalisé
-venusaur.attack1 = ATTACKES.TeraBlast()
-venusaur.attack2 = ATTACKES.LightScreen()
-venusaur.attack3 = ATTACKES.Spore()
-venusaur.attack4 = ATTACKES.RainDance()
-
-duraludon = import_pokemon("Duraludon")
-duraludon.talent = "Light Metal"
-duraludon.item = "Eviolite"
-duraludon.tera_type = "Steel"  # Type Tera personnalisé
-duraludon.attack1 = ATTACKES.DragonPulse()
-duraludon.attack2 = ATTACKES.ElectroShot()
-duraludon.attack3 = ATTACKES.TeraBlast()
-
-mew = import_pokemon("Mew")
-mew.talent = "Synchronize"
-mew.item = "Rocky Helmet"  # Test Rocky Helmet
-mew.tera_type = "Fairy"  # Type Tera personnalisé
-mew.attack1 = ATTACKES.HydroPump()
-mew.attack2 = ATTACKES.Taunt()
-mew.attack3 = ATTACKES.TeraBlast()
-
-charizard = import_pokemon("Charizard")
-charizard.talent = "Drought"
-charizard.item = "Sitrus Berry"
-charizard.tera_type = "Dragon"  # Type Tera personnalisé
-charizard.attack1 = ATTACKES.Substitute()
-charizard.attack2 = ATTACKES.Thunderbolt()
-charizard.attack3 = ATTACKES.TeraBlast()
-
-# Test Pokémon pour Roost
-pidgeot = import_pokemon("Pidgeot")
-pidgeot.talent = "Keen Eye"
-pidgeot.item = "Leftovers"
-pidgeot.tera_type = "Electric"  # Type Tera personnalisé
-pidgeot.attack1 = ATTACKES.Roost()
-pidgeot.attack2 = ATTACKES.Hurricane()
-pidgeot.attack3 = ATTACKES.TeraBlast()
-
-rillaboom = import_pokemon("Rillaboom")
-rillaboom.talent = "Grassy Surge"
-rillaboom.item = "Leftovers"  # Changé pour permettre les attaques de statut
-rillaboom.tera_type = "Fire"  # Type Tera personnalisé
-rillaboom.attack1 = ATTACKES.WoodHammer()
-rillaboom.attack2 = ATTACKES.UTurn()
-rillaboom.attack3 = ATTACKES.ShedTail()
-rillaboom.attack4 = ATTACKES.TeraBlast()
-
-garchomp = import_pokemon("Garchomp")
-garchomp.talent = "Rough Skin"
-garchomp.item = "Rocky Helmet"
-garchomp.tera_type = "Steel"  # Type Tera personnalisé
-garchomp.attack1 = ATTACKES.Earthquake()
-
-launch_battle([pidgeot, venusaur, duraludon, rillaboom], [garchomp])

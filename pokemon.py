@@ -31,6 +31,16 @@ class pokemon():
             'Speed': stats['Speed'],
         }
 
+        ## IVs
+        self.ivs = {
+            'HP': 31,
+            'Attack': 31,
+            'Defense': 31,
+            'Sp. Atk': 31,
+            'Sp. Def': 31,
+            'Speed': 31,
+        }
+
         ## EVs
         self.evs = {
             'HP': 0,
@@ -45,23 +55,26 @@ class pokemon():
         self.stats_modifier = [0, 0, 0, 0, 0]  # Modificateurs de stats pour Attack, Defense, Sp. Atk, Sp. Def, Speed
         self.ev_and_acc_modifier = [0, 0]  # Modificateurs d'évasion et de précision 
 
-        self.hidden_boost = {"Attack": 1, "Defense": 1, "Sp. Atk": 1, "Sp. Def": 1, "Speed": 1}
+        self.hidden_modifier = {"Attack": 1, "Defense": 1, "Sp. Atk": 1, "Sp. Def": 1, "Speed": 1}
+
+        self.max_hp =  int((2 * self.base_stats['HP'] + self.ivs["HP"] + self.evs['HP'] / 4) * 0.5 + 60)   # Points de vie maximum
+        self.current_hp = self.max_hp  # Points de vie actuels
 
         self.nature_modifier = donnees.nature_chart[self.nature] if self.nature else [1, 1, 1, 1, 1]
         self.stats = {
-                "Attack": int(((2 * self.base_stats['Attack'] + 31 + self.evs['Attack'] // 4) // 2 + 5) * self.nature_modifier[0]),
-                "Defense": int(((2 * self.base_stats['Defense'] + 31 + self.evs['Defense'] // 4) // 2 + 5) * self.nature_modifier[1]),
-                "Sp. Atk": int(((2 * self.base_stats['Sp. Atk'] + 31 + self.evs['Sp. Atk'] // 4) // 2 + 5) * self.nature_modifier[2]),
-                "Sp. Def": int(((2 * self.base_stats['Sp. Def'] + 31 + self.evs['Sp. Def'] // 4) // 2 + 5) * self.nature_modifier[3]),
-                "Speed": int(((2 * self.base_stats['Speed'] + 31 + self.evs['Speed'] // 4) // 2 + 5) * self.nature_modifier[4])
+                "Attack": int(((2 * self.base_stats['Attack'] + self.ivs["Attack"] + self.evs['Attack'] // 4) // 2 + 5) * self.nature_modifier[0]),
+                "Defense": int(((2 * self.base_stats['Defense'] + self.ivs["Defense"] + self.evs['Defense'] // 4) // 2 + 5) * self.nature_modifier[1]),
+                "Sp. Atk": int(((2 * self.base_stats['Sp. Atk'] + self.ivs["Sp. Atk"] + self.evs['Sp. Atk'] // 4) // 2 + 5) * self.nature_modifier[2]),
+                "Sp. Def": int(((2 * self.base_stats['Sp. Def'] + self.ivs["Sp. Def"] + self.evs['Sp. Def'] // 4) // 2 + 5) * self.nature_modifier[3]),
+                "Speed": int(((2 * self.base_stats['Speed'] + self.ivs["Speed"] + self.evs['Speed'] // 4) // 2 + 5) * self.nature_modifier[4])
             }
 
         self.stats_with_no_modifier = {
-                "Attack": int(((2 * self.base_stats['Attack'] + 31 + self.evs['Attack'] // 4) // 2 + 5) * self.nature_modifier[0]),
-                "Defense": int(((2 * self.base_stats['Defense'] + 31 + self.evs['Defense'] // 4) // 2 + 5) * self.nature_modifier[1]),
-                "Sp. Atk": int(((2 * self.base_stats['Sp. Atk'] + 31 + self.evs['Sp. Atk'] // 4) // 2 + 5) * self.nature_modifier[2]),
-                "Sp. Def": int(((2 * self.base_stats['Sp. Def'] + 31 + self.evs['Sp. Def'] // 4) // 2 + 5) * self.nature_modifier[3]),
-                "Speed": int(((2 * self.base_stats['Speed'] + 31 + self.evs['Speed'] // 4) // 2 + 5) * self.nature_modifier[4])
+                "Attack": int(((2 * self.base_stats['Attack'] + self.ivs["Attack"] + self.evs['Attack'] // 4) // 2 + 5) * self.nature_modifier[0]),
+                "Defense": int(((2 * self.base_stats['Defense'] + self.ivs["Defense"] + self.evs['Defense'] // 4) // 2 + 5) * self.nature_modifier[1]),
+                "Sp. Atk": int(((2 * self.base_stats['Sp. Atk'] + self.ivs["Sp. Atk"] + self.evs['Sp. Atk'] // 4) // 2 + 5) * self.nature_modifier[2]),
+                "Sp. Def": int(((2 * self.base_stats['Sp. Def'] + self.ivs["Sp. Def"] + self.evs['Sp. Def'] // 4) // 2 + 5) * self.nature_modifier[3]),
+                "Speed": int(((2 * self.base_stats['Speed'] + self.ivs["Speed"] + self.evs['Speed'] // 4) // 2 + 5) * self.nature_modifier[4])
             }
         
         self.accuracy = 1.0  # Précision du Pokémon (par exemple : 1.0 pour 100% de précision)
@@ -75,9 +88,6 @@ class pokemon():
         self.attack2 = None
         self.attack3 = None
         self.attack4 = None
-        
-        self.max_hp =  int((2 * self.base_stats['HP'] + 31 + self.evs['HP'] / 4) * 0.5 + 60)   # Points de vie maximum
-        self.current_hp = self.max_hp  # Points de vie actuels
         
         # Système de clones (Substitute)
         self.substitute_hp = 0  # PV du clone
@@ -196,11 +206,11 @@ class pokemon():
 
     def actualize_stats(self):
         self.stats = {
-            "Attack": int(self.calculate_stat(self.base_stats['Attack'], self.evs['Attack'], self.nature_modifier[0], self.stats_modifier[0]) * self.hidden_boost["Attack"]),
-            "Defense": int(self.calculate_stat(self.base_stats['Defense'], self.evs['Defense'], self.nature_modifier[1], self.stats_modifier[1]) * self.hidden_boost["Defense"]),
-            "Sp. Atk": int(self.calculate_stat(self.base_stats['Sp. Atk'], self.evs['Sp. Atk'], self.nature_modifier[2], self.stats_modifier[2]) * self.hidden_boost["Sp. Atk"]),
-            "Sp. Def": int(self.calculate_stat(self.base_stats['Sp. Def'], self.evs['Sp. Def'], self.nature_modifier[3], self.stats_modifier[3]) * self.hidden_boost["Sp. Def"]),
-            "Speed": int(self.calculate_stat(self.base_stats['Speed'], self.evs['Speed'], self.nature_modifier[4], self.stats_modifier[4]) * self.hidden_boost["Speed"]),
+            "Attack": int(self.calculate_stat(self.base_stats['Attack'],self.ivs['Attack'], self.evs['Attack'], self.nature_modifier[0], self.stats_modifier[0]) * self.hidden_modifier["Attack"]),
+            "Defense": int(self.calculate_stat(self.base_stats['Defense'], self.ivs['Defense'], self.evs['Defense'], self.nature_modifier[1], self.stats_modifier[1]) * self.hidden_modifier["Defense"]),
+            "Sp. Atk": int(self.calculate_stat(self.base_stats['Sp. Atk'], self.ivs['Sp. Atk'], self.evs['Sp. Atk'], self.nature_modifier[2], self.stats_modifier[2]) * self.hidden_modifier["Sp. Atk"]),
+            "Sp. Def": int(self.calculate_stat(self.base_stats['Sp. Def'], self.ivs['Sp. Def'], self.evs['Sp. Def'], self.nature_modifier[3], self.stats_modifier[3]) * self.hidden_modifier["Sp. Def"]),
+            "Speed": int(self.calculate_stat(self.base_stats['Speed'], self.ivs['Speed'], self.evs['Speed'], self.nature_modifier[4], self.stats_modifier[4]) * self.hidden_modifier["Speed"]),
         }
 
         self.evasion = self.calculate_accuracy_and_evasion(self.ev_and_acc_modifier[0])
@@ -252,6 +262,10 @@ class pokemon():
         """
         self.stats_modifier = [0, 0, 0, 0, 0]
         self.ev_and_acc_modifier = [0, 0]
+        
+        # Réinitialiser les modificateurs cachés (pour les talents de ruine, etc.)
+        self.hidden_modifier = {"Attack": 1, "Defense": 1, "Sp. Atk": 1, "Sp. Def": 1, "Speed": 1}
+        
         if self.is_confused:
             self.is_confused = False
         self.sturdy_activated = False
@@ -340,7 +354,7 @@ class pokemon():
         self.must_recharge = False  # Indique si le Pokémon doit se recharger
         self.actualize_stats()
 
-    def calculate_stat(self, base, ev, nature, modifier):
+    def calculate_stat(self, base, iv, ev, nature, modifier):
         """
         Calcule une statistique hors PV selon les formules officielles de Pokémon.
         
@@ -349,7 +363,7 @@ class pokemon():
         :param nature: Le multiplicateur de la nature (0.9, 1.0 ou 1.1)
         :return: La statistique calculée
         """
-        base_value = (2 * base + 31 + ev // 4) // 2 + 5
+        base_value = (2 * base + iv + ev // 4) // 2 + 5
         if modifier >= 0:
             modifier = 1 + modifier / 2
         else:

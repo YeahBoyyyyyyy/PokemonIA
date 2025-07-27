@@ -10,7 +10,7 @@ class Item:
         """
         pass
 
-    def before_attack(self, poke, attack, fight=None):
+    def on_attack(self, poke, attack, fight=None):
         """
         This method is called before an attack to apply the item's effect.
         """
@@ -65,14 +65,14 @@ class Eviolite(Item):
             poke.stats["Defense"] += int(poke.stats_with_no_modifier["Defense"] * 0.5)
             poke.stats["Sp. Def"] += int(poke.stats_with_no_modifier["Sp. Def"] * 0.5)
 
-class EnergyBooster(Item):
+class BoosterEnergy(Item):
     def on_entry(self, poke, fight=None):
         if poke.talent == "Quark Drive" or poke.talent == "Protosynthesis":
             stat_max = max(poke.stats, key = poke.stats.get)
             if stat_max == "Speed":
-                poke.hidden_boost[stat_max] *= 1.5
+                poke.hidden_modifier[stat_max] *= 1.5
             else:
-                poke.hidden_boost[stat_max] *= 1.3
+                poke.hidden_modifier[stat_max] *= 1.3
         poke.item = None
 
 class ChestoBerry(Item):
@@ -92,20 +92,43 @@ class AssaultVest(Item):
         poke.stats["Sp. Def"] += int(poke.stats_with_no_modifier["Sp. Def"] * 0.5)
 
 class RockyHelmet(Item):
-    def after_attack(self, poke, fight=None):
-        """
+    """
         Rocky Helmet inflige des dégâts à l'attaquant si l'attaque était de contact.
         Cet effet se déclenche après que le porteur ait subi une attaque de contact.
-        """
+    """
+    def after_attack(self, poke, fight=None):
+        
         pass
 
 class HeavyDutyBoots(Item):
-    def on_entry(self, poke, fight=None):
-        """
+    """
         Heavy-Duty Boots permet au Pokémon de ne pas subir de dégâts de Pièges d'Entrée.
         Cet effet se déclenche lorsque le Pokémon entre dans le combat.
-        """
+    """
+    def on_entry(self, poke, fight=None):
+       
         print(f"{poke.name} porte des Heavy-Duty Boots et ignore les Pièges d'Entrée !")
+
+class FocusSash(Item):
+    """
+        Focus Sash permet au Pokémon de survivre à une attaque qui le mettrait KO,
+        en restant à 1 PV à la place. Ne fonctionne que si le Pokémon était à pleine santé.
+    """
+    def before_attack(self, poke, attack, fight=None):
+        # La Ceinture Force ne fonctionne que si le Pokémon est à pleine santé
+        if poke.current_hp == poke.max_hp:
+            poke.focus_sash_ready = True
+        else:
+            poke.focus_sash_ready = False
+        
+class BlackGlasses(Item):
+    """
+        Black Glasses augmente la puissance des attaques de type Ténèbres de 20%.
+    """
+    def on_attack(self, poke, attack, fight=None):
+        if attack.type == "Dark":
+            print(f"Les Black Glasses de {poke.name} renforcent la puissance de son attaque !")
+        return {"power": 1.2}
 
 item_registry = {
     "Leftovers": Leftovers(),
@@ -115,10 +138,12 @@ item_registry = {
     "Choice Specs": ChoiceBoost(),
     "Choice Scarf": ChoiceBoost(),
     "Eviolite": Eviolite(),
-    "Energy Booster": EnergyBooster(),
+    "Booster Energy": BoosterEnergy(),
     "Assault Vest": AssaultVest(),
     "Rocky Helmet": RockyHelmet(),
     "Heavy-Duty Boots": HeavyDutyBoots(),
+    "Focus Sash": FocusSash(),
+    "Black Glasses": BlackGlasses(),
 }
 
 def trigger_item(poke, event, *args):

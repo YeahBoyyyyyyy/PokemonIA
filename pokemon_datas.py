@@ -1328,4 +1328,154 @@ pokemon_data = {
         "weight": 95.0,
         "fully_evolved": True
     },
+    "Chien-Pao": {
+        "name": "Chien-Pao",
+        "types": ["Dark", "Ice"],
+        "abilities": ["Sword of Ruin"],
+        "stats": {
+            "HP":80,
+            "Attack": 120,
+            "Defense": 80,
+            "Sp. Atk": 90,
+            "Sp. Def": 65,
+            "Speed": 135
+        },
+        "weight": 152.2,
+        "fully_evolved": True
+    },
+    "Wo-Chien": {
+        "name": "Wo-Chien",
+        "types": ["Grass", "Dark"],
+        "abilities": ["Tablets of Ruin"],
+        "stats": {
+            "HP": 85,
+            "Attack": 85,
+            "Defense": 100,
+            "Sp. Atk": 95,
+            "Sp. Def": 135,
+            "Speed": 70
+        },
+        "weight": 120.0,
+        "fully_evolved": True
+    },
+    "Chi-Yu": {
+        "name": "Chi-Yu",
+        "types": ["Fire", "Dark"],
+        "abilities": ["Beads of Ruin"],
+        "stats": {
+            "HP": 55,
+            "Attack": 80,
+            "Defense": 80,
+            "Sp. Atk": 135,
+            "Sp. Def": 120,
+            "Speed": 100
+        },
+        "weight": 20.0,
+        "fully_evolved": True
+    },
+    "Ting-Lu": {
+        "name": "Ting-Lu",
+        "types": ["Ground", "Dark"],
+        "abilities": ["Vessel of Ruin"],
+        "stats": {
+            "HP": 155,
+            "Attack": 110,
+            "Defense": 125,
+            "Sp. Atk": 55,
+            "Sp. Def": 80,
+            "Speed": 45
+        },
+        "weight": 220.0,
+        "fully_evolved": True
+    },
+    "Zamazenta": {
+        "name": "Zamazenta",
+        "types": ["Fighting"],
+        "abilities": ["Dauntless Shield"],
+        "stats": {
+            "HP": 92,
+            "Attack": 130,
+            "Defense": 115,
+            "Sp. Atk": 80,
+            "Sp. Def": 115,
+            "Speed": 138
+        },
+        "weight": 210.0,
+        "fully_evolved": True
+    },
+    "Zacian": {
+        "name": "Zacian",
+        "types": ["Fairy"],
+        "abilities": ["Intrepid Sword"],
+        "stats": {
+            "HP": 92,
+            "Attack": 130,
+            "Defense": 115,
+            "Sp. Atk": 80,
+            "Sp. Def": 115,
+            "Speed": 138
+        },
+        "weight": 210.0,
+        "fully_evolved": True
+    },
+    "Darkrai": {
+        "name": "Darkrai",
+        "types": ["Dark"],
+        "abilities": ["Bad Dreams"],
+        "stats": {
+            "HP": 70,
+            "Attack": 90,
+            "Defense": 90,
+            "Sp. Atk": 135,
+            "Sp. Def": 90,
+            "Speed": 125
+        },
+        "weight": 50.5,
+        "fully_evolved": True
+    },
+    "Kingambit": {
+        "name": "Kingambit",
+        "types": ["Dark", "Steel"],
+        "abilities": ["Defiant"],
+        "stats": {
+            "HP": 100,
+            "Attack": 125,
+            "Defense": 100,
+            "Sp. Atk": 60,
+            "Sp. Def": 100,
+            "Speed": 70
+        },
+        "weight": 110.0,
+        "fully_evolved": True
+    },
+    "Iron Valiant": {
+        "name": "Iron Valiant",
+        "types": ["Fairy", "Fighting"],
+        "abilities": ["Quark Drive"],
+        "stats": {
+            "HP": 70,
+            "Attack": 130,
+            "Defense": 90,
+            "Sp. Atk": 110,
+            "Sp. Def": 60,
+            "Speed": 120
+        },
+        "weight": 65.0,
+        "fully_evolved": True
+    },
+    "Glimmora": {
+        "name": "Glimmora",
+        "types": ["Rock", "Poison"],
+        "abilities": ["Toxic Debris"],
+        "stats": {
+            "HP": 80,
+            "Attack": 110,
+            "Defense": 70,
+            "Sp. Atk": 130,
+            "Sp. Def": 80,
+            "Speed": 100
+        },
+        "weight": 40.0,
+        "fully_evolved": True
+    }
 }

@@ -37,7 +37,9 @@ class Talent:
     def modify_stat(self, poke, fight=None):
         return None
     
-        
+    def on_turn_end(self, poke, fight=None):
+        pass
+    
     def on_stat_change(self, poke, stat_changes, source, fight=None):
         """
         Appelé quand une tentative de modification de stats est effectuée.
@@ -71,7 +73,6 @@ class Chlorophyll(Talent):
                 poke.stats["Speed"] = poke.stats["Speed"] // 2
                 return "activated"
         return None
-
 
 class Overgrow(Talent):
     """ Talent qui booste les attaques de type Plante quand le Pokémon a moins de 1/3 de ses PV."""
@@ -131,9 +132,9 @@ class QuarkDrive(Talent):
         if fight.weather['current'] == "Electric Terrain":
             stat_max = max(poke.stats, key = poke.stats.get)
             if stat_max == "Speed":
-                poke.hidden_boost["Speed"] *= 1.5
+                poke.hidden_modifier["Speed"] *= 1.5
             else:
-                poke.hidden_boost[stat_max] *= 1.3
+                poke.hidden_modifier[stat_max] *= 1.3
 
 class Protosynthesis(Talent):
     """ Talent qui booste la stat la plus élevée du Pokémon sous le soleil ou dans le terrain électrique."""
@@ -141,9 +142,9 @@ class Protosynthesis(Talent):
         if fight.weather['current'] == "Electric Terrain":
             stat_max = max(poke.stats, key = poke.stats.get)
             if stat_max == "Speed":
-                poke.hidden_boost["Speed"] *= 1.5
+                poke.hidden_modifier["Speed"] *= 1.5
             else:
-                poke.hidden_boost[stat_max] *= 1.3
+                poke.hidden_modifier[stat_max] *= 1.3
 
 class FlashFire(Talent):
     """ Talent qui absorbe les attaques de type Feu et augmente l'Attaque Spéciale."""
@@ -285,79 +286,6 @@ class RoughSkin(Talent):
                 print(f"{attacker_poke.name} subit {dmg} points de dégâts à cause de Rough Skin !")
         return 1.0  # Pas de modification des dégâts
 
-def apply_stat_changes(target_poke, stat_changes, source="unknown", fight=None):
-    """
-    Applique des modifications de statistiques en gérant les talents qui peuvent les intercepter.
-    
-    :param target_poke: Le Pokémon dont les stats vont être modifiées
-    :param stat_changes: Dict des modifications {stat_name: change_value}
-    :param source: L'origine de la modification ("opponent", "self", "field", etc.)
-    :param fight: L'instance de combat
-    :return: True si des modifications ont été appliquées, False sinon
-    """
-    if not stat_changes:
-        return False
-    
-    # Convertir les noms de stats en indices si nécessaire
-    stat_mapping = {
-        "Attack": 0,
-        "Defense": 1,
-        "Sp. Atk": 2,
-        "Sp. Def": 3,
-        "Speed": 4
-    }
-    
-    # Déclencher l'événement on_stat_change pour le Pokémon ciblé
-    final_changes = trigger_talent(target_poke, "on_stat_change", stat_changes, source, fight)
-    if final_changes is None:
-        final_changes = stat_changes
-    
-    # Appliquer les modifications finales
-    changes_applied = False
-    for stat, change in final_changes.items():
-        if change != 0:
-            if isinstance(stat, str) and stat in stat_mapping:
-                stat_index = stat_mapping[stat]
-            elif isinstance(stat, int):
-                stat_index = stat
-            else:
-                continue
-                
-            # Appliquer la modification avec les limites (-6 à +6)
-            old_value = target_poke.stats_modifier[stat_index]
-            target_poke.stats_modifier[stat_index] = max(-6, min(6, old_value + change))
-            
-            if target_poke.stats_modifier[stat_index] != old_value:
-                changes_applied = True
-    
-    if changes_applied:
-        target_poke.actualize_stats()
-    
-    return changes_applied
-
-
-def trigger_talent(poke, event_name, *args):
-    """
-    Déclenche l'effet du talent en fonction de l'événement.
-
-    :param poke: Le Pokémon utilisant le talent.
-    :param event_name: Le nom de l'événement qui déclenche l'effet du talent.
-    :param args: Arguments supplémentaires à mettre dans cet ordre"""
-    talent = talent_registry.get(poke.talent)
-    if talent and hasattr(talent, event_name):
-        # Vérifier si la méthode du talent diffère de la méthode de base (qui ne fait rien)
-        talent_method = getattr(talent, event_name)
-        base_method = getattr(Talent, event_name)
-        
-        # Si la méthode a été surchargée (différente de la classe de base)
-        if talent_method.__func__ != base_method:
-            result = talent_method(poke, *args)
-            # Afficher le message seulement si le talent a effectivement fait quelque chose
-            if result is not None:
-                print(f"[TALENT] {poke.name} active {poke.talent} -> {event_name}")
-            return result
-    return None
-
 class CompoundEyes(Talent):
     """Talent qui augmente la précision des attaques de 30%."""
     def on_attack(self, poke, attack, fight):
@@ -441,6 +369,189 @@ class MagicBounce(Talent):
             
             return 0  # Annule l'attaque originale sur le Pokémon avec Magic Bounce
 
+class DauntlessShield(Talent):
+    """Augmente la Défense de 1 niveau quand le Pokémon entre pour la première sur le terrain."""
+    def on_entry(self, poke, fight):
+        if not hasattr(poke, "dauntless_shield_activated"):
+            poke.dauntless_shield_activated = True
+            apply_stat_changes(poke, {"Defense": 1}, "self", fight)
+            print(f"{poke.name} active Egide Inflexible et augmente sa Défense !")
+            return "activated"
+        
+class IntrepidSword(Talent):
+    """Augmente l'Attaque de 1 niveau quand le Pokémon entre pour la première sur le terrain."""
+    def on_entry(self, poke, fight):
+        if not hasattr(poke, "intrepid_sword_activated"):
+            poke.intrepid_sword_activated = True
+            apply_stat_changes(poke, {"Attack": 1}, "self", fight)
+            print(f"{poke.name} active Epée Intrépide et augmente son Attaque !")
+            return "activated"
+        
+class SwordOfRuin(Talent):
+    """Diminue de manière discrète la Défense de tous les Pokémon sur le terrain (ne possédant pas le talent) de 25%."""
+    
+    def on_entry(self, poke, fight):
+        """Applique l'effet de Sword of Ruin quand le Pokémon entre."""
+        fight.ruin_effects_active["Sword of Ruin"] = True
+        fight.apply_ruin_effects()
+        print(f"{poke.name} active Sword of Ruin !")
+        return "activated"
+
+class TabletsOfRuin(Talent):
+    """Diminue de manière discrète l'Attaque de tous les Pokémon sur le terrain (ne possédant pas le talent) de 25%."""
+    
+    def on_entry(self, poke, fight):
+        """Applique l'effet de Tablets of Ruin quand le Pokémon entre."""
+        fight.ruin_effects_active["Tablets of Ruin"] = True
+        fight.apply_ruin_effects()
+        print(f"{poke.name} active Tablets of Ruin !")
+        return "activated"
+
+class VesselOfRuin(Talent):
+    """Diminue de manière discrète l'Attaque Spéciale de tous les Pokémon sur le terrain (ne possédant pas le talent) de 25%."""
+    
+    def on_entry(self, poke, fight):
+        """Applique l'effet de Vessel of Ruin quand le Pokémon entre."""
+        fight.ruin_effects_active["Vessel of Ruin"] = True
+        fight.apply_ruin_effects()
+        print(f"{poke.name} active Vessel of Ruin !")
+        return "activated"
+
+class BeadsOfRuin(Talent):
+    """Diminue de manière discrète la Défense Spéciale de tous les Pokémon sur le terrain (ne possédant pas le talent) de 25%."""
+    
+    def on_entry(self, poke, fight):
+        """Applique l'effet de Beads of Ruin quand le Pokémon entre."""
+        fight.ruin_effects_active["Beads of Ruin"] = True
+        fight.apply_ruin_effects()
+        print(f"{poke.name} active Beads of Ruin !")
+        return "activated"
+    
+class ToxicDebris(Talent):
+    """Talent qui place des Débris Toxiques sur le terrain quand le Pokémon est touché par une attaque physique."""
+    
+    def on_defense(self, poke, incoming_attack, attacker_poke=None, fight=None):
+        # Se déclenche seulement si c'est une attaque physique qui inflige des dégâts
+        if incoming_attack and incoming_attack.category == "Physical":
+            user_team_id = fight.get_team_id(poke)
+            opponent_hazards = fight.hazards_team2 if user_team_id == 1 else fight.hazards_team1
+
+            if opponent_hazards["Toxic Spikes"] < 2:
+                opponent_hazards["Toxic Spikes"] += 1
+                layers = opponent_hazards["Toxic Spikes"]
+                effect = "empoisonnement" if layers == 1 else "empoisonnement grave"
+                print(f"{poke.name} pose des Toxic Spikes ! (Couche {layers}/2 - {effect})")
+                return "activated"
+            else:
+                print(f"Il y a déjà le maximum de Toxic Spikes sur le terrain !")
+        return None
+
+class SupremeOverlord(Talent):
+    """Talent qui augmente de 10% l'attaque et l'attaque spéciale pour chaque Pokémon allié KO"""
+    def on_entry(self, poke, fight):
+        user_team_id = fight.get_team_id(poke)
+        team = fight.team1 if user_team_id == 1 else fight.team2
+        num_kos = sum(1 for p in team if p.current_hp <= 0)
+
+        if num_kos > 0:
+            boost = 1 + 0.1 * num_kos
+            poke.hidden_modifier["Attack"] *= boost
+            poke.hidden_modifier["Sp. Atk"] *= boost
+            print(f"{poke.name} active Supreme Overlord et augmente son Attaque et Attaque Spéciale de {boost:.1f}x !")
+            poke.actualize_stats()
+            return "activated"
+        return None
+    
+class Multiscale(Talent):
+    """Talent qui réduit les dégâts subis par le Pokémon de 50% quand il est à plein PV."""
+    def on_defense(self, poke, incoming_attack, attacker_poke=None, fight=None):
+        if poke.current_hp == poke.max_hp:
+            print(f"{poke.name} réduit les dégâts grâce à Multiscale !")
+            return 0.5  # Réduit les dégâts de moitié
+        return 1.0  # Pas de réduction si pas à plein PV
+
+class BadDreams(Talent):
+    """Talent qui inflige 1/8 des PV max de chaque pokemon adverses endormis."""
+    def on_turn_end(self, poke, fight):
+        opponent = fight.active2 if poke == fight.active1 else fight.active1
+        if opponent.status == "sleep":
+            damage = int(opponent.max_hp * 0.125)
+            fight.damage_method(opponent, damage)
+            print(f"{opponent.name} subit {damage} points de dégâts à cause de Bad Dreams !")
+
+def apply_stat_changes(target_poke, stat_changes, source="unknown", fight=None):
+    """
+    Applique des modifications de statistiques en gérant les talents qui peuvent les intercepter.
+    
+    :param target_poke: Le Pokémon dont les stats vont être modifiées
+    :param stat_changes: Dict des modifications {stat_name: change_value}
+    :param source: L'origine de la modification ("opponent", "self", "field", etc.)
+    :param fight: L'instance de combat
+    :return: True si des modifications ont été appliquées, False sinon
+    """
+    if not stat_changes:
+        return False
+    
+    # Convertir les noms de stats en indices si nécessaire
+    stat_mapping = {
+        "Attack": 0,
+        "Defense": 1,
+        "Sp. Atk": 2,
+        "Sp. Def": 3,
+        "Speed": 4
+    }
+    
+    # Déclencher l'événement on_stat_change pour le Pokémon ciblé
+    final_changes = trigger_talent(target_poke, "on_stat_change", stat_changes, source, fight)
+    if final_changes is None:
+        final_changes = stat_changes
+    
+    # Appliquer les modifications finales
+    changes_applied = False
+    for stat, change in final_changes.items():
+        if change != 0:
+            if isinstance(stat, str) and stat in stat_mapping:
+                stat_index = stat_mapping[stat]
+            elif isinstance(stat, int):
+                stat_index = stat
+            else:
+                continue
+                
+            # Appliquer la modification avec les limites (-6 à +6)
+            old_value = target_poke.stats_modifier[stat_index]
+            target_poke.stats_modifier[stat_index] = max(-6, min(6, old_value + change))
+            
+            if target_poke.stats_modifier[stat_index] != old_value:
+                changes_applied = True
+    
+    if changes_applied:
+        target_poke.actualize_stats()
+    
+    return changes_applied
+
+
+def trigger_talent(poke, event_name, *args):
+    """
+    Déclenche l'effet du talent en fonction de l'événement.
+
+    :param poke: Le Pokémon utilisant le talent.
+    :param event_name: Le nom de l'événement qui déclenche l'effet du talent.
+    :param args: Arguments supplémentaires à mettre dans cet ordre"""
+    talent = talent_registry.get(poke.talent)
+    if talent and hasattr(talent, event_name):
+        # Vérifier si la méthode du talent diffère de la méthode de base (qui ne fait rien)
+        talent_method = getattr(talent, event_name)
+        base_method = getattr(Talent, event_name)
+        
+        # Si la méthode a été surchargée (différente de la classe de base)
+        if talent_method.__func__ != base_method:
+            result = talent_method(poke, *args)
+            # Afficher le message seulement si le talent a effectivement fait quelque chose
+            if result is not None:
+                print(f"[TALENT] {poke.name} active {poke.talent} -> {event_name}")
+            return result
+    return None
+
 # Registre des talents
 talent_registry = {
     "Water Absorb": WaterAbsorb(),
@@ -474,4 +585,14 @@ talent_registry = {
     "Static": Static(),
     "Flame Body": FlameBody(),
     "Magic Bounce": MagicBounce(),
+    "Dauntless Shield": DauntlessShield(),
+    "Intrepid Sword": IntrepidSword(),
+    "Sword of Ruin": SwordOfRuin(),
+    "Tablets of Ruin": TabletsOfRuin(),
+    "Vessel of Ruin": VesselOfRuin(),
+    "Beads of Ruin": BeadsOfRuin(),
+    "Supreme Overlord": SupremeOverlord(),
+    "Toxic Debris": ToxicDebris(),
+    "Multiscale": Multiscale(),
+    "Bad Dreams": BadDreams(),
 }

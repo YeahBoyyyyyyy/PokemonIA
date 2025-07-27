@@ -42,6 +42,14 @@ class Fight():
         self.pending_substitute_team1 = 0  # Substitute en attente pour l'équipe 1
         self.pending_substitute_team2 = 0  # Substitute en attente pour l'équipe 2
 
+        ## Talents de ruine actifs ##
+        self.ruin_effects_active = {
+            "Sword of Ruin": False,
+            "Tablets of Ruin": False, 
+            "Vessel of Ruin": False,
+            "Beads of Ruin": False
+        }
+
         """
         self.check_ability_weather(self.active1)
         self.check_ability_weather(self.active2)
@@ -164,13 +172,13 @@ class Fight():
         """
         for pokemon in [self.active1, self.active2]:
             if self.weather["current"] == "Snow" and self.weather["previous"] != "Snow" and "Ice" in pokemon.types:
-                pokemon.hidden_boost["Sp. Def"] *= 1.5
+                pokemon.hidden_modifier["Sp. Def"] *= 1.5
             elif self.weather["previous"] == "Snow" and self.weather["current"] != "Snow" and "Ice" in pokemon.types:
-                pokemon.hidden_boost["Sp. Def"] /= 1.5
+                pokemon.hidden_modifier["Sp. Def"] /= 1.5
             elif self.weather["current"] == "Sandstorm" and self.weather["previous"] and "Rock" in pokemon.types:
-                pokemon.hidden_boost["Defense"] *= 1.5
+                pokemon.hidden_modifier["Defense"] *= 1.5
             elif self.weather["previous"] == "Sandstorm" and self.weather["current"] != "Sandstorm" and "Rock" in pokemon.types:
-                pokemon.hidden_boost["Defense"] /= 1.5
+                pokemon.hidden_modifier["Defense"] /= 1.5
 
     def weather_update(self):
         """
@@ -319,10 +327,21 @@ class Fight():
             pokemon.current_hp = 1
             pokemon.sturdy_activated = False
             print(f"{pokemon.name} survit avec 1 PV grâce à Fermeté !")
+        # Vérification de la Ceinture Force (Focus Sash)
+        elif (pokemon.current_hp <= 0 and pokemon.item == "Focus Sash" and 
+              hasattr(pokemon, 'focus_sash_ready') and pokemon.focus_sash_ready):
+            pokemon.current_hp = 1
+            pokemon.focus_sash_ready = False
+            pokemon.item = None  # La Ceinture Force est consommée
+            print(f"{pokemon.name} survit grâce à sa Ceinture Force ! Il reste à 1 PV.")
         elif pokemon.current_hp < 0:
             pokemon.current_hp = 0
         elif pokemon.current_hp > pokemon.max_hp:
             pokemon.current_hp = pokemon.max_hp
+        
+        # Si le Pokémon est KO, supprimer ses effets de ruine
+        if pokemon.current_hp <= 0:
+            self.remove_ruin_effects(pokemon)
             
         return actual_damage
 
@@ -416,7 +435,7 @@ class Fight():
                 print(f"{p.name} récupère son type Vol !")
             
     #def attack(pokemon : pokemon, attack : dict, target : pokemon, fight : Fight):
-    def attack_power(self, user_pokemon : pokemon, attack : Attack, target_pokemon : pokemon, multiplier=1.0, talent_mod=None):
+    def attack_power(self, user_pokemon : pokemon, attack : Attack, target_pokemon : pokemon, multiplier=1.0, talent_mod=None, item_mod=None):
         """
         Effectue une attaque d'un Pokémon sur une cible.
 
@@ -435,9 +454,9 @@ class Fight():
         
         # Vérifier si l'attaque a une méthode get_power pour calculer la puissance dynamiquement
         if hasattr(attack, 'get_power'):
-            base_power = attack.get_power(user_pokemon, target_pokemon, self) * talent_mod["power"]
+            base_power = attack.get_power(user_pokemon, target_pokemon, self) * talent_mod["power"] * item_mod["power"]
         else:
-            base_power = attack.base_power * talent_mod["power"]
+            base_power = attack.base_power * talent_mod["power"] * item_mod["power"]
             
         attack_stat = user_pokemon.current_stats()['Attack'] if attack.category == 'Physical' else user_pokemon.current_stats()['Sp. Atk']
         attack_stat *= talent_mod["attack"] if talent_mod and talent_mod["attack"] is not None else 1.0  # Modificateur de l'attaque du Pokémon
@@ -527,6 +546,10 @@ class Fight():
         if team == 1:
             if self.team1[index].current_hp > 0:
                 print(f"{self.active1.name} est remplacé par {self.team1[index].name} !")
+                
+                # Supprimer les effets de ruine du Pokémon qui sort
+                self.remove_ruin_effects(self.active1)
+                
                 self.active1.reset_stats_nd_status()  # Réinitialiser les stats et les effets de statut du Pokémon actif
                 self.active1 = self.team1[index]
                 self.active1.init_fight(self)  # Initialiser l'attribut fight
@@ -543,6 +566,10 @@ class Fight():
         elif team == 2:
             if self.team2[index].current_hp > 0:
                 print(f"{self.active2.name} est remplacé par {self.team2[index].name} !")
+                
+                # Supprimer les effets de ruine du Pokémon qui sort
+                self.remove_ruin_effects(self.active2)
+                
                 self.active2.reset_stats_nd_status()  # Réinitialiser les stats et les effets de statut du Pokémon actif
                 self.active2 = self.team2[index]
                 self.active2.init_fight(self)  # Initialiser l'attribut fight
@@ -665,6 +692,9 @@ class Fight():
             if not attacker.locked_attack:
                 attacker.locked_attack = attack
         
+        # Déclencher les objets before_attack pour le défenseur (ex: Focus Sash)
+        trigger_item(defender, "before_attack", attack, self)
+        
         # Calcul des dégâts
         dmg = self.calculate_damage(attacker, attack, defender)
         if dmg:
@@ -777,16 +807,20 @@ class Fight():
 
         multiplier = trigger_talent(defender, "on_defense", attack, attacker, self)
         on_attack_mod = trigger_talent(attacker, "on_attack", attack, self)
+        item_mod = trigger_item(attacker, "on_attack", attack, self)
 
         # Valeur par défaut si on_attack_mod est None
         if on_attack_mod is None:
             on_attack_mod = {"attack": 1.0, "power": 1.0, "accuracy": 1.0, "type": None}
+
+        if item_mod is None:
+            item_mod = {"power": 1.0}
         
         damage = None
 
         if attack.category != "Status":
             # Calculer les dégâts finaux
-            damage = self.attack_power(attacker, attack, defender, multiplier, on_attack_mod)
+            damage = self.attack_power(attacker, attack, defender, multiplier, on_attack_mod, item_mod)
             damage = int(damage)
             
         return damage
@@ -963,6 +997,7 @@ class Fight():
         for p in [self.active1, self.active2]:
             self.apply_status_damage(p)  # Appliquer les dégâts liés aux statuts persistants
             trigger_item(p, "on_turn_end", self)  # Appliquer les effets des objets à la fin du tour
+            trigger_talent(p, "on_turn_end", self)  # Appliquer les effets des talents à la fin du tour
             
             # Gérer les statuts temporaires
             self.manage_temporary_status(p)
@@ -1047,6 +1082,73 @@ class Fight():
         
         # Ici on peut ajouter d'autres statuts temporaires si nécessaire
         # ex: Focus Energy, Taunt, etc.
+
+    def remove_ruin_effects(self, departing_pokemon):
+        """Supprime les effets de ruine quand un Pokémon avec un talent de ruine quitte le combat."""
+        ruin_talents = ["Sword of Ruin", "Tablets of Ruin", "Vessel of Ruin", "Beads of Ruin"]
+        
+        if departing_pokemon.talent in ruin_talents:
+            # Désactiver l'effet correspondant
+            self.ruin_effects_active[departing_pokemon.talent] = False
+            
+            # Vérifier s'il y a encore un autre Pokémon avec le même talent
+            still_active = False
+            for pokemon in [self.active1, self.active2]:
+                if pokemon and pokemon != departing_pokemon and pokemon.current_hp > 0 and pokemon.talent == departing_pokemon.talent:
+                    still_active = True
+                    break
+            
+            # Si aucun autre Pokémon n'a ce talent, réappliquer tous les effets actifs
+            if not still_active:
+                # Réappliquer tous les effets actifs (ce qui va automatiquement 
+                # réinitialiser les hidden_modifier appropriés)
+                self.apply_ruin_effects()
+                print(f"Les effets de {departing_pokemon.talent} ont été supprimés.")
+
+    def apply_ruin_effects(self):
+        """
+        Applique les effets des talents de ruine à tous les Pokémon actifs.
+        Cette méthode doit être appelée quand un Pokémon avec un talent de ruine entre sur le terrain.
+        """
+        ruin_talents = ["Sword of Ruin", "Tablets of Ruin", "Vessel of Ruin", "Beads of Ruin"]
+        
+        # Vérifier si un talent de ruine est actif sur le terrain
+        for pokemon in [self.active1, self.active2]:
+            if pokemon.current_hp > 0 and pokemon.talent in ruin_talents:
+                self.ruin_effects_active[pokemon.talent] = True
+        
+        # Appliquer les effets de ruine à tous les Pokémon qui n'ont pas ce talent
+        for pokemon in [self.active1, self.active2]:
+            if pokemon.current_hp > 0:
+                self.apply_individual_ruin_effects(pokemon)
+    
+    def apply_individual_ruin_effects(self, pokemon):
+        """
+        Applique les effets de ruine individuels à un Pokémon spécifique en utilisant hidden_modifier.
+        """
+        stat_map = {
+            "Sword of Ruin": "Defense",
+            "Tablets of Ruin": "Attack", 
+            "Vessel of Ruin": "Sp. Atk",
+            "Beads of Ruin": "Sp. Def"
+        }
+        
+        # Réinitialiser les hidden_modifier pour les stats de ruine
+        for stat in stat_map.values():
+            pokemon.hidden_modifier[stat] = 1.0
+        
+        # Appliquer les effets de ruine actifs
+        for ruin_talent, active in self.ruin_effects_active.items():
+            if active and ruin_talent in stat_map:
+                affected_stat = stat_map[ruin_talent]
+                
+                # Ne pas affecter les Pokémon avec le même talent
+                if pokemon.talent != ruin_talent:
+                    pokemon.hidden_modifier[affected_stat] = 0.75
+                    print(f"{ruin_talent} réduit {affected_stat} de {pokemon.name} de 25%")
+        
+        # Actualiser les stats avec les nouveaux modificateurs
+        pokemon.actualize_stats()
 
     ### Savoir la probabilité de toucher une attaque ###
     def calculate_hit_chance(self, attacker, defender, attack, talent_mod):
@@ -1135,18 +1237,7 @@ class Fight():
                     return False
                 case _:
                     raise ValueError(f"Invalid sleep counter value: {attacker.sleep_counter}")
-
-            """
-            if attacker.sleep_counter > 0:
-                print(f"{attacker.name} dort encore ({attacker.sleep_counter} tour(s) restant).")
-                attacker.sleep_counter -= 1
-                return False
-            else:
-                print(f"{attacker.name} se réveille !")
-                attacker.remove_status()
-                return True
-            """
-
+                
         if attacker.status == "frozen":
             if random.random() < 0.2:  # 20% chance de dégeler
                 print(f"{attacker.name} dégèle !")
