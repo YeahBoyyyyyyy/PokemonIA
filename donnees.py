@@ -1,25 +1,65 @@
 class bcolors:
-    OKWHITE = '\033[97m'
-    OKBLACK = '\033[30m'
-    OKRED = '\033[91m'
-    OKORANGE = '\033[38;5;208m'
-    OKYELLOW = '\033[93m'
-    OKPINK = '\033[95m'
-    OKPURPLE = '\033[95m'
-    OKMAGENTA = '\033[35m'
-    OKBLUE = '\033[94m'
-    OKCYAN = '\033[96m'
-    OKGREEN = '\033[92m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNBOLD = '\033[22m'
-    UNDERLINE = '\033[4m'
-    LIGHT_GREEN = '\033[92m'
-    LIGHT_RED = '\033[91m'
-    LIGHT_BLUE = '\033[94m'
+
     GRAY = '\033[90m'
-    LIGHT_YELLOW = '\033[93m'
-    DARK_RED = '\033[31m'
+    # --- Text Styles ---
+    ENDC = '\033[0m'  # Réinitialise tous les styles et couleurs
+    BOLD          = '\033[1m'   # Texte en gras
+    UNBOLD = '\033[22m'
+    DIM           = '\033[2m'   # Texte atténué (moins lumineux, utile pour indiquer que c’est secondaire)
+    ITALIC        = '\033[3m'   # Texte en italique (pas pris en charge partout)
+    UNDERLINE     = '\033[4m'   # Texte souligné
+    BLINK         = '\033[5m'   # Texte clignotant (rarement pris en charge)
+    REVERSE       = '\033[7m'   # Inverse les couleurs (texte devient fond, fond devient texte)
+    HIDDEN        = '\033[8m'   # Texte caché (visible uniquement en le copiant)
+    STRIKETHROUGH = '\033[9m'   # Texte barré (pas toujours pris en charge)
+
+    # --- Text Colors (Foreground) ---
+    BLACK       = '\033[30m'  # Texte noir
+    DARK_RED         = '\033[31m'  # Texte rouge
+    GREEN       = '\033[32m'  # Texte vert
+    YELLOW      = '\033[33m'  # Texte jaune
+    BLUE        = '\033[34m'  # Texte bleu
+    MAGENTA     = '\033[35m'  # Texte magenta (rose/violet)
+    CYAN        = '\033[36m'  # Texte cyan (bleu clair)
+    WHITE       = '\033[37m'  # Texte blanc (ou gris clair selon le terminal)
+    DEFAULT     = '\033[39m'  # Couleur de texte par défaut du terminal
+    ORANGE = '\033[38;5;208m'  # Texte orange (ANSI 256 couleurs)
+
+    # --- Bright Text Colors ---
+    LIGHT_BLACK   = '\033[90m'  # Gris foncé (noir lumineux)
+    OKRED = '\033[91m'  # Rouge clair
+    LIGHT_RED = '\033[91m'
+    OKGREEN = '\033[92m'  # Vert clair
+    LIGHT_GREEN = '\033[92m'
+    OKYELLOW = '\033[93m'  # Jaune clair
+    LIGHT_YELLOW = '\033[93m'  # Jaune clair
+    OKBLUE    = '\033[94m'  # Bleu clair
+    LIGHT_BLUE = '\033[94m'
+    OKMAGENTA = '\033[95m'  # Magenta clair
+    OKCYAN    = '\033[96m'  # Cyan clair
+    OKWHITE   = '\033[97m'  # Blanc vif
+
+    # --- Background Colors ---
+    BG_BLACK     = '\033[40m'  # Fond noir
+    BG_RED       = '\033[41m'  # Fond rouge
+    BG_GREEN     = '\033[42m'  # Fond vert
+    BG_YELLOW    = '\033[43m'  # Fond jaune
+    BG_BLUE      = '\033[44m'  # Fond bleu
+    BG_MAGENTA   = '\033[45m'  # Fond magenta
+    BG_CYAN      = '\033[46m'  # Fond cyan
+    BG_WHITE     = '\033[47m'  # Fond blanc
+    BG_DEFAULT   = '\033[49m'  # Fond par défaut du terminal
+
+    # --- Bright Background Colors ---
+    BG_BRIGHT_BLACK   = '\033[100m'  # Fond gris foncé
+    BG_BRIGHT_RED     = '\033[101m'  # Fond rouge clair
+    BG_BRIGHT_GREEN   = '\033[102m'  # Fond vert clair
+    BG_BRIGHT_YELLOW  = '\033[103m'  # Fond jaune clair
+    BG_BRIGHT_BLUE    = '\033[104m'  # Fond bleu clair
+    BG_BRIGHT_MAGENTA = '\033[105m'  # Fond magenta clair
+    BG_BRIGHT_CYAN    = '\033[106m'  # Fond cyan clair
+    BG_BRIGHT_WHITE   = '\033[107m'  # Fond blanc vif
+
 
 POKEMON_TYPES = ["Normal", "Fighting", "Flying", "Poison", "Ground", "Rock", "Bug", "Ghost", "Steel",
               "Fire", "Water", "Grass", "Electric", "Psychic", "Ice", "Dragon", "Dark", "Fairy", "Null"]

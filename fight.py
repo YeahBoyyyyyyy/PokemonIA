@@ -4,7 +4,7 @@ import donnees
 from donnees import bcolors
 from pokemon_items import trigger_item
 from pokemon_talents import trigger_talent, apply_stat_changes
-from pokemon_attacks import Attack
+from pokemon_attacks import Attack, process_future_sight_attacks
 
 class Fight():
     def __init__(self, team1, team2):
@@ -42,6 +42,10 @@ class Fight():
         self.pending_substitute_team1 = 0  # Substitute en attente pour l'équipe 1
         self.pending_substitute_team2 = 0  # Substitute en attente pour l'équipe 2
 
+        ## Tailwind
+        self.tailwind_team1 = 0
+        self.tailwind_team2 = 0
+
         ## Talents de ruine actifs ##
         self.ruin_effects_active = {
             "Sword of Ruin": False,
@@ -78,8 +82,10 @@ class Fight():
         Sélectionne automatiquement le prochain Pokémon vivant dans l'équipe.
         """
         team = self.team1 if team_id == 1 else self.team2
+        current_active = self.active1 if team_id == 1 else self.active2
+        
         for i, p in enumerate(team):
-            if p.current_hp > 0:
+            if p.current_hp > 0 and p != current_active:
                 self.player_switch(team_id, i)
                 return
 
@@ -139,24 +145,24 @@ class Fight():
                 for pokemon in [self.active1, self.active2]:
                     if not any(t in pokemon.types for t in ["Rock", "Steel", "Ground"]):
                         damage = int(pokemon.max_hp * 0.0625)
-                        self.damage_method(pokemon, damage)
+                        self.damage_method(pokemon, damage, True)
             case "Snow":
                 for pokemon in [self.active1, self.active2]:
                     if "Ice" not in pokemon.types:
                         damage = int(pokemon.max_hp * 0.0625)
-                        self.damage_method(pokemon, damage)
+                        self.damage_method(pokemon, damage, True)
             case "Rain":
                 for pokemon in [self.active1, self.active2]:
                     # Si l'un des Pokémons a le talent "Rain Dish", il regagne des PV
                     if pokemon.talent == "Rain Dish" and not getattr(pokemon, 'heal_blocked', False):
                         heal_amount = int(pokemon.max_hp * 0.0625) # Régénération de 1/16 des PV max
-                        self.damage_method(pokemon, -heal_amount)
+                        self.damage_method(pokemon, -heal_amount, True)
                     elif pokemon.talent == "Rain Dish" and getattr(pokemon, 'heal_blocked', False):
                         print(f"{pokemon.name} ne peut pas bénéficier de Rain Dish à cause de Heal Block !")
                     # Si l'un des Pokémons a le talent "Dry Skin", il perd des PV
                     if pokemon.talent == "Dry Skin" and not getattr(pokemon, 'heal_blocked', False):
                         heal_amount = int(pokemon.max_hp * 0.125)
-                        self.damage_method(pokemon, -heal_amount)  # Régénération de 1/8 des PV max
+                        self.damage_method(pokemon, -heal_amount, True)  # Régénération de 1/8 des PV max
                     elif pokemon.talent == "Dry Skin" and getattr(pokemon, 'heal_blocked', False):
                         print(f"{pokemon.name} ne peut pas bénéficier de Dry Skin à cause de Heal Block !")
             case "Sunny":
@@ -164,7 +170,7 @@ class Fight():
                     # Si l'un des Pokémons a le talent "Dry Skin", il perd des PV
                     if pokemon.talent == "Dry Skin":
                         damage = int(pokemon.max_hp * 0.125)
-                        self.damage_method(pokemon, damage)
+                        self.damage_method(pokemon, damage, True)
                     
     def weather_boost_modifier(self):
         """
@@ -195,24 +201,6 @@ class Fight():
             self.weather['previous'] = self.weather['current']
             self.weather['current'] = None
             
-
-    """
-    INUTILE ?
-        def check_ability_weather(self, pokemon):
-            
-            Déclenche une météo si le Pokémon possède un talent météo.
-            
-            talent_weather = {
-                "Drought": "Sun",
-                "Drizzle": "Rain",
-                "Sand Stream": "Sandstorm",
-                "Snow Warning": "Snow"
-            }
-
-            if pokemon.talent in talent_weather:
-                self.set_weather(talent_weather[pokemon.talent], duration=5)
-    """
-
 ###### Méthodes pour gérer les effets de terrain #######
     def set_field(self, effect):
         self.field = effect
@@ -289,6 +277,10 @@ class Fight():
                 self.remove_screen(effect, 2)
                 print(f"L'écran {effect} de l'équipe 2 a expiré.")
 
+    def tailwind_update(self):
+        self.tailwind_team1 = min(self.tailwind_team1 - 1, 0)
+        self.tailwind_team2 = min(self.tailwind_team2 - 1, 0)
+
     def damage_method(self, pokemon : pokemon, damage : int, bypass_substitute=False, is_draining=False):
         """
         Applique les dégâts à un Pokémon.
@@ -347,42 +339,76 @@ class Fight():
 
     ## Printing methods pour debugger
     def print_fight_status(self):
-        print(f"{bcolors.OKGREEN}Pokémon 1: {self.active1.name} (HP: {self.active1.current_hp}/{self.active1.max_hp})")
+        display_pokemon(self.active1)
         if self.active1.has_substitute():
             print(f"   Clone: {self.active1.substitute_hp} PV")
-        print(f"Pokémon 2: {self.active2.name} (HP: {self.active2.current_hp}/{self.active2.max_hp}){bcolors.ENDC}")
+        display_pokemon(self.active2)
         if self.active2.has_substitute():
             print(f"   Clone: {self.active2.substitute_hp} PV")
-        print(f"{bcolors.OKYELLOW}Météo actuelle: {self.weather['current']} pendant encore {self.weather_turn_left} tours" if self.weather['current'] else "Aucune météo active")
-        print(f"Écrans équipe 1: {self.screen_team1 if self.screen_team1 else 'Aucun'}{bcolors.ENDC}")
-        print(f"{bcolors.LIGHT_YELLOW}", end="")
-        if self.screen_team1 != []:
-            for screen in self.screen_team1:
-                print(f"Écran actif: {screen} ({self.screen_turn_left_team1[screen]} tours restants)")
-        print(f"{bcolors.OKYELLOW}", end="")
-        print(f"Écrans équipe 2: {self.screen_team2 if self.screen_team2 else 'Aucun'}{bcolors.ENDC}")
-        print(f"{bcolors.LIGHT_YELLOW}", end="")
-        if self.screen_team2 != []:
-            for screen in self.screen_team2:
-                print(f"Écran actif: {screen} ({self.screen_turn_left_team2[screen]} tours restants)")
+        display_wall(self)
         # Afficher les effets de terrain s'il y en a
         if self.field and self.field_turn_left:
             print(f"Effet de terrain actif: {self.field} ({self.field_turn_left} tours restants)")
         print(f"{bcolors.ENDC}", end="")
+        display_hazards(self)
+        display_weather(self)
 
     def fight(self):
-        print(f"{bcolors.OKMAGENTA}Le combat oppose {self.active1.name} à {self.active2.name} !{bcolors.ENDC}")
+        print(f"{bcolors.BG_WHITE}{bcolors.BOLD}{bcolors.BLACK}Le combat oppose {self.active1.name} à {self.active2.name} !{bcolors.ENDC}{bcolors.UNBOLD}{bcolors.BG_DEFAULT}")
 
     def next_turn(self):
         """
         Passe au tour suivant du combat.
         Incrémente le compteur de tours et applique les effets de terrain et de météo.
         """
-        self.turn += 1
-        print(f"Tour {self.turn}:")
-        self.weather_update()
+        
+        # Appliquer les effets de fin de tour AVANT d'incrémenter le tour
+        # Effet de Leech Seed à la fin du tour
+        for pokemon in [self.active1, self.active2]:
+            if pokemon.leech_seeded_by and pokemon.current_hp > 0:
+                drained = max(1, pokemon.max_hp // 8)
+                pokemon.current_hp = max(0, pokemon.current_hp - drained)
+                seeder = pokemon.leech_seeded_by
+                if seeder.current_hp > 0:
+                    seeder.current_hp = min(seeder.max_hp, seeder.current_hp + drained)
+                print(f"{pokemon.name} perd {drained} PV à cause de Graine ! {seeder.name} les récupère.")
 
-        #self.print_fight_status()
+        for p in [self.active1, self.active2]:
+            self.apply_status_damage(p)  # Appliquer les dégâts liés aux statuts persistants
+            trigger_item(p, "on_turn_end", self)  # Appliquer les effets des objets à la fin du tour
+            trigger_talent(p, "on_turn_end", self)  # Appliquer les effets des talents à la fin du tour
+            
+            # Gérer les statuts temporaires
+            self.manage_temporary_status(p)
+        
+        if self.active1.current_hp == 0:
+            print(f"{self.active1.name} est K.O. !")
+            defeated_team = self.team1 if self.active1 == self.active1 else self.team2
+            team_id = 1 if self.active1 == self.active1 else 2
+            if self.is_team_defeated(defeated_team):
+                if self.check_battle_end():
+                    return
+            else:
+                if team_id == 1:  # Joueur humain
+                    self.player_choice_switch(team_id)
+                else:  # IA
+                    self.auto_switch(team_id)
+
+        if self.active2.current_hp == 0:
+            print(f"{self.active2.name} est K.O. !")
+            defeated_team = self.team1 if self.active2 == self.active1 else self.team2
+            team_id = 1 if self.active2 == self.active1 else 2
+            if self.is_team_defeated(defeated_team):
+                if self.check_battle_end():
+                    return
+            else:
+                if team_id == 1:  # Joueur humain
+                    self.player_choice_switch(team_id)
+                else:  # IA
+                    self.auto_switch(team_id)
+
+        self.turn += 1
+        self.weather_update()
         
         # Appliquer les effets de terrain et de météo
         self.apply_weather_effects()
@@ -403,14 +429,10 @@ class Fight():
         
         # Gérer les écrans de protection
         self.update_screens()
-
-        if "Electric Terrain" == self.field:
-            print("Le terrain est électrique ! Les Pokémon ne peuvent pas dormir.")
-        elif "Psychic Terrain" == self.field:
-            print("Le terrain est psychique ! Les attaques de priorité sont neutralisées.")
-        elif "Misty Terrain" == self.field:
-            print("Le terrain est brumeux ! Les attaques de type Dragon sont neutralisées.")
         
+        # Gérer tailwind
+        self.tailwind_update()
+
         for p in [self.active1, self.active2]:
             trigger_talent(p, "modify_stat", self)
             
@@ -433,6 +455,9 @@ class Fight():
                     delattr(p, 'original_types')  # Nettoyer l'attribut temporaire
                 p.lost_flying_from_roost = False
                 print(f"{p.name} récupère son type Vol !")
+        
+        # Traiter les attaques Future Sight programmées
+        process_future_sight_attacks(self)
             
     #def attack(pokemon : pokemon, attack : dict, target : pokemon, fight : Fight):
     def attack_power(self, user_pokemon : pokemon, attack : Attack, target_pokemon : pokemon, multiplier=1.0, talent_mod=None, item_mod=None):
@@ -447,8 +472,16 @@ class Fight():
         formule de calcul des dégâts :
         damage = ((22 * base_power * (attack_stat / defense_stat)) / 50 + 2) * burn * screen * weather * FF * critical * item * stab * random * Type1 * Type2 * Berry
         """
-        if multiplier == None:
+    
+        if not (isinstance(multiplier, int) or isinstance(multiplier, float)):
             multiplier = 1.0
+            
+        # Valeurs par défaut pour talent_mod et item_mod si elles sont None
+        if talent_mod is None:
+            talent_mod = {"attack": 1.0, "power": 1.0, "accuracy": 1.0, "type": None}
+        if item_mod is None:
+            item_mod = {"attack": 1.0, "power": 1.0, "accuracy": 1.0}
+            
         # Le coup critique est déterminé avant car s'il y a un coup critique, on ne prend pas en compte les modificateurs de stats
         attack_boost = attack.boosted_attack(user_pokemon, target_pokemon, self) if hasattr(attack, 'boosted_attack') else 1.0
         
@@ -460,6 +493,7 @@ class Fight():
             
         attack_stat = user_pokemon.current_stats()['Attack'] if attack.category == 'Physical' else user_pokemon.current_stats()['Sp. Atk']
         attack_stat *= talent_mod["attack"] if talent_mod and talent_mod["attack"] is not None else 1.0  # Modificateur de l'attaque du Pokémon
+        attack_stat *= item_mod["attack"] if item_mod and item_mod["attack"] is not None else 1.0  # Modificateur de l'attaque de l'objet
         terrain_boost = attack_terrain_boost(attack, self)  # Modificateur de puissance des attaques en fonction du terrain
         weather_boost = attack_weather_boost(attack, self)  # Modificateur de puissance des attaques en fonction de la météo
         berry = berry_boost(target_pokemon, attack)  # Placeholder pour l'effet de la baie, si applicable
@@ -500,41 +534,6 @@ class Fight():
         print(f"{bcolors.OKMAGENTA}Dégâts calculés : {damage} (base_power: {base_power}, attack_stat: {attack_stat}, defense_stat: {defense_stat}, burn: {burn}, screen: {screen}, weather_boost: {weather_boost}, terrain_boost: {terrain_boost}, critical: {critical}, stab: {stab}, rdm: {rdm}, type_eff: {type_eff}, berry: {berry}, boost: {attack_boost}, coef talent: {multiplier}){bcolors.ENDC}")
         return damage
     
-    ## PRINTING METHODS POUR DEBUGGER
-
-    def print_wall_effects(self):
-        """
-        Affiche les effets des murs de protection actifs pour chaque équipe.
-        """
-        if self.screen_team1:
-            print("Équipe 1:")
-            for effet in self.screen_team1:
-                if effet == "light_screen":
-                    print(f"  Mur Lumière actif pendant encore {self.screen_turn_left_team1[effet]} tours.")
-                elif effet == "reflect":
-                    print(f"  Protection active pendant encore {self.screen_turn_left_team1[effet]} tours.")
-                elif effet == "aurora_veil":
-                    print(f"  Voile Aurore actif pendant encore {self.screen_turn_left_team1[effet]} tours.")
-        
-        if self.screen_team2:
-            print("Équipe 2:")
-            for effet in self.screen_team2:
-                if effet == "light_screen":
-                    print(f"  Mur Lumière actif pendant encore {self.screen_turn_left_team2[effet]} tours.")
-                elif effet == "reflect":
-                    print(f"  Protection active pendant encore {self.screen_turn_left_team2[effet]} tours.")
-                elif effet == "aurora_veil":
-                    print(f"  Voile Aurore actif pendant encore {self.screen_turn_left_team2[effet]} tours.")
-        
-        if not self.screen_team1 and not self.screen_team2:
-            print("Aucun écran de protection actif.")
-    
-    def print_weather_effects(self):
-        """
-        Affiche les effets de la météo actuelle.
-        """
-        print(f"Météo actuelle : {self.weather['current']} ({self.weather_turn_left} tours restants)")
-
 ###### Actions ######
 
     def player_switch(self, team: int, index: int):
@@ -546,6 +545,9 @@ class Fight():
         if team == 1:
             if self.team1[index].current_hp > 0:
                 print(f"{self.active1.name} est remplacé par {self.team1[index].name} !")
+                
+                # Déclencher on_exit pour le Pokémon qui sort (Regenerator, etc.)
+                trigger_talent(self.active1, "on_exit", self)
                 
                 # Supprimer les effets de ruine du Pokémon qui sort
                 self.remove_ruin_effects(self.active1)
@@ -560,12 +562,16 @@ class Fight():
                     print(f"{self.active1.name} hérite du clone avec {self.pending_substitute_team1} PV !")
                     self.pending_substitute_team1 = 0  # Reset
                 
+                trigger_item(self.active1, "on_entry", self)
                 trigger_talent(self.active1, "on_entry", self)
                 on_entry_hazards(self.active1, self)
 
         elif team == 2:
             if self.team2[index].current_hp > 0:
                 print(f"{self.active2.name} est remplacé par {self.team2[index].name} !")
+                
+                # Déclencher on_exit pour le Pokémon qui sort (Regenerator, etc.)
+                trigger_talent(self.active2, "on_exit", self)
                 
                 # Supprimer les effets de ruine du Pokémon qui sort
                 self.remove_ruin_effects(self.active2)
@@ -580,6 +586,7 @@ class Fight():
                     print(f"{self.active2.name} hérite du clone avec {self.pending_substitute_team2} PV !")
                     self.pending_substitute_team2 = 0  # Reset
                 
+                trigger_item(self.active2, "on_entry", self)
                 trigger_talent(self.active2, "on_entry", self)
                 on_entry_hazards(self.active2, self)       
 
@@ -620,7 +627,7 @@ class Fight():
                 if random.random() < 0.33:
                     print(f"{attacker.name} est confus et se blesse lui-même !")
                     damage = confusion_attack(attacker)
-                    self.damage_method(attacker, damage)
+                    self.damage_method(attacker, damage, True)
                     if random() < 0.33: # Le Pokémon ne sera plus confus au prochain tour 1/3 chance
                         attacker.is_confused = False
                     return
@@ -659,9 +666,16 @@ class Fight():
                     return
 
         on_attack_mod = trigger_talent(attacker, "on_attack", attack, self)
+        on_item_mod = trigger_item(attacker, "on_attack", attack, self)
+
+        if on_item_mod is None:
+            on_item_mod = {"attack": 1.0, "power": 1.0, "accuracy" : 1.0}
+
+        if on_attack_mod is None:
+            on_attack_mod = {"attack": 1.0, "power": 1.0, "accuracy": 1.0, "type": None}
 
         # Vérification Précision avec modificateurs
-        if not self.calculate_hit_chance(attacker, defender, attack, on_attack_mod):
+        if not self.calculate_hit_chance(attacker, defender, attack, on_attack_mod, on_item_mod):
             print(f"{attacker.name} rate son attaque !")
             return
 
@@ -676,8 +690,14 @@ class Fight():
             if not attack.on_condition_attack(attacker, defender, defender_attack, self):
                 return
 
-        # Vérification des talents de l'attaquant ex lavabo, etc.
-        multiplier = trigger_talent(defender, "on_defense", attack, attacker, self)
+        # Vérification des talents défensifs seulement si l'attaque cible l'adversaire
+        if attack.target == "Foe" or attack.target == "All Foes":
+            multiplier = trigger_talent(defender, "on_defense", attack, attacker, self)
+            if multiplier == 0:
+                print(f"{defender.name} n'est pas affecté grâce à son talent !")
+                return 
+        else:
+            multiplier = 1.0  # Pas de modificateur défensif si l'attaque ne cible pas l'adversaire
         if multiplier == 0:
             print(f"{defender.name} n’est pas affecté grâce à son talent !")
             return 
@@ -695,10 +715,16 @@ class Fight():
         # Déclencher les objets before_attack pour le défenseur (ex: Focus Sash)
         trigger_item(defender, "before_attack", attack, self)
         
-        # Calcul des dégâts
-        dmg = self.calculate_damage(attacker, attack, defender)
-        if dmg:
+        # Calcul des dégâts (gestion spéciale pour les attaques multi-coups)
+        dmg = self.handle_multi_hit_attack(attacker, attack, defender, on_attack_mod, on_item_mod, multiplier)
+        health_before = defender.current_hp  # Pour les effets secondaires
+        if dmg and not (hasattr(attack, 'multi_hit') and attack.multi_hit):
+            # Pour les attaques normales, appliquer les dégâts ici
+            # Pour les multi-coups, les dégâts sont déjà appliqués dans handle_multi_hit_attack
             self.apply_damage(dmg, defender, attack, attacker)
+        
+        if health_before - dmg < 0:
+            dmg = health_before  # Si les dégâts dépassent les PV restants, ajuster au nombre de dégâts pour atteindre 0 PV
 
         # Effets secondaires de l'attaque (seulement si pas déjà appelé pour les attaques à charge)
         if charging_result != "attack":
@@ -730,6 +756,8 @@ class Fight():
             # Déterminer la cible en fonction du target de l'attaque
             if attack.target == "Foe":
                 target = defender
+                if attacker.talent == "Prankster":
+                    trigger_talent(attacker, "prankster", attack, self)
             elif attack.target == "User":
                 target = attacker
             else:
@@ -741,12 +769,25 @@ class Fight():
                 return
             
             # Appliquer l'effet secondaire
+            # Pour les attaques d'état pur, transmettre toujours damage_dealt
+            # Pour les attaques de dégâts, ne transmettre damage_dealt que si > 0
+            should_pass_damage = (attack.category == "Status" or damage_dealt > 0)
+            
             # Essayer d'abord avec le paramètre damage_dealt, sinon utiliser l'ancienne signature
             try:
-                attack.apply_effect(attacker, target, self, damage_dealt)
+                if should_pass_damage:
+                    attack.apply_effect(attacker, target, self, damage_dealt)
+                else:
+                    # Ne pas appliquer les effets secondaires des attaques de dégâts qui font 0 dégâts
+                    print(f"Les effets secondaires de {attack.name} ne s'appliquent pas car l'attaque n'a pas infligé de dégâts.")
+                    return
             except TypeError:
                 # Ancienne signature sans damage_dealt
-                attack.apply_effect(attacker, target, self)
+                if should_pass_damage:
+                    attack.apply_effect(attacker, target, self)
+                else:
+                    print(f"Les effets secondaires de {attack.name} ne s'appliquent pas car l'attaque n'a pas infligé de dégâts.")
+                    return
 
     def is_blocked_by_substitute(self, attack, target):
         """
@@ -814,7 +855,11 @@ class Fight():
             on_attack_mod = {"attack": 1.0, "power": 1.0, "accuracy": 1.0, "type": None}
 
         if item_mod is None:
-            item_mod = {"power": 1.0}
+            item_mod = {"attack": 1.0, "power": 1.0, "accuracy" : 1.0}
+            
+        # S'assurer que multiplier est un nombre
+        if multiplier is None or not isinstance(multiplier, (int, float)):
+            multiplier = 1.0
         
         damage = None
 
@@ -824,6 +869,88 @@ class Fight():
             damage = int(damage)
             
         return damage
+
+    def handle_multi_hit_attack(self, attacker: pokemon, attack: Attack, defender: pokemon, talent_mod = None, item_mod = None, multiplier = None):
+        """
+        Gère les attaques multi-coups comme Triple Axel, Bullet Seed, etc.
+        
+        :param attacker: Le Pokémon qui attaque
+        :param attack: L'attaque multi-coups
+        :param defender: Le Pokémon qui défend
+        :param talent_mod: Modificateurs de talent pour l'attaque (précision, puissance, etc.)
+        :param multiplier: Multiplicateur de dégâts
+        :return: Dégâts totaux infligés
+        """
+        if not hasattr(attack, 'multi_hit') or not attack.multi_hit:
+            # Ce n'est pas une attaque multi-coups, utiliser la méthode normale
+            return self.calculate_damage(attacker, attack, defender)
+        
+        total_damage = 0
+        hit_count = 0
+        
+        # Déterminer le nombre de coups
+        if hasattr(attack, 'hits'):
+            # Attaques avec un nombre fixe de coups (comme Triple Axel)
+            max_hits = attack.hits
+            hit_count = max_hits
+        elif hasattr(attack, 'get_hit_count'):
+            # Attaques avec un nombre variable de coups (comme Bullet Seed)
+            hit_count = attack.get_hit_count()
+        else:
+            # Fallback : 2-5 coups aléatoires
+            import random
+            rand = random.random()
+            if rand < 0.375:
+                hit_count = 2
+            elif rand < 0.75:
+                hit_count = 3
+            elif rand < 0.875:
+                hit_count = 4
+            else:
+                hit_count = 5
+        
+        print(f"{attacker.name} utilise {attack.name} ! L'attaque va frapper {hit_count} fois !")
+        
+        # Sauver la puissance originale AVANT la boucle pour éviter les problèmes de persistance
+        original_base_power = attack.base_power
+        
+        # Effectuer chaque coup
+        for hit in range(1, hit_count + 1):
+            # Vérifier si le défenseur est encore en vie
+            if defender.current_hp <= 0:
+                print(f"{defender.name} est K.O. ! L'attaque s'arrête.")
+                break
+            
+            # Vérifier la précision pour chaque coup avec les modificateurs de talents
+            if not self.calculate_hit_chance(attacker, defender, attack, talent_mod, item_mod):
+                print(f"Le coup {hit} rate !")
+                break  # Si un coup rate, l'attaque s'arrête
+            
+            # Calculer la puissance pour ce coup spécifique
+            if hasattr(attack, 'get_hit_power'):
+                # Pour des attaques comme Triple Axel (20, 40, 60)
+                attack.base_power = attack.get_hit_power(hit)
+            else:
+                # Utiliser la puissance originale pour les attaques à puissance fixe
+                attack.base_power = original_base_power
+            
+            # Calculer les dégâts pour ce coup
+            damage = self.calculate_damage(attacker, attack, defender)
+            
+            if damage and damage > 0:
+                print(f"Coup {hit} : ", end="")
+                self.apply_damage(damage, defender, attack, attacker)
+                total_damage += damage
+                
+                # Vérifier les talents qui se déclenchent à chaque coup
+                trigger_talent(defender, "after_hit", attack, attacker, self)
+                trigger_talent(attacker, "after_dealing_damage", attack, defender, self)
+        
+        # Restaurer la puissance originale APRÈS la boucle complète
+        attack.base_power = original_base_power
+        
+        print(f"{attack.name} a infligé {total_damage} dégâts au total sur {hit} coup(s) !")
+        return total_damage
 
     def apply_damage(self, damage:int, defender:pokemon, attack:Attack, attacker:pokemon = None):
         """Applique les dégâts à un Pokémon et gère les effets de statut.
@@ -872,6 +999,7 @@ class Fight():
         """
         Gère les changements forcés après les attaques comme U-turn, Volt Switch, etc.
         """
+        
         # Vérifier le Pokémon actif de l'équipe 1
         if self.active1.must_switch_after_attack and self.active1.current_hp > 0:
             team_id = 1
@@ -897,10 +1025,10 @@ class Fight():
             
             if available_pokemon:
                 print(f"{self.active2.name} revient grâce à {self.active2.switch_reason} !")
-                if team_id == 1:  # Joueur humain
-                    self.player_choice_switch(team_id)
-                else:  # IA
+                if team_id == 2:  # IA
                     self.auto_switch(team_id)
+                else:  # Joueur humain (ne devrait jamais arriver ici pour team_id=2)
+                    self.player_choice_switch(team_id)
             
             # Réinitialiser les attributs
             self.active2.must_switch_after_attack = False
@@ -944,63 +1072,21 @@ class Fight():
             self.player_attack(first, first_attack, second, second_attack)
         
         for p in [self.active1, self.active2]:
-            trigger_item(p, "after_attack", self)  # Appliquer les effets des objets après l'attaque
-            
+            trigger_item(p, "after_attack", self, first, first_attack)  # Appliquer les effets des objets après l'attaque
+
+        # Gérer les changements forcés après la première attaque (U-turn, Volt Switch, etc.)   
+        self.handle_forced_switches()        
+
         # Seconde attaque si vivant
         if second.current_hp > 0:
             if self.check_status_before_attack(second):
                 self.player_attack(second, second_attack, first, first_attack)
         
         for p in [self.active1, self.active2]:
-            trigger_item(p, "after_attack", self)  # Appliquer les effets des objets après l'attaque
-        
-        # Gérer les changements forcés après attaque (U-turn, Volt Switch, etc.)
+            trigger_item(p, "after_attack", self, second, second_attack)  # Appliquer les effets des objets après l'attaque
+
+        # Gérer les changements forcés après la deuxième attaque (U-turn, Volt Switch, etc.)
         self.handle_forced_switches()
-        
-        if second.current_hp == 0:
-            print(f"{second.name} est K.O. !")
-            defeated_team = self.team1 if second == self.active1 else self.team2
-            team_id = 1 if second == self.active1 else 2
-            if self.is_team_defeated(defeated_team):
-                if self.check_battle_end():
-                    return
-            else:
-                if team_id == 1:  # Joueur humain
-                    self.player_choice_switch(team_id)
-                else:  # IA
-                    self.auto_switch(team_id)
-
-        if first.current_hp == 0:
-            print(f"{first.name} est K.O. !")
-            defeated_team = self.team1 if first == self.active1 else self.team2
-            team_id = 1 if first == self.active1 else 2
-            if self.is_team_defeated(defeated_team):
-                if self.check_battle_end():
-                    return
-            else:
-                if team_id == 1:  # Joueur humain
-                    self.player_choice_switch(team_id)
-                else:  # IA
-                    self.auto_switch(team_id)
-
-
-        # Effet de Leech Seed à la fin du tour
-        for pokemon in [self.active1, self.active2]:
-            if pokemon.leech_seeded_by and pokemon.current_hp > 0:
-                drained = max(1, pokemon.max_hp // 8)
-                pokemon.current_hp = max(0, pokemon.current_hp - drained)
-                seeder = pokemon.leech_seeded_by
-                if seeder.current_hp > 0:
-                    seeder.current_hp = min(seeder.max_hp, seeder.current_hp + drained)
-                print(f"{pokemon.name} perd {drained} PV à cause de Graine ! {seeder.name} les récupère.")
-
-        for p in [self.active1, self.active2]:
-            self.apply_status_damage(p)  # Appliquer les dégâts liés aux statuts persistants
-            trigger_item(p, "on_turn_end", self)  # Appliquer les effets des objets à la fin du tour
-            trigger_talent(p, "on_turn_end", self)  # Appliquer les effets des talents à la fin du tour
-            
-            # Gérer les statuts temporaires
-            self.manage_temporary_status(p)
 
         self.next_turn()
 
@@ -1151,7 +1237,7 @@ class Fight():
         pokemon.actualize_stats()
 
     ### Savoir la probabilité de toucher une attaque ###
-    def calculate_hit_chance(self, attacker, defender, attack, talent_mod):
+    def calculate_hit_chance(self, attacker, defender, attack, talent_mod, item_mod):
         """
         Calcule si l'attaque touche en tenant compte de la précision de l'attaque,
         de la précision de l'attaquant et de l'évasion du défenseur.
@@ -1162,9 +1248,6 @@ class Fight():
         :param talent_mod: Modificateur de talent pour l'attaque.
         :return: True si l'attaque touche, False sinon.
         """
-        if talent_mod is None:
-            talent_mod = {"accuracy": 1.0, "power": 1.0, "attack": 1.0, "type": None}
-
         # Vérifier les talents qui garantissent la précision (comme No Guard)
         if talent_mod["accuracy"] == True:
             return True 
@@ -1177,7 +1260,7 @@ class Fight():
             return True
         
         # Calcul normal de précision
-        base_accuracy = effective_accuracy / 100.0 * talent_mod["accuracy"]
+        base_accuracy = effective_accuracy / 100.0 * talent_mod["accuracy"] * item_mod["accuracy"]
         final_accuracy = base_accuracy * attacker.accuracy / defender.evasion
         return random.random() <= final_accuracy
     
@@ -1189,16 +1272,24 @@ class Fight():
         if pokemon.status == "burn":
             dmg = int(pokemon.max_hp * 0.0625)
             print(f"{pokemon.name} souffre de sa brûlure ! Il perd {dmg} PV.")
-            self.damage_method(pokemon, dmg)
+            self.damage_method(pokemon, dmg, True)
         elif pokemon.status == "poison":
-            dmg = int(pokemon.max_hp * 0.125)
-            print(f"{pokemon.name} est empoisonné ! Il perd {dmg} PV.")
-            self.damage_method(pokemon, dmg)
+            if pokemon.talent == "Poison Heal":
+                dmg = -int(pokemon.max_hp * 0.125)
+                print(f"{pokemon.name} regagne {dmg} PV grâce à Poison Heal ! ")
+            else:
+                dmg = int(pokemon.max_hp * 0.125)
+                print(f"{pokemon.name} est empoisonné ! Il perd {dmg} PV.")
+            self.damage_method(pokemon, dmg, True)
         elif pokemon.status == "badly_poisoned":
             if not hasattr(pokemon, "toxic_counter"):
                 pokemon.toxic_counter = 1
-            dmg = int(pokemon.max_hp * 0.0625 * pokemon.toxic_counter)
-            print(f"{pokemon.name} est gravement empoisonné ! Il perd {dmg} PV.")
+            if pokemon.talent == "Poison Heal":
+                dmg = -int(pokemon.max_hp * 0.0625 * pokemon.toxic_counter)
+                print(f"{pokemon.name} regagne {dmg} PV grâce à Poison Heal ! ")
+            else:
+                dmg = int(pokemon.max_hp * 0.0625 * pokemon.toxic_counter)
+                print(f"{pokemon.name} est gravement empoisonné ! Il perd {dmg} PV.")
             self.damage_method(pokemon, dmg)
             pokemon.toxic_counter += 1
 
@@ -1253,7 +1344,7 @@ class Fight():
                 return False
 
         if attacker.flinched:
-            print(f"{attacker.name} est paralysé par la peur et ne peut pas attaquer.")
+            print(f"{attacker.name} est flinched et ne peut pas attaquer !")
             attacker.flinched = False
             return False
         
@@ -1533,3 +1624,51 @@ def on_entry_hazards(pokemon, fight):
                 print(f"La vitesse de {pokemon.name} ne peut pas être réduite davantage !")
         else:
             print(f"{pokemon.name} évite Sticky Web grâce à son type/talent !")
+
+
+
+from colors_utils import Colors
+
+# Affichage des Pokémon
+def display_pokemon(poke : pokemon):
+    ratio = poke.current_hp / poke.max_hp
+    color = Colors.color_hp(ratio)
+    color_team = Colors.TEAM1 if poke.fight.get_team_id(poke) == 1 else Colors.TEAM2
+    print(f"{Colors.BOLD}{color_team}{poke.name}{Colors.RESET} (HP: {color}{poke.current_hp}/{poke.max_hp}{Colors.RESET})")
+
+def display_weather(fight : Fight):
+    weath = fight.weather["current"]
+    color = Colors.color_weather(weath)
+    print(f"{color}Météo actuelle: {weath} pendant encore {fight.weather_turn_left} tours{Colors.RESET}" if weath else "Aucune météo active")
+
+def display_wall(fight : Fight):
+    color = Colors.WALL
+    color2 = Colors.WALL_TITLE
+    print(f"{Colors.TEAM1}Écrans équipe 1: {color2}{fight.screen_team1 if fight.screen_team1 else 'Aucun'}{Colors.RESET}")
+    print(f"{color}", end="")
+    if fight.screen_team1 != []:
+        for screen in fight.screen_team1:
+            print(f"Écran actif: {screen} ({fight.screen_turn_left_team1[screen]} tours restants)")
+    print(f"{color2}", end="")
+    print(f"{Colors.TEAM2}Écrans équipe 2: {color2}{fight.screen_team2 if fight.screen_team2 else 'Aucun'}{Colors.RESET}")
+    print(f"{color}", end="")
+    if fight.screen_team2 != []:
+        for screen in fight.screen_team2:
+            print(f"Écran actif: {screen} ({fight.screen_turn_left_team2[screen]} tours restants)")
+
+def display_hazards(fight : Fight):
+    spike = Colors.SPIKES
+    tspike = Colors.TOXIC_SPIKES
+    sticky = Colors.STICKY_WEB
+    rocks = Colors.STEALTH_ROCK
+    print(f"{Colors.TEAM1}Equipe 1: {rocks}Piège de Roc: {fight.hazards_team1["Stealth Rock"]}, {spike}Spikes: {fight.hazards_team1["Spikes"]}/3, {tspike}Toxic Spikes: {fight.hazards_team1["Toxic Spikes"]}/2, {sticky}Sticky Web: {fight.hazards_team1["Sticky Web"]} {Colors.RESET}")
+    print(f"{Colors.TEAM2}Equipe 2: {rocks}Piège de Roc: {fight.hazards_team2["Stealth Rock"]}, {spike}Spikes: {fight.hazards_team2["Spikes"]}/3, {tspike}Toxic Spikes: {fight.hazards_team2["Toxic Spikes"]}/2, {sticky}Sticky Web: {fight.hazards_team2["Sticky Web"]} {Colors.RESET}")
+
+
+# Affichage du menu
+def display_menu():
+    print(Colors.TEAM1 + "Choisissez une action pour le joueur 1 :" + Colors.RESET)
+    print(Colors.menu_option(1, "Attaquer"))
+    print(Colors.menu_option(2, "Changer de Pokémon"))
+    print(Colors.menu_option(3, "Voir les stats d'un Pokémon"))
+    print(Colors.menu_option(4, "Quitter le combat") + Colors.RESET)

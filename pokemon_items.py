@@ -4,9 +4,15 @@ class Item:
         This method is called at the end of each turn to apply the item's effect.
         """
         pass
-    def after_attack(self, poke, fight=None):
+    def after_attack(self, poke, fight, attacker, attack):
         """
         This method is called after an attack to apply the item's effect.
+        """
+        pass
+
+    def before_attack(self, poke, attack, fight=None):
+        """
+        This method is called before an attack to apply the item's effect (e.g., Focus Sash).
         """
         pass
 
@@ -39,7 +45,7 @@ class Leftovers(Item):
                 print(f"{poke.name} ne peut pas bénéficier de ses Restes à cause de Heal Block !")
 
 class SitrusBerry(Item):
-    def after_attack(self, poke, fight=None):
+    def after_attack(self, poke, fight = None, attacker = None, attack = None):
         if poke.current_hp <= poke.max_hp * 0.5 and poke.current_hp > 0:
             if not getattr(poke, 'heal_blocked', False):
                 heal = int(poke.max_hp * 0.25)
@@ -53,17 +59,17 @@ class SitrusBerry(Item):
 class ChoiceBoost(Item):
     def modify_stat(self, poke, fight=None):
         if poke.item == "Choice Band":
-            poke.stats["Attack"] += int(poke.stats_with_no_modifier["Attack"] * 0.5)
+            poke.stats["Attack"] = int(poke.stats["Attack"] * 1.5)
         elif poke.item == "Choice Specs":
-            poke.stats["Sp. Atk"] += int(poke.stats_with_no_modifier["Sp. Atk"] * 0.5)
+            poke.stats["Sp. Atk"] = int(poke.stats["Sp. Atk"] * 1.5)
         elif poke.item == "Choice Scarf":
-            poke.stats["Speed"] += int(poke.stats_with_no_modifier["Speed"] * 0.5)
+            poke.stats["Speed"] = int(poke.stats["Speed"] * 1.5)
 
 class Eviolite(Item):
     def modify_stat(self, poke, fight=None):
         if not poke.fully_evolved:
-            poke.stats["Defense"] += int(poke.stats_with_no_modifier["Defense"] * 0.5)
-            poke.stats["Sp. Def"] += int(poke.stats_with_no_modifier["Sp. Def"] * 0.5)
+            poke.stats["Defense"] = int(poke.stats["Defense"] * 1.5)
+            poke.stats["Sp. Def"] = int(poke.stats["Sp. Def"] * 1.5)
 
 class BoosterEnergy(Item):
     def on_entry(self, poke, fight=None):
@@ -93,17 +99,17 @@ class AssaultVest(Item):
 
 class RockyHelmet(Item):
     """
-        Rocky Helmet inflige des dégâts à l'attaquant si l'attaque était de contact.
-        Cet effet se déclenche après que le porteur ait subi une attaque de contact.
+    Rocky Helmet inflige des dégâts à l'attaquant si l'attaque était de contact.    
+    Cet effet se déclenche après que le porteur ait subi une attaque de contact.
     """
-    def after_attack(self, poke, fight=None):
+    def after_attack(self, poke, fight=None, attacker=None, attack=None):
         
         pass
 
 class HeavyDutyBoots(Item):
     """
-        Heavy-Duty Boots permet au Pokémon de ne pas subir de dégâts de Pièges d'Entrée.
-        Cet effet se déclenche lorsque le Pokémon entre dans le combat.
+    Heavy-Duty Boots permet au Pokémon de ne pas subir de dégâts de Pièges d'Entrée.
+    Cet effet se déclenche lorsque le Pokémon entre dans le combat.
     """
     def on_entry(self, poke, fight=None):
        
@@ -111,8 +117,7 @@ class HeavyDutyBoots(Item):
 
 class FocusSash(Item):
     """
-        Focus Sash permet au Pokémon de survivre à une attaque qui le mettrait KO,
-        en restant à 1 PV à la place. Ne fonctionne que si le Pokémon était à pleine santé.
+    Focus Sash permet au Pokémon de survivre à une attaque qui le mettrait KO, en restant à 1 PV à la place. Ne fonctionne que si le Pokémon était à pleine santé.
     """
     def before_attack(self, poke, attack, fight=None):
         # La Ceinture Force ne fonctionne que si le Pokémon est à pleine santé
@@ -123,12 +128,43 @@ class FocusSash(Item):
         
 class BlackGlasses(Item):
     """
-        Black Glasses augmente la puissance des attaques de type Ténèbres de 20%.
+    Black Glasses augmente la puissance des attaques de type Ténèbres de 20%.
     """
     def on_attack(self, poke, attack, fight=None):
         if attack.type == "Dark":
             print(f"Les Black Glasses de {poke.name} renforcent la puissance de son attaque !")
-        return {"power": 1.2}
+        return {"attack":1.0,"power": 1.2, "accuracy": 1.0}
+    
+class LifeOrb(Item):
+    """
+    Life Orb augmente la puissance des attaques de 30%, mais inflige 10% de dégâts au Pokémon après chaque attaque.
+    """
+    def on_attack(self, poke, attack, fight=None):
+        return {"attack": 1.3, "power": 1.0}
+    
+    def after_attack(self, poke, fight, attacker=None, attack=None):
+        if attacker == poke and attack.category != "Status":
+            if poke.current_hp > 0:
+                damage = int(poke.max_hp * 0.1)
+                print(f"{poke.name} subit {damage} PV de dégâts à cause de la Life Orb !")
+                poke.current_hp = max(poke.current_hp - damage, 0)
+
+class ToxicOrb(Item):
+    """
+    Empoisonne gravement le porteur à la fin du tour
+    """
+    def on_turn_end(self, poke, fight=None):
+        if poke.status is None:
+            print(f"{poke.name} est empoisonné gravement par sa Toxic Orb !")
+            poke.apply_status("badly_poisoned")
+
+class WideLens(Item):
+    """
+    Wide Lens augmente la précision des attaques de 10%.
+    """
+    def on_attack(self, poke, attack, fight=None):
+        return {"attack": 1.0, "power": 1.0, "accuracy": 1.1}
+    
 
 item_registry = {
     "Leftovers": Leftovers(),
@@ -144,6 +180,9 @@ item_registry = {
     "Heavy-Duty Boots": HeavyDutyBoots(),
     "Focus Sash": FocusSash(),
     "Black Glasses": BlackGlasses(),
+    "Life Orb": LifeOrb(),
+    "Toxic Orb": ToxicOrb(),
+    "Wide Lens": WideLens()
 }
 
 def trigger_item(poke, event, *args):

@@ -4,6 +4,7 @@ import pokemon_attacks as ATTACKES
 import pokemon_datas as STATS
 import random
 from donnees import bcolors
+from fight import display_menu
 
 def can_terastallize(pokemon, fight, team_id):
     """
@@ -67,7 +68,7 @@ def print_pokemon_stats(pokemon : pk.pokemon):
         print(f"Types: {', '.join(pokemon.types)} {bcolors.OKMAGENTA}(Tera actif: {pokemon.tera_type}) ✨{bcolors.ENDC}")
     else:
         print(f"Types: {', '.join(pokemon.types)} {bcolors.GRAY}(Tera: {pokemon.tera_type}){bcolors.ENDC}")
-    
+    print(f"Status: {pokemon.status}")
     for stat in ["Attack", "Defense", "Sp. Atk", "Sp. Def", "Speed"]:
         print(f"{stat}: {pokemon.stats[stat]}")
     print(f"Modificateurs de stats: {pokemon.stats_modifier}")
@@ -188,12 +189,7 @@ def launch_battle(team1: list[pk.pokemon], team2: list[pk.pokemon]):
             # Afficher le numéro de tour (ajuster +1 car le tour sera incrémenté à la fin)
             print(f"\n{bcolors.OKMAGENTA}═══ TOUR {fight.turn + 1} ═══{bcolors.ENDC}")
             
-            print(f"\n{bcolors.LIGHT_BLUE}Choisissez une action pour le joueur 1 :")
-            print("1. Attaquer")
-            print("2. Changer de Pokémon")
-            print("3. Voir les stats d'un Pokémon")
-            print("4. Quitter le combat")
-            print(f"{bcolors.ENDC}")
+            display_menu()
             action1 = input("Action (1-4) : ").strip()
 
             if action1 == "1":
@@ -270,11 +266,11 @@ def launch_battle(team1: list[pk.pokemon], team2: list[pk.pokemon]):
                         break
                     else:
                         print("Choix invalide.")
-                else:
-                    continue  # En cas de retour, on retourne au menu principal
-
-                if 'act1' in locals():
-                    break
+                
+                # Vérifier si une attaque a été sélectionnée
+                if 'act1' not in locals():
+                    continue  # Retour au menu principal si annulation
+                break  # Sortir de la boucle de sélection d'action
 
             elif action1 == "2":
                 while True:
@@ -293,8 +289,7 @@ def launch_battle(team1: list[pk.pokemon], team2: list[pk.pokemon]):
                             break
                         else:
                             print("Choix invalide.")
-                else:
-                    continue  # Retour au menu principal
+                            
                 if 'act1' in locals():
                     break
 
@@ -347,42 +342,34 @@ def launch_battle(team1: list[pk.pokemon], team2: list[pk.pokemon]):
             
             act2 = (attacker2, atk2)
 
-            # Résolution du tour
+            # Résolution du tour - logique simplifiée
+            
+            # Cas spécial : Switch du joueur
             if isinstance(act1, tuple) and act1[0] == "switch":
-                # Switch : le nouveau Pokémon entre AVANT que l'adversaire n'attaque
                 fight.player_switch(1, act1[1])
                 print(f"\n{fight.active2.name} attaque le nouveau Pokémon !")
                 fight.player_attack(fight.active2, atk2, fight.active1)
-                # Incrémenter le tour après un switch + attaque
                 fight.next_turn()
-            elif isinstance(act1, tuple) and act1[0] == "terastallize_attack":
-                # Téracristalisation + Attaque : traiter comme une attaque normale
+                continue  # Passer au tour suivant
+            
+            # Normaliser l'action du joueur (gérer téracristalisation)
+            if isinstance(act1, tuple) and act1[0] == "terastallize_attack":
                 _, tera_type, pokemon, attack = act1
                 print(f"\n{bcolors.OKMAGENTA}{pokemon.name} téracristallise et attaque !{bcolors.ENDC}")
                 act1 = (pokemon, attack)
-                
-                if ai_tera_action:
-                    # Les deux téracristallisent ce tour
-                    print(f"\n{bcolors.OKMAGENTA}Les deux Pokémon téracristallisent en même temps !{bcolors.ENDC}")
-                
-                fight.resolve_turn(act1, act2)
             elif isinstance(act1, tuple) and act1[0] == "terastallize":
-                # Téracristalisation pure (sans attaque) - ne devrait plus arriver
-                if ai_tera_action:
-                    # Les deux téracristallisent ce tour
-                    print(f"\n{bcolors.OKMAGENTA}Les deux Pokémon téracristallisent en même temps !{bcolors.ENDC}")
-                    fight.player_attack(fight.active2, atk2, fight.active1)
-                else:
-                    print(f"\n{fight.active2.name} attaque {fight.active1.name} téracristallisé !")
-                    fight.player_attack(fight.active2, atk2, fight.active1)
-                # Incrémenter le tour après téracristalisation + attaque adverse
+                # Téracristalisation pure (ne devrait plus arriver)
+                print(f"\n{bcolors.OKMAGENTA}{act1[2].name} téracristallise !{bcolors.ENDC}")
+                fight.player_attack(fight.active2, atk2, fight.active1)
                 fight.next_turn()
-            elif ai_tera_action:
-                # Seulement l'IA téracristallise
-                print(f"\n{bcolors.OKMAGENTA}L'IA téracristallise !{bcolors.ENDC}")
-                fight.resolve_turn(act1, act2)
-            else:
-                fight.resolve_turn(act1, act2)
+                continue
+            
+            # Message pour téracristalisation de l'IA
+            if ai_tera_action:
+                print(f"\n{bcolors.OKMAGENTA}✨ L'IA fait téracristaliser {attacker2.name} ! ✨{bcolors.ENDC}")
+            
+            # Résolution normale du tour (attaque vs attaque)
+            fight.resolve_turn(act1, act2)
         else:
             # Si l'adversaire n'a pas d'attaque, faire seulement le switch
             if isinstance(act1, tuple) and act1[0] == "switch":

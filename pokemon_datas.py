@@ -1439,11 +1439,11 @@ pokemon_data = {
         "abilities": ["Defiant"],
         "stats": {
             "HP": 100,
-            "Attack": 125,
-            "Defense": 100,
+            "Attack": 135,
+            "Defense": 120,
             "Sp. Atk": 60,
-            "Sp. Def": 100,
-            "Speed": 70
+            "Sp. Def": 85,
+            "Speed": 50
         },
         "weight": 110.0,
         "fully_evolved": True
@@ -1453,12 +1453,12 @@ pokemon_data = {
         "types": ["Fairy", "Fighting"],
         "abilities": ["Quark Drive"],
         "stats": {
-            "HP": 70,
+            "HP": 74,
             "Attack": 130,
             "Defense": 90,
-            "Sp. Atk": 110,
+            "Sp. Atk": 120,
             "Sp. Def": 60,
-            "Speed": 120
+            "Speed": 116
         },
         "weight": 65.0,
         "fully_evolved": True
@@ -1477,5 +1477,95 @@ pokemon_data = {
         },
         "weight": 40.0,
         "fully_evolved": True
-    }
+    },
+    "Maushold": {
+        "name": "Maushold",
+        "types": ["Normal"],
+        "abilities": ["Friend Guard", "Technician"],
+        "stats": {
+            "HP": 74,
+            "Attack": 75,
+            "Defense": 70,
+            "Sp. Atk": 65,
+            "Sp. Def": 75,
+            "Speed": 111
+        },
+        "weight": 2.3,
+        "fully_evolved": True
+    },
+    "Primarina": {
+        "name": "Primarina",
+        "types": ["Water", "Fairy"],
+        "abilities": ["Torrent", "Liquid Voice"],
+        "stats": {
+            "HP": 80,
+            "Attack": 74,
+            "Defense": 74,
+            "Sp. Atk": 126,
+            "Sp. Def": 116,
+            "Speed": 60
+        },
+        "weight": 44.0,
+        "fully_evolved": True
+    },
+    "Gholdengo": {
+        "name": "Gholdengo",
+        "types": ["Steel", "Ghost"],
+        "abilities": ["Good as Gold"],
+        "stats": {
+            "HP": 87,
+            "Attack": 60,
+            "Defense": 95,
+            "Sp. Atk": 133,
+            "Sp. Def": 91,
+            "Speed": 84
+        },
+        "weight": 30.0,
+        "fully_evolved": True
+    },
+    "Gliscor": {
+        "name": "Gliscor",
+        "types": ["Ground", "Flying"],
+        "abilities": ["Hyper Cutter", "Sand Veil", "Poison Heal"],
+        "stats": {
+            "HP": 75,
+            "Attack": 95,
+            "Defense": 125,
+            "Sp. Atk": 45,
+            "Sp. Def": 75,
+            "Speed": 95
+        },
+        "weight": 42.5,
+        "fully_evolved": True
+    },
+    "Weavile": {
+        "name": "Weavile",
+        "types": ["Dark", "Ice"],
+        "abilities": ["Pressure", "Pickpocket"],
+        "stats": {
+            "HP": 70,
+            "Attack": 120,
+            "Defense": 65,
+            "Sp. Atk": 45,
+            "Sp. Def": 85,
+            "Speed": 125
+        },
+        "weight": 34.0,
+        "fully_evolved": True
+    },
+    "Slowking-Galar": {
+        "name": "Slowking-Galar",
+        "types": ["Poison", "Psychic"],
+        "abilities": ["Curious Medicine", "Own Tempo", "Regenerator"],
+        "stats": {
+            "HP": 95,
+            "Attack": 65,
+            "Defense": 80,
+            "Sp. Atk": 110,
+            "Sp. Def": 110,
+            "Speed": 30
+        },
+        "weight": 79.5,
+        "fully_evolved": True
+    },
 }

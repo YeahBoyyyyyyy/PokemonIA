@@ -62,19 +62,19 @@ class pokemon():
 
         self.nature_modifier = donnees.nature_chart[self.nature] if self.nature else [1, 1, 1, 1, 1]
         self.stats = {
-                "Attack": int(((2 * self.base_stats['Attack'] + self.ivs["Attack"] + self.evs['Attack'] // 4) // 2 + 5) * self.nature_modifier[0]),
-                "Defense": int(((2 * self.base_stats['Defense'] + self.ivs["Defense"] + self.evs['Defense'] // 4) // 2 + 5) * self.nature_modifier[1]),
-                "Sp. Atk": int(((2 * self.base_stats['Sp. Atk'] + self.ivs["Sp. Atk"] + self.evs['Sp. Atk'] // 4) // 2 + 5) * self.nature_modifier[2]),
-                "Sp. Def": int(((2 * self.base_stats['Sp. Def'] + self.ivs["Sp. Def"] + self.evs['Sp. Def'] // 4) // 2 + 5) * self.nature_modifier[3]),
-                "Speed": int(((2 * self.base_stats['Speed'] + self.ivs["Speed"] + self.evs['Speed'] // 4) // 2 + 5) * self.nature_modifier[4])
+                "Attack": int(((2 * self.base_stats['Attack'] + self.ivs["Attack"] + self.evs['Attack'] // 4) * 0.5 + 5) * self.nature_modifier[0]),
+                "Defense": int(((2 * self.base_stats['Defense'] + self.ivs["Defense"] + self.evs['Defense'] // 4) * 0.5 + 5) * self.nature_modifier[1]),
+                "Sp. Atk": int(((2 * self.base_stats['Sp. Atk'] + self.ivs["Sp. Atk"] + self.evs['Sp. Atk'] // 4) * 0.5 + 5) * self.nature_modifier[2]),
+                "Sp. Def": int(((2 * self.base_stats['Sp. Def'] + self.ivs["Sp. Def"] + self.evs['Sp. Def'] // 4) * 0.5 + 5) * self.nature_modifier[3]),
+                "Speed": int(((2 * self.base_stats['Speed'] + self.ivs["Speed"] + self.evs['Speed'] // 4) * 0.5 + 5) * self.nature_modifier[4])
             }
 
         self.stats_with_no_modifier = {
-                "Attack": int(((2 * self.base_stats['Attack'] + self.ivs["Attack"] + self.evs['Attack'] // 4) // 2 + 5) * self.nature_modifier[0]),
-                "Defense": int(((2 * self.base_stats['Defense'] + self.ivs["Defense"] + self.evs['Defense'] // 4) // 2 + 5) * self.nature_modifier[1]),
-                "Sp. Atk": int(((2 * self.base_stats['Sp. Atk'] + self.ivs["Sp. Atk"] + self.evs['Sp. Atk'] // 4) // 2 + 5) * self.nature_modifier[2]),
-                "Sp. Def": int(((2 * self.base_stats['Sp. Def'] + self.ivs["Sp. Def"] + self.evs['Sp. Def'] // 4) // 2 + 5) * self.nature_modifier[3]),
-                "Speed": int(((2 * self.base_stats['Speed'] + self.ivs["Speed"] + self.evs['Speed'] // 4) // 2 + 5) * self.nature_modifier[4])
+                "Attack": int(((2 * self.base_stats['Attack'] + self.ivs["Attack"] + self.evs['Attack'] // 4) * 0.5 + 5) * self.nature_modifier[0]),
+                "Defense": int(((2 * self.base_stats['Defense'] + self.ivs["Defense"] + self.evs['Defense'] // 4) * 0.5 + 5) * self.nature_modifier[1]),
+                "Sp. Atk": int(((2 * self.base_stats['Sp. Atk'] + self.ivs["Sp. Atk"] + self.evs['Sp. Atk'] // 4) * 0.5 + 5) * self.nature_modifier[2]),
+                "Sp. Def": int(((2 * self.base_stats['Sp. Def'] + self.ivs["Sp. Def"] + self.evs['Sp. Def'] // 4) * 0.5 + 5) * self.nature_modifier[3]),
+                "Speed": int(((2 * self.base_stats['Speed'] + self.ivs["Speed"] + self.evs['Speed'] // 4) * 0.5 + 5) * self.nature_modifier[4])
             }
         
         self.accuracy = 1.0  # Précision du Pokémon (par exemple : 1.0 pour 100% de précision)
@@ -99,7 +99,6 @@ class pokemon():
         self.charging_attack = None  # Indique quelle attaque est en cours de chargement
         self.must_recharge = False  # Indique si le Pokémon doit récupérer après une attaque de recharge (comme Hyper Beam)
         self.sleep_counter = None  # Nombre de tours de sommeil du Pokémon endormi
-        self.poison_counter = 0  # Nombre de tours de poison restants si le Pokémon est gravement empoisonné vu que les degats augmentent à chaque tour
         self.toxic_counter = 1  # Compteur pour le poison grave (Toxic) - commence à 1
         self.protect_turns = 0  # Nombre de tours de protection restants si le Pokémon utilise "Protect" ou "Detect"
         self.still_confused = False  # Indique si le Pokémon est toujours confus au prochain tour
@@ -205,12 +204,13 @@ class pokemon():
             return 1.0
 
     def actualize_stats(self):
+        
         self.stats = {
             "Attack": int(self.calculate_stat(self.base_stats['Attack'],self.ivs['Attack'], self.evs['Attack'], self.nature_modifier[0], self.stats_modifier[0]) * self.hidden_modifier["Attack"]),
             "Defense": int(self.calculate_stat(self.base_stats['Defense'], self.ivs['Defense'], self.evs['Defense'], self.nature_modifier[1], self.stats_modifier[1]) * self.hidden_modifier["Defense"]),
             "Sp. Atk": int(self.calculate_stat(self.base_stats['Sp. Atk'], self.ivs['Sp. Atk'], self.evs['Sp. Atk'], self.nature_modifier[2], self.stats_modifier[2]) * self.hidden_modifier["Sp. Atk"]),
             "Sp. Def": int(self.calculate_stat(self.base_stats['Sp. Def'], self.ivs['Sp. Def'], self.evs['Sp. Def'], self.nature_modifier[3], self.stats_modifier[3]) * self.hidden_modifier["Sp. Def"]),
-            "Speed": int(self.calculate_stat(self.base_stats['Speed'], self.ivs['Speed'], self.evs['Speed'], self.nature_modifier[4], self.stats_modifier[4]) * self.hidden_modifier["Speed"]),
+            "Speed": int(self.calculate_stat(self.base_stats['Speed'], self.ivs['Speed'], self.evs['Speed'], self.nature_modifier[4], self.stats_modifier[4]) * self.hidden_modifier["Speed"] * tailwind_mod(self, self.fight)),
         }
 
         self.evasion = self.calculate_accuracy_and_evasion(self.ev_and_acc_modifier[0])
@@ -220,18 +220,40 @@ class pokemon():
         fight_instance = getattr(self, 'fight', None)
         trigger_item(self, "modify_stat", fight_instance)
         trigger_talent(self, "modify_stat", fight_instance)
-    
-    def set_nature(self, nature):
+
+    def recalculate_all_stats(self):
         """
-        Définit la nature du Pokémon et met à jour les stats en conséquence.
-        :param nature: Nature du Pokémon (par exemple : "Hardy", "Lonely", etc.)
+        Recalcule toutes les stats du Pokémon, y compris les HP max, après modification des EVs/IVs/nature.
+        Utile après avoir modifié les EVs ou la nature d'un Pokémon.
         """
-        if nature in donnees.nature_chart:
-            self.nature = nature
-            self.nature_modifier = donnees.nature_chart[nature]
-            self.actualize_stats()
-        else:
-            raise ValueError(f"Nature '{nature}' inconnue.")
+        # Mettre à jour le modificateur de nature
+        self.nature_modifier = donnees.nature_chart[self.nature] if self.nature else [1, 1, 1, 1, 1]
+        
+        # Recalculer les HP max
+        old_max_hp = self.max_hp
+        self.max_hp = int((2 * self.base_stats['HP'] + self.ivs["HP"] + self.evs['HP'] / 4) * 0.5 + 60)
+        
+        # Si c'est la première fois ou si le Pokémon est à pleine santé, mettre les HP actuels au max
+        if old_max_hp == 0 or self.current_hp == old_max_hp:
+            self.current_hp = self.max_hp
+        
+        # Recalculer les autres stats
+        self.stats = {
+            "Attack": int(((2 * self.base_stats['Attack'] + self.ivs["Attack"] + self.evs['Attack'] // 4) * 0.5 + 5) * self.nature_modifier[0]),
+            "Defense": int(((2 * self.base_stats['Defense'] + self.ivs["Defense"] + self.evs['Defense'] // 4) * 0.5 + 5) * self.nature_modifier[1]),
+            "Sp. Atk": int(((2 * self.base_stats['Sp. Atk'] + self.ivs["Sp. Atk"] + self.evs['Sp. Atk'] // 4) * 0.5 + 5) * self.nature_modifier[2]),
+            "Sp. Def": int(((2 * self.base_stats['Sp. Def'] + self.ivs["Sp. Def"] + self.evs['Sp. Def'] // 4) * 0.5 + 5) * self.nature_modifier[3]),
+            "Speed": int(((2 * self.base_stats['Speed'] + self.ivs["Speed"] + self.evs['Speed'] // 4) * 0.5 + 5) * self.nature_modifier[4])
+        }
+        
+        # Recalculer les stats sans modificateurs
+        self.stats_with_no_modifier = {
+            "Attack": int(((2 * self.base_stats['Attack'] + self.ivs["Attack"] + self.evs['Attack'] // 4) * 0.5 + 5) * self.nature_modifier[0]),
+            "Defense": int(((2 * self.base_stats['Defense'] + self.ivs["Defense"] + self.evs['Defense'] // 4) * 0.5 + 5) * self.nature_modifier[1]),
+            "Sp. Atk": int(((2 * self.base_stats['Sp. Atk'] + self.ivs["Sp. Atk"] + self.evs['Sp. Atk'] // 4) * 0.5 + 5) * self.nature_modifier[2]),
+            "Sp. Def": int(((2 * self.base_stats['Sp. Def'] + self.ivs["Sp. Def"] + self.evs['Sp. Def'] // 4) * 0.5 + 5) * self.nature_modifier[3]),
+            "Speed": int(((2 * self.base_stats['Speed'] + self.ivs["Speed"] + self.evs['Speed'] // 4) * 0.5 + 5) * self.nature_modifier[4])
+        }
 
     def current_stats(self):
         """
@@ -363,7 +385,7 @@ class pokemon():
         :param nature: Le multiplicateur de la nature (0.9, 1.0 ou 1.1)
         :return: La statistique calculée
         """
-        base_value = (2 * base + iv + ev // 4) // 2 + 5
+        base_value = (2 * base + iv + ev // 4) * 0.5 + 5
         if modifier >= 0:
             modifier = 1 + modifier / 2
         else:
@@ -381,3 +403,11 @@ class pokemon():
             modifier = 1 / (1 + abs(stage_mod) / 3)
         return base_value * modifier
     
+def tailwind_mod(poke, fight):
+    team_id = fight.get_team_id(poke)
+    tailwind_side = fight.tailwind_team1 if team_id == 1 else fight.tailwind_team2
+
+    if tailwind_side != 0:
+        return 2.0
+    else:
+        return 1.0

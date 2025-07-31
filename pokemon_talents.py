@@ -22,6 +22,10 @@ class Talent:
     def on_entry(self, poke, fight):
         pass
 
+    def on_exit(self, poke, fight):
+        """Appelé quand le Pokémon quitte le terrain (switch ou remplacement)."""
+        pass
+
     def on_attack(self, poke, attack, fight):
         """Appelé juste avant de lancer une attaque.
         
@@ -39,7 +43,7 @@ class Talent:
     
     def on_turn_end(self, poke, fight=None):
         pass
-    
+
     def on_stat_change(self, poke, stat_changes, source, fight=None):
         """
         Appelé quand une tentative de modification de stats est effectuée.
@@ -52,6 +56,17 @@ class Talent:
         """
         return stat_changes
 
+class Prankster(Talent):
+    """Talent qui fait en sorte que les attaques de status gagne +1 en priorité. Gain de priorité géré dans fight.py."""
+    def prankster(self, poke, attack, fight):
+        """Les pokémons de type Dark sont immunisés aux attaques de status venant d'un pokémon avec Prankster."""
+        target = fight.active1 if fight.active2 == poke else fight.active2
+        if "Dark" in target.types and attack.category == "Status":
+            print(f"{target.name} n'est pas affecté par les attaques de status provenant du talent prankskter !")
+            return
+        else:
+            pass
+    
 
 class WaterAbsorb(Talent):
     """ Talent qui absorbe les attaques de type Eau et soigne le Pokémon."""
@@ -101,15 +116,25 @@ class Torrent(Talent):
 class Drizzle(Talent):
     """ Talent qui invoque la pluie quand le Pokémon entre en combat."""
     def on_entry(self, poke, fight):
-        fight.set_weather("Rain", duration=5)
-        print(f"{poke.name} invoque la pluie !")
+        if fight.weather["current"] != "Rain":
+            fight.set_weather("Rain", duration=5)
+            print(f"{poke.name} invoque la pluie !")
         return "activated"
 
 class Drought(Talent):
     """ Talent qui invoque le soleil quand le Pokémon entre en combat."""
     def on_entry(self, poke, fight):
-        fight.set_weather("Sunny", duration=5)
-        print(f"{poke.name} invoque le soleil !")
+        if fight.weather["current"] != "Sunny":
+            fight.set_weather("Sunny", duration=5)
+            print(f"{poke.name} invoque le soleil !")
+        return "activated"
+    
+class SnowWarning(Talent):
+    """Talent qui invoque la grêle quand le Pokémon entre en combat"""
+    def on_entry(self, poke, fight):
+        if fight.weather["current"] != "Snow":
+            fight.set_weather("Snow", duration=5)
+            print(f"{poke.name} invoque la grêle !")
         return "activated"
 
 class Intimidate(Talent):
@@ -479,6 +504,27 @@ class BadDreams(Talent):
             fight.damage_method(opponent, damage)
             print(f"{opponent.name} subit {damage} points de dégâts à cause de Bad Dreams !")
 
+class GoodAsGold(Talent):
+    """Talent qui rend le Pokémon immunisé aux attaques de statut provenant d'autres pokémon que lui-même."""
+    def on_defense(self, poke, incoming_attack, attacker_poke, fight=None):
+        if incoming_attack.category == "Status" and attacker_poke != poke:
+            print(f"{poke.name} est immunisé aux attaques de statut grâce à Good as Gold !")
+            return 0  # Annule l'attaque de statut
+        return None  # Pas d'effet sur les autres types d'attaques
+
+class Regenerator(Talent):
+    """Talent qui permet au Pokémon de récupérer 1/3 de ses PV max quand il quitte le terrain."""
+    def on_exit(self, poke, fight):
+        """Se déclenche quand le Pokémon quitte le terrain (switch ou KO d'un autre Pokémon)."""
+        if poke.current_hp > 0 and poke.current_hp < poke.max_hp:
+            healed = int(poke.max_hp / 3)  # 1/3 des PV max
+            old_hp = poke.current_hp
+            poke.current_hp = min(poke.current_hp + healed, poke.max_hp)
+            actual_healed = poke.current_hp - old_hp
+            print(f"{poke.name} récupère {actual_healed} PV grâce à Regenerator !")
+            return "activated"
+        return None
+
 def apply_stat_changes(target_poke, stat_changes, source="unknown", fight=None):
     """
     Applique des modifications de statistiques en gérant les talents qui peuvent les intercepter.
@@ -595,4 +641,8 @@ talent_registry = {
     "Toxic Debris": ToxicDebris(),
     "Multiscale": Multiscale(),
     "Bad Dreams": BadDreams(),
+    "Good as Gold": GoodAsGold(),
+    "Regenerator": Regenerator(),
+    "Prankster": Prankster(),
+    "Snow Warning": SnowWarning()
 }

@@ -94,7 +94,7 @@ class Attack:
         return self.accuracy  # Par défaut, retourne la précision de base
         
 
-class FlameThrower(Attack):
+class Flamethrower(Attack):
     def __init__(self):
         super().__init__(
             name="Flamethrower",
@@ -110,6 +110,7 @@ class FlameThrower(Attack):
 
     def apply_effect(self, user, target, fight):
         if random.randint(1, 100) <= 10:
+            print(f"{target} est brulé !")
             target.apply_status("burn")
 
 class HydroPump(Attack):
@@ -219,7 +220,6 @@ class FlowerTrick(Attack):
             
         )
         self.guaranteed_critical = True  # Coup critique garanti
-        
 
 class RainDance(Attack):
     def __init__(self):
@@ -230,7 +230,7 @@ class RainDance(Attack):
             power=0,
             accuracy=True,
             priority=0,
-            pp=5,
+            pp=10,
             flags=[],
             target="User"
         )
@@ -238,6 +238,42 @@ class RainDance(Attack):
     def apply_effect(self, user, target, fight):
         fight.set_weather("Rain", duration=5)
         print(f"{user.name} invoque la pluie !")
+
+class Sandstorm(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Sandstorm",
+            type_="Ground",
+            category="Status",
+            power=0,
+            accuracy=True,
+            priority=0,
+            pp=10,
+            flags=[],
+            target="User"
+        )
+    
+    def apply_effect(self, user, target, fight):
+        fight.set_weather("Sandstorm", duration=5)
+        print(f"{user.name} invoque la tempête de sable !")
+
+class SunnyDay(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Sunny Day",
+            type_="Fire",
+            category="Status",
+            power=0,
+            accuracy=True,
+            priority=0,
+            pp=10,
+            flags=[],
+            target="User"
+        )
+    
+    def apply_effect(self, user, target, fight):
+        fight.set_weather("Sunny", duration=5)
+        print(f"{user.name} invoque le soleil !")
 
 class Recover(Attack):
     def __init__(self):
@@ -314,9 +350,6 @@ class FakeOut(Attack):
     def apply_effect(self, user, target, fight):
         if not target.flinched:
             target.flinched = True
-            print(f"{target.name} est flinché par Fake Out !")
-        else:
-            print(f"{target.name} a déjà été flinché ce tour-ci.")
     
     def on_condition_attack(self, user, target=None, target_attack=None, fight=None):
         if user.first_attack:
@@ -594,11 +627,16 @@ class SuckerPunch(Attack):
         )
 
     def on_condition_attack(self, user, target, target_atk, fight):
-        if target_atk.category != "Status":
-            return True
-        else:
+        # Si la cible n'attaque pas (switch, KO, etc.), Sucker Punch échoue
+        if target_atk is None:
             print("L'attaque échoue !")
             return False
+        # Si la cible utilise une attaque de statut, Sucker Punch échoue
+        if target_atk.category == "Status":
+            print("L'attaque échoue !")
+            return False
+        # Sinon, l'attaque réussit
+        return True
 
 class Reflect(Attack):
     def __init__(self):
@@ -619,6 +657,8 @@ class Reflect(Attack):
             fight.screen.append("reflect")
             fight.screen_turn_left["reflect"] = 5
             print(f"{user.name} utilise Reflect ! Les dégâts physiques sont réduits de moitié pour 5 tours.")
+        else:
+            print("L'attaque échoue")
 
 class LightScreen(Attack):
     def __init__(self):
@@ -641,6 +681,8 @@ class LightScreen(Attack):
         if "light_screen" not in screens:
             fight.add_screen("light_screen", user_team_id)
             print(f"{user.name} utilise Light Screen ! Les dégâts spéciaux sont réduits de moitié pour son équipe pendant 5 tours.")
+        else:
+            print("L'attaque échoue.")
 
 class AuroraVeil(Attack):
     def __init__(self):
@@ -661,6 +703,8 @@ class AuroraVeil(Attack):
             fight.screen.append("auroraveil")
             fight.screen_turn_left["auroraveil"] = 5
             print(f"{user.name} utilise Aurora Veil ! Les dégâts physiques et spéciaux sont réduits de moitié pour 5 tours.")
+        else:
+            print("L'attaque échoue.")
 
 class SwordsDance(Attack):
     def __init__(self):
@@ -681,6 +725,26 @@ class SwordsDance(Attack):
         success = apply_stat_changes(user, stat_changes, "self", fight)
         if success:
             print(f"{user.name} utilise Swords Dance ! Son Attaque augmente de 2 niveaux.")
+
+class NastyPlot(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Nasty Plot",
+            type_="Dark",
+            category="Status",
+            power=0,
+            accuracy=True,
+            priority=0,
+            pp=20,
+            flags=[],
+            target="User"
+        )
+
+    def apply_effect(self, user : PK.pokemon, target, fight):
+        stat_changes = {"Sp. Atk": 2}
+        success = apply_stat_changes(user, stat_changes, "self", fight)
+        if success:
+            print(f"{user.name} utilise Nasty Plot ! Son Attaque Spéciale augmente de 2 niveaux.")
 
 class CalmMind(Attack):
     def __init__(self):
@@ -721,6 +785,30 @@ class BulkUp(Attack):
         success = apply_stat_changes(user, stat_changes, "self", fight)
         if success:
             print(f"{user.name} utilise Bulk Up ! Son Attaque et sa Défense augmentent de 1 niveau.")
+
+class IronDefense(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Iron Defense",
+            type_="Steel",
+            category="Status",
+            power=0,
+            accuracy=True,
+            priority=0,
+            pp=15,
+            flags=["protect", "mirror"],
+            target="User"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        Augmente la Défense de l'utilisateur de 2 niveaux.
+        """
+        stat_changes = {"Defense": 2}
+        success = apply_stat_changes(user, stat_changes, "self", fight)
+        
+        if success:
+            print(f"{user.name} renforce sa Défense avec Iron Defense !")
 
 class CloseCombat(Attack):
     def __init__(self):
@@ -889,34 +977,6 @@ class SolarBeam(Attack):
             user.charging_attack = None
             return "attack"  # Indique que l'attaque est exécutée
 
-class Dig(Attack):
-    def __init__(self):
-        super().__init__(
-            name="Dig",
-            type_="Ground",
-            category="Physical",
-            power=80,
-            accuracy=100,
-            priority=0,
-            pp=10,
-            flags=["contact", "protect", "mirror", "charge"],
-            target="Foe"
-        )
-    
-    def apply_effect(self, user, target, fight):
-        # Au premier tour : creuse
-        if not user.charging or user.charging_attack != self:
-            user.charging = True
-            user.charging_attack = self
-            print(f"{user.name} creuse un tunnel sous terre !")
-            return "charging"
-        else:
-            # Au deuxième tour : attaque depuis le sous-sol
-            user.charging = False
-            user.charging_attack = None
-            print(f"{user.name} surgit du sol pour attaquer !")
-            return "attack"
-
 class HyperBeam(Attack):
     def __init__(self):
         super().__init__(
@@ -962,12 +1022,12 @@ class Encore(Attack):
             
         # Vérifier si le Pokémon est déjà sous l'effet d'Encore
         if target.encored_turns > 0:
-            print(f"{target.name} est déjà sous l'effet d'Encore !")
+            print(f"{target.name} est déjà sous l'effet d'Encore ! L'attaque échoue.")
             return
             
         # Vérifier si le Pokémon a utilisé une attaque récemment
         if not target.last_used_attack:
-            print(f"{target.name} n'a pas utilisé d'attaque récemment ! Encore échoue.")
+            print(f"{target.name} n'a pas utilisé d'attaque récemment ! L'attaque échoue.")
             return
             
         # Vérifier si l'attaque peut être répétée (exclure certaines attaques)
@@ -1002,9 +1062,9 @@ class Substitute(Attack):
             user.substitute_hp = substitute_hp
             print(f"{user.name} crée un clone avec {substitute_hp} PV !")
         elif user.has_substitute():
-            print(f"{user.name} a déjà un clone !")
+            print(f"{user.name} a déjà un clone ! L'attaque échoue.")
         else:
-            print(f"{user.name} n'a pas assez de PV pour créer un clone !")
+            print(f"{user.name} n'a pas assez de PV pour créer un clone ! L'attaque échoue.")
 
 class Snarl(Attack):
     def __init__(self):
@@ -1125,7 +1185,7 @@ class ThunderWave(Attack):
             target.apply_status("paralyzed")
             print(f"{target.name} est paralysé ! Il aura du mal à attaquer.")
         else:
-            print(f"{target.name} est déjà affecté ou immunisé contre la paralysie.")
+            print("L'attaque échoue.")
 
 class Taunt(Attack):
     """Attaque qui n'est pas bloquée par les substituts et empêche l'usage d'attaques de statut"""
@@ -1299,24 +1359,25 @@ class Aerial_Ace(Attack):
         """Aerial Ace ne peut jamais rater."""
         return True
 
-class Shock_Wave(Attack):
+class Scald(Attack):
     def __init__(self):
         super().__init__(
-            name="Shock Wave",
-            type_="Electric",
+            name="Scald",
+            type_="Water",
             category="Special",
-            power=60,
-            accuracy=100,  # Ne rate jamais
+            power=80,
+            accuracy=100,
             priority=0,
-            pp=20,
+            pp=15,
             flags=["protect", "mirror"],
             target="Foe"
         )
 
-    def get_effective_accuracy(self, user, target, fight):
-        """Shock Wave ne peut jamais rater."""
-        return True
-
+    def apply_effect(self, user, target, fight):
+        if random.random() < 0.3:
+            target.apply_status("burned")
+            print(f"{target.name} est brûlé !")
+        
 class Dynamic_Punch(Attack):
     def __init__(self):
         super().__init__(
@@ -1650,7 +1711,7 @@ class Defog(Attack):
             accuracy=True,
             priority=0,
             pp=15,
-            flags=["protect", "reflectable", "mirror"],
+            flags=[],
             target="Single"
         )
 
@@ -1691,12 +1752,12 @@ class MortalSpin(Attack):
             target="Foe"
         )
 
-    def apply_effect(self, user, target, fight):
+    def apply_effect(self, user, target, fight, damage_dealt=0):
         """
-        Supprime les Entry Hazards de son côté du terrain.
-        Empoisonne la cible si elle n'est pas immunisée.
+        Supprime les Entry Hazards de son côté du terrain (effet qui s'applique toujours).
+        Empoisonne la cible si elle n'est pas immunisée ET si l'attaque a infligé des dégâts.
         """
-        # Supprimer les hazards de l'utilisateur
+        # Supprimer les hazards de l'utilisateur (cet effet s'applique toujours)
         user_hazards = fight.hazards_team1 if fight.get_team_id(user) == 1 else fight.hazards_team2
         user_hazards["Spikes"] = 0
         user_hazards["Stealth Rock"] = False
@@ -1709,9 +1770,9 @@ class MortalSpin(Attack):
         
         print(f"{user.name} supprime tous les pièges de son côté avec Mortal Spin !")
         
-        # Empoisonner la cible si possible
-        if target.status is None and "Poison" not in target.types:
-            target.apply_status("poisoned")
+        # Empoisonner la cible seulement si l'attaque a infligé des dégâts
+        if damage_dealt > 0 and target.status is None and "Poison" not in target.types:
+            target.apply_status("poison")
             print(f"{target.name} est empoisonné par Mortal Spin !")
 
 class MagicCoat(Attack):
@@ -2000,7 +2061,7 @@ class SludgeBomb(Attack):
         A 30 % de chance de provoquer un empoisonnement de la cible.
         """
         if random.random() < 0.3:
-            target.status = "poisoned"
+            target.apply_status("poison")
             print(f"{target.name} est empoisonné !")
 
 class DarkPulse(Attack):
@@ -2023,7 +2084,6 @@ class DarkPulse(Attack):
         """
         if random.random() < 0.2:
             target.apply_status("flinched")
-            print(f"{target.name} est fléchi par Dark Pulse !")
 
 class FocusBlast(Attack):
     def __init__(self):
@@ -2263,28 +2323,504 @@ class IronHead(Attack):
         """
         if random.random() < 0.3:
             target.apply_status("flinched")
-            print(f"{target.name} est fléchi par Iron Head !")
 
-class IronDefense(Attack):
+class Surf(Attack):
     def __init__(self):
         super().__init__(
-            name="Iron Defense",
-            type_="Steel",
+            name="Surf",
+            type_="Water",
+            category="Special",
+            power=90,
+            accuracy=100,
+            priority=0,
+            pp=15,
+            flags=["protect", "mirror"],
+            target="All Foes"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        Pas d'effet secondaire pour Surf.
+        """
+        pass
+
+class Hex(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Hex",
+            type_="Ghost",
+            category="Special",
+            power=65,
+            accuracy=100,
+            priority=0,
+            pp=10,
+            flags=["protect", "mirror"],
+            target="Foe"
+        )
+
+    def get_power(self, user, target, fight):
+        """
+        La puissance de Hex est doublée si la cible a un statut.
+        """
+        if target.status is not None:
+            return 130
+        else:
+            return 65
+        
+class IceShard(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Ice Shard",
+            type_="Ice",
+            category="Physical",
+            power=40,
+            accuracy=100,
+            priority=1,  # Priorité élevée
+            pp=30,
+            flags=["contact", "protect", "mirror"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        Pas d'effet secondaire pour Ice Shard.
+        """
+        pass
+
+class LowKick(Attack): 
+    def __init__(self):
+        super().__init__(
+            name="Low Kick",
+            type_="Fighting",
+            category="Physical",
+            power=0,  # La puissance est déterminée par le poids
+            accuracy=100,
+            priority=0,
+            pp=20,
+            flags=["contact", "protect", "mirror"],
+            target="Foe"
+        )
+        self.weight_factor = 0.5  # Facteur de poids pour le calcul de la puissance
+
+    def get_power(self, user, target, fight):
+        """
+        Calcule la puissance de Grass Knot en fonction du poids de la cible.
+        
+        :param user: Le Pokémon qui lance l'attaque.
+        :param target: Le Pokémon ciblé par l'attaque.
+        :param fight: L'instance de combat en cours.
+        :return: La puissance de l'attaque basée sur le poids de la cible.
+        """
+        weight = target.weight  # Poids de la cible en kg
+        if weight < 10:
+            return 20
+        elif weight < 25:
+            return 40
+        elif weight < 50:
+            return 60
+        elif weight < 100:
+            return 80
+        elif weight < 200:
+            return 100
+        else:
+            return 120
+        
+class ChillyReception(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Chilly Reception",
+            type_="Ice",
             category="Status",
             power=0,
             accuracy=True,
             priority=0,
-            pp=15,
-            flags=["protect", "mirror"],
+            pp=10,
+            flags=["mirror"],
             target="User"
         )
 
     def apply_effect(self, user, target, fight):
         """
-        Augmente la Défense de l'utilisateur de 2 niveaux.
+        Invoque la neige et fait switcher l'utilisateur.
         """
-        stat_changes = {"Defense": 2}
-        success = apply_stat_changes(user, stat_changes, "self", fight)
+        fight.set_weather("Snow")
+
+        # Vérifier si l'utilisateur est encore en vie
+        if user.current_hp <= 0:
+            print(f"{user.name} est K.O. et ne peut pas switcher !")
+            return
         
+        # Déterminer quelle équipe possède l'utilisateur
+        team_id = fight.get_team_id(user)
+        if team_id is None:
+            return
+            
+        team = fight.team1 if team_id == 1 else fight.team2
+        
+        # Vérifier s'il y a d'autres Pokémon disponibles
+        available_pokemon = [p for p in team if p.current_hp > 0 and p != user]
+        
+        if not available_pokemon:
+            print(f"{user.name} ne peut pas changer car il n'y a pas d'autre Pokémon disponible !")
+            return
+        
+        # Marquer que le Pokémon doit changer après l'attaque
+        user.must_switch_after_attack = True
+        user.switch_reason = "Chilly Reception"
+        print(f"{user.name} doit revenir après Chilly Reception !")
+
+class Tailwind(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Tailwind",
+            type_="Flying",
+            category="Status",
+            power=0,
+            accuracy=True,
+            priority=0,
+            pp=10,
+            flags=[],
+            target="User"
+        )
+    
+    def apply_effect(self, user, target, fight):
+        """
+        Pose le vent arrière pendant 5 tours.
+        """
+        team_id = fight.get_team_id(user)
+        if team_id == 1:
+            fight.tailwind_team1 = 5
+        else:
+            fight.tailwind_team2 = 5
+
+class TripleAxel(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Triple Axel",
+            type_="Ice",
+            category="Physical",
+            power=20,  # Puissance de base par coup
+            accuracy=90,
+            priority=0,
+            pp=10,
+            flags=["contact", "protect", "mirror"],
+            target="Foe"
+        )
+        self.hits = 3  # Nombre de coups
+        self.multi_hit = True  # Marquer comme attaque multi-coups
+
+    def get_hit_power(self, hit_number):
+        """
+        Retourne la puissance pour chaque coup.
+        Triple Axel : 20, 40, 60 de puissance
+        """
+        return 20 * hit_number
+
+    def apply_effect(self, user, target, fight):
+        """
+        Pas d'effet secondaire pour Triple Axel.
+        """
+        pass
+
+class BulletSeed(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Bullet Seed",
+            type_="Grass",
+            category="Physical",
+            power=25,
+            accuracy=100,
+            priority=0,
+            pp=30,
+            flags=["protect", "mirror"],
+            target="Foe"
+        )
+        self.multi_hit = True
+        self.min_hits = 2
+        self.max_hits = 5
+
+    def get_hit_count(self):
+        """
+        Détermine le nombre de coups pour les attaques 2-5 hits.
+        37.5% pour 2 hits, 37.5% pour 3 hits, 12.5% pour 4 hits, 12.5% pour 5 hits
+        """
+        import random
+        rand = random.random()
+        if rand < 0.375:
+            return 2
+        elif rand < 0.75:
+            return 3
+        elif rand < 0.875:
+            return 4
+        else:
+            return 5
+
+class RockBlast(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Rock Blast",
+            type_="Rock",
+            category="Physical",
+            power=25,
+            accuracy=90,
+            priority=0,
+            pp=10,
+            flags=["protect", "mirror"],
+            target="Foe"
+        )
+        self.multi_hit = True
+        self.min_hits = 2
+        self.max_hits = 5
+
+    def get_hit_count(self):
+        """
+        Même distribution que Bullet Seed
+        """
+        import random
+        rand = random.random()
+        if rand < 0.375:
+            return 2
+        elif rand < 0.75:
+            return 3
+        elif rand < 0.875:
+            return 4
+        else:
+            return 5
+
+class IcicleSpear(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Icicle Spear",
+            type_="Ice",
+            category="Physical",
+            power=25,
+            accuracy=100,
+            priority=0,
+            pp=30,
+            flags=["protect", "mirror"],
+            target="Foe"
+        )
+        self.multi_hit = True
+        self.min_hits = 2
+        self.max_hits = 5
+
+    def get_hit_count(self):
+        """
+        Même distribution que les autres attaques 2-5 hits
+        """
+        import random
+        rand = random.random()
+        if rand < 0.375:
+            return 2
+        elif rand < 0.75:
+            return 3
+        elif rand < 0.875:
+            return 4
+        else:
+            return 5
+
+class PopulationBomb(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Population Bomb",
+            type_="Normal",
+            category="Physical",
+            power=20,
+            accuracy=100,
+            priority=0,
+            pp=10,
+            flags=["protect", "mirror"],
+            target="Foe"
+        )
+        self.multi_hit = True
+        self.min_hits = 10
+        self.max_hits = 10  # Toujours 10 coups
+
+class TidyUp(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Tidy Up",
+            type_="Normal",
+            category="Status",
+            power=0,
+            accuracy=100,
+            priority=0,
+            pp=10,
+            flags=[""],
+            target="User"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        Tidy up nettoie les Entry Hazards et les clones des deux cotés du terrain et augmente l'attaque et la vitesse.
+        """
+        # Nettoyer tous les Entry Hazards des deux côtés
+        for hazards in [fight.hazards_team1, fight.hazards_team2]:
+            hazards["Spikes"] = 0
+            hazards["Stealth Rock"] = False
+            hazards["Toxic Spikes"] = 0
+            hazards["Sticky Web"] = False
+        
+        # Supprimer les substituts des Pokémon actifs des deux équipes
+        active_pokemon = [fight.pokemon1, fight.pokemon2]
+        for pokemon in active_pokemon:
+            if pokemon and hasattr(pokemon, 'substitute_hp') and pokemon.substitute_hp > 0:
+                pokemon.substitute_hp = 0
+                print(f"Le clone de {pokemon.name} est détruit par Tidy Up !")
+        
+        print(f"{user.name} nettoie le terrain avec Tidy Up !")
+        
+        # Augmenter l'Attaque et la Vitesse dans tous les cas
+        stats_changes = {"Speed": 1, "Attack": 1}
+        success = apply_stat_changes(user, stats_changes, "self", fight)
         if success:
-            print(f"{user.name} renforce sa Défense avec Iron Defense !")
+            print(f"{user.name} augmente sa Vitesse et son Attaque !")
+
+class FutureSight(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Future Sight",
+            type_="Psychic",
+            category="Special",
+            power=120,
+            accuracy=100,
+            priority=0,
+            pp=10,
+            flags=["protect", "mirror"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        Future Sight programme une attaque qui frappera dans 2 tours.
+        L'attaque sauvegarde l'Attaque Spéciale de l'utilisateur au moment de l'utilisation.
+        """
+        # Initialiser la liste des attaques Future Sight si elle n'existe pas
+        if not hasattr(fight, 'future_sight_attacks'):
+            fight.future_sight_attacks = []
+        
+        # Vérifier s'il y a déjà un Future Sight programmé pour cette position
+        target_position = 1 if target == fight.active1 else 2
+        for existing_attack in fight.future_sight_attacks:
+            if existing_attack['target_position'] == target_position:
+                print(f"Un Future Sight est déjà programmé pour cette position !")
+                return
+        
+        # Programmer l'attaque pour dans 2 tours
+        future_attack = {
+            'user': user,
+            'user_name': user.name,  # Sauvegarder le nom pour les messages
+            'user_sp_atk': user.current_stats()['Sp. Atk'],  # Attaque Spé au moment de l'utilisation
+            'target_position': target_position,  # Position de la cible (1 ou 2)
+            'turns_remaining': 2,
+            'attack_power': self.base_power,
+            'attack_type': self.type
+        }
+        
+        fight.future_sight_attacks.append(future_attack)
+        print(f"{user.name} utilise Future Sight ! L'attaque frappera dans 2 tours !")
+
+def process_future_sight_attacks(fight):
+    """
+    Fonction à appeler à la fin de chaque tour pour gérer les attaques Future Sight.
+    Cette fonction doit être intégrée dans le système de combat.
+    """
+    if not hasattr(fight, 'future_sight_attacks'):
+        return
+    
+    # Décrémenter le compteur et exécuter les attaques prêtes
+    attacks_to_remove = []
+    
+    for i, future_attack in enumerate(fight.future_sight_attacks):
+        future_attack['turns_remaining'] -= 1
+        
+        if future_attack['turns_remaining'] == 0:
+            # Exécuter l'attaque
+            execute_future_sight(future_attack, fight)
+            attacks_to_remove.append(i)
+    
+    # Supprimer les attaques exécutées (en partant de la fin pour éviter les problèmes d'index)
+    for i in reversed(attacks_to_remove):
+        fight.future_sight_attacks.pop(i)
+
+def execute_future_sight(future_attack, fight):
+    """
+    Exécute une attaque Future Sight programmée.
+    """
+    # Déterminer la cible actuelle à cette position
+    if future_attack['target_position'] == 1:
+        current_target = fight.active1
+    else:
+        current_target = fight.active2
+    
+    if current_target.current_hp <= 0:
+        print(f"Future Sight de {future_attack['user_name']} rate car il n'y a plus de cible !")
+        return
+    
+    print(f"Future Sight de {future_attack['user_name']} frappe {current_target.name} !")
+    
+    # Vérifier si l'utilisateur original est encore sur le terrain
+    original_user = future_attack['user']
+    user_on_field = (original_user == fight.active1 or original_user == fight.active2)
+    
+    # Calculer les dégâts
+    # Attaque Spé de l'utilisateur au moment de l'utilisation
+    attack_stat = future_attack['user_sp_atk']
+    
+    # Défense Spé de la cible actuelle au moment de l'impact
+    defense_stat = current_target.current_stats()['Sp. Def']
+    
+    base_power = future_attack['attack_power']
+    attack_type = future_attack['attack_type']
+    
+    # Créer un objet Attack temporaire pour Future Sight
+    from pokemon_attacks import Attack
+    temp_attack = Attack("Future Sight", attack_type, "Special", base_power, 100, 0, 10, ["protect", "mirror"], "Foe")
+    
+    # Formule de dégâts simplifiée pour Future Sight
+    import random
+    rdm = random.uniform(0.85, 1.0)
+    
+    # Utiliser le système existant de calcul d'efficacité de type
+    from donnees import type_effectiveness, is_stab
+    type_eff = type_effectiveness(attack_type, current_target)
+    
+    # STAB si l'utilisateur est encore sur le terrain
+    stab = is_stab(original_user, temp_attack) if user_on_field else 1.0
+    
+    # Future Sight utilise les objets et talents seulement si l'utilisateur est encore sur le terrain
+    if user_on_field:
+        # Utiliser le système existant de trigger_talent et trigger_item
+        from pokemon_talents import trigger_talent
+        from pokemon_items import trigger_item
+        
+        talent_mod = trigger_talent(original_user, "on_attack", temp_attack, fight)
+        item_mod = trigger_item(original_user, "on_attack", temp_attack, fight)
+        
+        # Valeurs par défaut si None
+        if talent_mod is None:
+            talent_mod = {"attack": 1.0, "power": 1.0, "accuracy": 1.0, "type": None}
+        if item_mod is None:
+            item_mod = {"attack": 1.0, "power": 1.0, "accuracy": 1.0}
+        
+        # Appliquer les modificateurs
+        attack_stat *= talent_mod.get("attack", 1.0)
+        base_power *= talent_mod.get("power", 1.0) * item_mod.get("power", 1.0)
+        
+        # Changer le type si le talent le modifie
+        if talent_mod.get("type") is not None:
+            attack_type = talent_mod["type"]
+            type_eff = type_effectiveness(attack_type, current_target)
+            temp_attack.type = attack_type
+            stab = is_stab(original_user, temp_attack)
+    
+    # Calcul final des dégâts
+    damage = ((22 * base_power * (attack_stat / defense_stat)) / 50 + 2) * type_eff * stab * rdm
+    damage = int(damage)
+    
+    # Appliquer les dégâts (Future Sight ignore les substituts)
+    print(f"Future Sight inflige {damage} dégâts !")
+    fight.damage_method(current_target, damage, bypass_substitute=True)
+    
+    if current_target.current_hp <= 0:
+        print(f"{current_target.name} est K.O. par Future Sight !")
