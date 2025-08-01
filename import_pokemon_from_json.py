@@ -1,6 +1,9 @@
 from pokemon import pokemon
-from pokemon_datas import pokemon_data
-from pokemon_attacks import attack_registry
+import sys
+sys.path.append("C:/Users/natha/OneDrive/Desktop/Travail/IA Combats pokémons/PokemonIA/Materials")
+from Materials.pokemon_datas import pokemon_data
+from Materials.pokemon_attacks import attack_registry
+sys.path.append("C:/Users/natha/OneDrive/Desktop/Travail/IA Combats pokémons/PokemonIA")
 import json
 
 def import_team_from_json(id):

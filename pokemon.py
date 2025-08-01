@@ -1,7 +1,9 @@
 import random
 import donnees # Données de la table des types et des natures
-from pokemon_items import trigger_item
-from pokemon_talents import trigger_talent
+import sys
+sys.path.append("C:/Users/natha/OneDrive/Desktop/Travail/IA Combats pokémons/PokemonIA/Materials")
+from Materials.pokemon_items import trigger_item
+from Materials.pokemon_talents import trigger_talent
 '''
 Véritable Intelligence Artificielle pour faire des combats pokémon : On va ici implémenenter toutes les particularités d'un combat pokémon,
 c'est-à-dire : les pokémons avec leurs stats, talents, attaques, les 6 pokémons de l'équipe, les effets des attaques, les changements de stats, 

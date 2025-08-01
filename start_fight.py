@@ -1,8 +1,5 @@
 import pokemon as pk
-import pokemon_datas as STATS
-from fight import Fight
 from battle_interface import launch_battle
-import pokemon_attacks as ATTACKS
 from import_pokemon_from_json import import_team_from_json
 
 
