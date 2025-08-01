@@ -3304,7 +3304,7 @@ def execute_future_sight(future_attack, fight):
     rdm = random.uniform(0.85, 1.0)
     
     # Utiliser le système existant de calcul d'efficacité de type
-    from donnees import type_effectiveness, is_stab
+    from utilities import type_effectiveness, is_stab
     type_eff = type_effectiveness(attack_type, current_target)
     
     # STAB si l'utilisateur est encore sur le terrain

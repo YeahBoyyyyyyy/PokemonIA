@@ -43,3 +43,70 @@ nature_chart = {
     "Timid": [0.9, 1, 1, 1, 1.1], "Hasty":  [1, 0.9, 1, 1, 1.1], "Jolly":   [1, 1, 0.9, 1, 1.1],  "Naive":  [1, 1, 1, 0.9, 1.1], "Serious": [1, 1, 1, 1, 1], # Speed Boosted
 }
     
+def can_terastallize(pokemon, fight, team_id):
+    """
+    Vérifie si un Pokémon peut téracristaliser.
+    """
+    # Vérifier si déjà téracristallisé
+    if pokemon.tera_activated:
+        return False
+    
+    # Vérifier si l'équipe a déjà utilisé sa téracristalisation
+    if hasattr(fight, 'tera_used_team1') and hasattr(fight, 'tera_used_team2'):
+        if team_id == 1 and fight.tera_used_team1:
+            return False
+        if team_id == 2 and fight.tera_used_team2:
+            return False
+    
+    return True
+
+def can_use_attack(pokemon, attack):
+    """
+    Vérifie si un Pokémon peut utiliser une attaque donnée.
+    Retourne (True, "") si l'attaque peut être utilisée, 
+    ou (False, "raison") si elle ne peut pas être utilisée.
+    """
+    # Vérifier si l'attaque a des PP disponibles
+    if pokemon.get_attack_pp(attack) <= 0:
+        return False, f"{pokemon.name} n'a plus de PP pour {attack.name} !"
+    
+    # Vérifier Heal Block : empêche l'utilisation d'attaques de soin
+    if getattr(pokemon, 'heal_blocked', False) and "heal" in attack.flags:
+        return False, f"{pokemon.name} ne peut pas utiliser {attack.name} car il est sous l'effet de Heal Block !"
+    
+    # Vérifier Encore : force l'utilisation d'une attaque spécifique
+    if pokemon.encored_turns > 0 and pokemon.encored_attack:
+        if attack != pokemon.encored_attack:
+            return False, f"{pokemon.name} est sous l'effet d'Encore et doit utiliser {pokemon.encored_attack.name} !"
+    
+    # Vérifier Choice items : verrouille sur une attaque spécifique
+    if pokemon.item and "Choice" in pokemon.item and pokemon.locked_attack:
+        if attack != pokemon.locked_attack:
+            return False, f"{pokemon.name} est verrouillé sur {pokemon.locked_attack.name} par {pokemon.item} !"
+    
+    # Vérifier si l'attaque est de type Status
+    if attack.category == "Status":
+        # Vérifier Taunt
+        if pokemon.is_taunted():
+            return False, f"{pokemon.name} est provoqué et ne peut pas utiliser d'attaques de statut !"
+        
+        # Vérifier Assault Vest (Veste de Combat)
+        if pokemon.item == "Assault Vest":
+            return False, f"{pokemon.name} porte une Veste de Combat et ne peut pas utiliser d'attaques de statut !"
+    
+    return True, ""
+
+def possible_attacks(pokemon):
+    """
+    Retourne la liste des attaques possibles par le pokemon
+    """
+    attacks = [pokemon.attack1, pokemon.attack2, pokemon.attack3, pokemon.attack4]
+    possible = []
+    
+    for atk in attacks:
+        if atk is not None:
+            can_use, _ = can_use_attack(pokemon, atk)
+            if can_use:
+                possible.append(atk)
+    
+    return possible

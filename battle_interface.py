@@ -1,63 +1,11 @@
 from fight import Fight
 import pokemon as pk
-import pokemon_attacks as ATTACKES
-import pokemon_datas as STATS
+import Materials.pokemon_attacks as ATTACKES
+import Materials.pokemon_datas as STATS
 import random
 from colors_utils import Colors as bcolors
 from fight import display_menu
-
-def can_terastallize(pokemon, fight, team_id):
-    """
-    Vérifie si un Pokémon peut téracristaliser.
-    """
-    # Vérifier si déjà téracristallisé
-    if pokemon.tera_activated:
-        return False, f"{pokemon.name} est déjà téracristallisé !"
-    
-    # Vérifier si l'équipe a déjà utilisé sa téracristalisation
-    if hasattr(fight, 'tera_used_team1') and hasattr(fight, 'tera_used_team2'):
-        if team_id == 1 and fight.tera_used_team1:
-            return False, "L'équipe 1 a déjà utilisé sa téracristalisation ce combat !"
-        if team_id == 2 and fight.tera_used_team2:
-            return False, "L'équipe 2 a déjà utilisé sa téracristalisation ce combat !"
-    
-    return True, ""
-
-def can_use_attack(pokemon, attack):
-    """
-    Vérifie si un Pokémon peut utiliser une attaque donnée.
-    Retourne (True, "") si l'attaque peut être utilisée, 
-    ou (False, "raison") si elle ne peut pas être utilisée.
-    """
-    # Vérifier si l'attaque a des PP disponibles
-    if pokemon.get_attack_pp(attack) <= 0:
-        return False, f"{pokemon.name} n'a plus de PP pour {attack.name} !"
-    
-    # Vérifier Heal Block : empêche l'utilisation d'attaques de soin
-    if getattr(pokemon, 'heal_blocked', False) and "heal" in attack.flags:
-        return False, f"{pokemon.name} ne peut pas utiliser {attack.name} car il est sous l'effet de Heal Block !"
-    
-    # Vérifier Encore : force l'utilisation d'une attaque spécifique
-    if pokemon.encored_turns > 0 and pokemon.encored_attack:
-        if attack != pokemon.encored_attack:
-            return False, f"{pokemon.name} est sous l'effet d'Encore et doit utiliser {pokemon.encored_attack.name} !"
-    
-    # Vérifier Choice items : verrouille sur une attaque spécifique
-    if pokemon.item and "Choice" in pokemon.item and pokemon.locked_attack:
-        if attack != pokemon.locked_attack:
-            return False, f"{pokemon.name} est verrouillé sur {pokemon.locked_attack.name} par {pokemon.item} !"
-    
-    # Vérifier si l'attaque est de type Status
-    if attack.category == "Status":
-        # Vérifier Taunt
-        if pokemon.is_taunted():
-            return False, f"{pokemon.name} est provoqué et ne peut pas utiliser d'attaques de statut !"
-        
-        # Vérifier Assault Vest (Veste de Combat)
-        if pokemon.item == "Assault Vest":
-            return False, f"{pokemon.name} porte une Veste de Combat et ne peut pas utiliser d'attaques de statut !"
-    
-    return True, ""
+from utilities import *
 
 # Option pour afficher les stats d'un Pokémon
 def print_pokemon_stats(pokemon : pk.pokemon):
@@ -222,7 +170,7 @@ def launch_battle(team1: list[pk.pokemon], team2: list[pk.pokemon]):
                 
                 # Vérifier si le Pokémon a des attaques utilisables
                 if not attacker.has_usable_attack():
-                    from pokemon_attacks import STRUGGLE_ATTACK
+                    from Materials.pokemon_attacks import STRUGGLE_ATTACK
                     print(f"\n{bcolors.OKYELLOW}{attacker.name} n'a plus de PP et doit utiliser Struggle !{bcolors.RESET}")
                     act1 = (attacker, STRUGGLE_ATTACK)
                     break
@@ -280,7 +228,7 @@ def launch_battle(team1: list[pk.pokemon], team2: list[pk.pokemon]):
                             continue  # Demander une autre attaque
                         
                         # Après avoir choisi une attaque valide, proposer la téracristalisation
-                        can_tera, tera_reason = can_terastallize(attacker, fight, 1)
+                        can_tera = can_terastallize(attacker, fight, 1)
                         if can_tera:
                             print(f"\n{bcolors.OKCYAN}Voulez-vous téracristaliser {attacker.name} avant d'attaquer ?")
                             print(f"Type Tera : {attacker.tera_type}")
@@ -379,7 +327,7 @@ def launch_battle(team1: list[pk.pokemon], team2: list[pk.pokemon]):
                 atk2 = random.choice(valid_attacks)
         else:
             # Aucune attaque utilisable, utiliser Struggle
-            from pokemon_attacks import STRUGGLE_ATTACK
+            from Materials.pokemon_attacks import STRUGGLE_ATTACK
             atk2 = STRUGGLE_ATTACK
             print(f"\n{bcolors.OKYELLOW}{attacker2.name} n'a plus de PP et utilise Struggle !{bcolors.RESET}")
         

@@ -1,5 +1,5 @@
 import random
-import donnees # Données de la table des types et des natures
+import utilities # Données de la table des types et des natures
 import sys
 sys.path.append("C:/Users/natha/OneDrive/Desktop/Travail/IA Combats pokémons/PokemonIA/Materials")
 from Materials.pokemon_items import trigger_item
@@ -52,7 +52,7 @@ class pokemon():
         self._stats_cache = {}
         self._stats_dirty = True  # Flag pour savoir si le cache doit être recalculé
 
-        self.nature_modifier = donnees.nature_chart[self.nature] if self.nature else [1, 1, 1, 1, 1]
+        self.nature_modifier = utilities.nature_chart[self.nature] if self.nature else [1, 1, 1, 1, 1]
         self._calculate_initial_stats()
         
         self.accuracy = 1.0  # Précision du Pokémon (par exemple : 1.0 pour 100% de précision)
@@ -226,7 +226,7 @@ class pokemon():
         Utile après avoir modifié les EVs ou la nature d'un Pokémon.
         """
         # Mettre à jour le modificateur de nature
-        self.nature_modifier = donnees.nature_chart[self.nature] if self.nature else [1, 1, 1, 1, 1]
+        self.nature_modifier = utilities.nature_chart[self.nature] if self.nature else [1, 1, 1, 1, 1]
         
         # Recalculer les HP max
         old_max_hp = self.max_hp

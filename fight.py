@@ -1,10 +1,10 @@
 from pokemon import pokemon, apply_stat_changes
 import random 
-import donnees 
+import utilities 
 from colors_utils import Colors as bcolors
-from pokemon_items import trigger_item, item_registry
-from pokemon_talents import trigger_talent
-from pokemon_attacks import Attack, process_future_sight_attacks
+from Materials.pokemon_items import trigger_item, item_registry
+from Materials.pokemon_talents import trigger_talent
+from Materials.pokemon_attacks import Attack, process_future_sight_attacks
 
 class Fight():
     def __init__(self, team1, team2):
@@ -1459,7 +1459,7 @@ def type_effectiveness(attack_type, target):
         
     modifier = 1.0
     for t in target_types:
-        modifier *= donnees.type_chart[donnees.POKEMON_TYPES_ID[attack_type]][donnees.POKEMON_TYPES_ID[t]]
+        modifier *= utilities.type_chart[utilities.POKEMON_TYPES_ID[attack_type]][utilities.POKEMON_TYPES_ID[t]]
     return modifier
 
 #### Gerer le STAB ####
