@@ -461,8 +461,15 @@ class ToxicDebris(Talent):
     """Talent qui place des Débris Toxiques sur le terrain quand le Pokémon est touché par une attaque physique."""
     
     def on_defense(self, poke, incoming_attack, attacker_poke=None, fight=None):
+        # Éviter la double activation en vérifiant si le talent s'est déjà déclenché ce tour
+        if hasattr(poke, '_toxic_debris_triggered'):
+            return None
+            
         # Se déclenche seulement si c'est une attaque physique qui inflige des dégâts
         if incoming_attack and incoming_attack.category == "Physical":
+            # Marquer que le talent s'est déclenché pour éviter la double activation
+            poke._toxic_debris_triggered = True
+            
             user_team_id = fight.get_team_id(poke)
             opponent_hazards = fight.hazards_team2 if user_team_id == 1 else fight.hazards_team1
 

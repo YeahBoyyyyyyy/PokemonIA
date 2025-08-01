@@ -1221,6 +1221,21 @@ pokemon_data = {
         "weight": 162.5,
         "fully_evolved": True
     },
+    "Iron Moth": {
+        "name": "Iron Moth",
+        "types": ["Fire", "Poison"],
+        "abilities": ["Quark Drive"],
+        "stats": {
+            "HP": 80,
+            "Attack": 70,
+            "Defense": 60,
+            "Sp. Atk": 140,
+            "Sp. Def": 110,
+            "Speed": 110
+        },
+        "weight": 36.0,
+        "fully_evolved": True
+    },
     "Terapagos": {
         "name": "Terapagos",
         "types": ["Normal"],
@@ -1596,5 +1611,19 @@ pokemon_data = {
         "weight": 60.8,
         "fully_evolved": True
     },
-    
+    "Samurott-Hisui": {
+        "name": "Samurott-Hisui",
+        "types": ["Water", "Ice"],
+        "abilities": ["Torrent", "Shell Armor"],
+        "stats": {
+            "HP": 90,
+            "Attack": 108,
+            "Defense": 80,
+            "Sp. Atk": 100,
+            "Sp. Def": 65,
+            "Speed": 85
+        },
+        "weight": 58.2,
+        "fully_evolved": True
+    },
 }

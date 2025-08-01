@@ -194,19 +194,22 @@ def launch_battle(team1: list[pk.pokemon], team2: list[pk.pokemon]):
         if fight.check_battle_end():
             break
 
-        # Vérifier si le Pokémon actif du joueur est KO et forcer un changement
-        if fight.active1.current_hp <= 0:
-            if not fight.is_team_defeated(fight.team1):
-                print(f"\n{bcolors.OKYELLOW}{fight.active1.name} est K.O. ! Vous devez choisir un remplaçant.{bcolors.RESET}")
-                choose_switch_pokemon(fight, 1)
-            else:
-                break  # L'équipe est défaite, sortir de la boucle
+        # La vérification et gestion des Pokémon K.O. est maintenant gérée dans fight.py
+        # Ne pas dupliquer la logique ici
 
         fight.print_fight_status()
 
         # Boucle de sélection d'action
         while True:
             attacker = fight.active1
+            
+            # Vérifier que le Pokémon actif est toujours vivant avant de demander une action
+            if attacker.current_hp <= 0:
+                break  # Sortir de la boucle d'action pour relancer la vérification principale
+            
+            # Réinitialiser act1 au début de chaque tour
+            if 'act1' in locals():
+                del act1
             
             # Afficher le numéro de tour (ajuster +1 car le tour sera incrémenté à la fin)
             print(f"\n{bcolors.OKMAGENTA}═══ TOUR {fight.turn + 1} ═══{bcolors.RESET}")

@@ -428,31 +428,12 @@ class Fight():
             # Gérer les statuts temporaires
             self.manage_temporary_status(p)
         
+        # Vérifier les Pokémon K.O. après les effets de fin de tour
         if self.active1.current_hp == 0:
-            print(f"{self.active1.name} est K.O. !")
-            defeated_team = self.team1
-            team_id = 1
-            if self.is_team_defeated(defeated_team):
-                if self.check_battle_end():
-                    return
-            else:
-                if team_id == 1:  # Joueur humain
-                    self.player_choice_switch(team_id)
-                else:  # IA
-                    self.auto_switch(team_id)
-
+            self.handle_ko_replacement(self.active1)
+        
         if self.active2.current_hp == 0:
-            print(f"{self.active2.name} est K.O. !")
-            defeated_team = self.team2
-            team_id = 2
-            if self.is_team_defeated(defeated_team):
-                if self.check_battle_end():
-                    return
-            else:
-                if team_id == 2:  # IA
-                    self.auto_switch(team_id)
-                else:  # Joueur humain
-                    self.player_choice_switch(team_id)
+            self.handle_ko_replacement(self.active2)
 
         self.turn += 1
         self.weather_update()
@@ -807,9 +788,34 @@ class Fight():
         # Nettoyer les attributs temporaires pour éviter les doubles activations de talents
         if hasattr(attacker, '_rough_skin_triggered'):
             delattr(attacker, '_rough_skin_triggered')
+        if hasattr(defender, '_toxic_debris_triggered'):
+            delattr(defender, '_toxic_debris_triggered')
 
         if defender.current_hp == 0:
             print(f"{defender.name} est K.O. !")
+            self.handle_ko_replacement(defender)
+
+    def handle_ko_replacement(self, ko_pokemon):
+        """
+        Gère le remplacement immédiat d'un Pokémon K.O.
+        """
+        if ko_pokemon == self.active1:
+            team_id = 1
+            team = self.team1
+        elif ko_pokemon == self.active2:
+            team_id = 2
+            team = self.team2
+        else:
+            return  # Pokémon pas actif, pas besoin de remplacement
+        
+        if self.is_team_defeated(team):
+            if self.check_battle_end():
+                return
+        else:
+            if team_id == 1:  # Joueur humain
+                self.player_choice_switch(team_id)
+            else:  # IA
+                self.auto_switch(team_id)
 
     def apply_secondary_effects(self, attacker, defender, attack, damage_dealt=0):
         """

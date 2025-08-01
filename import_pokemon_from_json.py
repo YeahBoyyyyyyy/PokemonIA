@@ -5,16 +5,18 @@ import json
 
 def import_team_from_json(id):
     teamid = "team" + str(id)
-    team = []
+    pokemon_team = []
     with open("OUteams.json", "r") as f:
         data = json.load(f)
-        team = data.get(teamid, [])
+        # Accéder au contenu et au premier élément qui contient les équipes
+        team_data = data.get("content", [{}])[0].get(teamid, {})
+    
     for i in range(1, 7):
-        if str(i) in team:
-            carac = team[str(i)]
+        if str(i) in team_data:
+            carac = team_data[str(i)]
             poke = import_pokemon_from_json(carac)
-            team.append(poke)
-    return team
+            pokemon_team.append(poke)
+    return pokemon_team
 
 def import_pokemon_from_json(carac : dict):
     """
