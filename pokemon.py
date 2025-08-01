@@ -31,25 +31,11 @@ class pokemon():
             'Speed': stats['Speed'],
         }
 
-        ## IVs
-        self.ivs = {
-            'HP': 31,
-            'Attack': 31,
-            'Defense': 31,
-            'Sp. Atk': 31,
-            'Sp. Def': 31,
-            'Speed': 31,
-        }
+        ## IVs - Optimisation: utilisation d'un dict avec valeurs par défaut
+        self.ivs = {stat: 31 for stat in self.base_stats.keys()}
 
-        ## EVs
-        self.evs = {
-            'HP': 0,
-            'Attack': 0,
-            'Defense': 0,
-            'Sp. Atk': 0,
-            'Sp. Def': 0,
-            'Speed': 0,
-        }
+        ## EVs - Optimisation: utilisation d'un dict avec valeurs par défaut
+        self.evs = {stat: 0 for stat in self.base_stats.keys()}
 
         ## Les stats dans le combat
         self.stats_modifier = [0, 0, 0, 0, 0]  # Modificateurs de stats pour Attack, Defense, Sp. Atk, Sp. Def, Speed
@@ -60,34 +46,34 @@ class pokemon():
         self.max_hp =  int((2 * self.base_stats['HP'] + self.ivs["HP"] + self.evs['HP'] / 4) * 0.5 + 60)   # Points de vie maximum
         self.current_hp = self.max_hp  # Points de vie actuels
 
-        self.nature_modifier = donnees.nature_chart[self.nature] if self.nature else [1, 1, 1, 1, 1]
-        self.stats = {
-                "Attack": int(((2 * self.base_stats['Attack'] + self.ivs["Attack"] + self.evs['Attack'] // 4) * 0.5 + 5) * self.nature_modifier[0]),
-                "Defense": int(((2 * self.base_stats['Defense'] + self.ivs["Defense"] + self.evs['Defense'] // 4) * 0.5 + 5) * self.nature_modifier[1]),
-                "Sp. Atk": int(((2 * self.base_stats['Sp. Atk'] + self.ivs["Sp. Atk"] + self.evs['Sp. Atk'] // 4) * 0.5 + 5) * self.nature_modifier[2]),
-                "Sp. Def": int(((2 * self.base_stats['Sp. Def'] + self.ivs["Sp. Def"] + self.evs['Sp. Def'] // 4) * 0.5 + 5) * self.nature_modifier[3]),
-                "Speed": int(((2 * self.base_stats['Speed'] + self.ivs["Speed"] + self.evs['Speed'] // 4) * 0.5 + 5) * self.nature_modifier[4])
-            }
+        # Cache pour les calculs de stats
+        self._stats_cache = {}
+        self._stats_dirty = True  # Flag pour savoir si le cache doit être recalculé
 
-        self.stats_with_no_modifier = {
-                "Attack": int(((2 * self.base_stats['Attack'] + self.ivs["Attack"] + self.evs['Attack'] // 4) * 0.5 + 5) * self.nature_modifier[0]),
-                "Defense": int(((2 * self.base_stats['Defense'] + self.ivs["Defense"] + self.evs['Defense'] // 4) * 0.5 + 5) * self.nature_modifier[1]),
-                "Sp. Atk": int(((2 * self.base_stats['Sp. Atk'] + self.ivs["Sp. Atk"] + self.evs['Sp. Atk'] // 4) * 0.5 + 5) * self.nature_modifier[2]),
-                "Sp. Def": int(((2 * self.base_stats['Sp. Def'] + self.ivs["Sp. Def"] + self.evs['Sp. Def'] // 4) * 0.5 + 5) * self.nature_modifier[3]),
-                "Speed": int(((2 * self.base_stats['Speed'] + self.ivs["Speed"] + self.evs['Speed'] // 4) * 0.5 + 5) * self.nature_modifier[4])
-            }
+        self.nature_modifier = donnees.nature_chart[self.nature] if self.nature else [1, 1, 1, 1, 1]
+        self._calculate_initial_stats()
         
         self.accuracy = 1.0  # Précision du Pokémon (par exemple : 1.0 pour 100% de précision)
         self.evasion = 1.0  # Évasion du Pokémon (par exemple : 1.0 pour 100% d'évasion)
 
         self.accuracy_with_no_modifier = 1.0  # Précision du Pokémon sans modificateurs
         self.evasion_with_no_modifier = 1.0  # Évasion du Pokémon sans modificateurs
-            
+        
         ## ATTACKS : Les attaques ne sont pas mises à l'initialisation du Pokémon, mais lorsque l'on modifie le Pokémon pour le combat.
         self.attack1 = None
         self.attack2 = None
         self.attack3 = None
         self.attack4 = None
+        
+        ## PP SYSTEM : Points de Pouvoir pour chaque attaque
+        self.pp1 = 0  # PP actuels pour attack1
+        self.pp2 = 0  # PP actuels pour attack2
+        self.pp3 = 0  # PP actuels pour attack3
+        self.pp4 = 0  # PP actuels pour attack4
+        self.max_pp1 = 0  # PP maximum pour attack1
+        self.max_pp2 = 0  # PP maximum pour attack2
+        self.max_pp3 = 0  # PP maximum pour attack3
+        self.max_pp4 = 0  # PP maximum pour attack4
         
         # Système de clones (Substitute)
         self.substitute_hp = 0  # PV du clone
@@ -127,6 +113,17 @@ class pokemon():
         # Téracristalisation
         self.tera_type = random.choice(self.types)  # Type de la Téracristalisation
         self.tera_activated = False  # Indique si le Pokémon a été Téracristalisé
+
+    def _calculate_initial_stats(self):
+        """Calcule les stats initiales sans modificateurs"""
+        self.stats = {}
+        self.stats_with_no_modifier = {}
+        
+        stat_names = ["Attack", "Defense", "Sp. Atk", "Sp. Def", "Speed"]
+        for i, stat in enumerate(stat_names):
+            base_value = int(((2 * self.base_stats[stat] + self.ivs[stat] + self.evs[stat] // 4) * 0.5 + 5) * self.nature_modifier[i])
+            self.stats[stat] = base_value
+            self.stats_with_no_modifier[stat] = base_value
 
     def has_substitute(self):
         """Retourne True si le Pokémon a un clone actif"""
@@ -402,6 +399,125 @@ class pokemon():
         else:
             modifier = 1 / (1 + abs(stage_mod) / 3)
         return base_value * modifier
+
+    # ========== SYSTÈME DE PP ==========
+    
+    def set_attack(self, slot, attack):
+        """
+        Définit une attaque dans un slot spécifique et initialise ses PP.
+        
+        :param slot: Numéro du slot (1-4)
+        :param attack: L'attaque à assigner
+        """
+        if slot == 1:
+            self.attack1 = attack
+            self.max_pp1 = attack.pp if attack else 0
+            self.pp1 = self.max_pp1
+        elif slot == 2:
+            self.attack2 = attack
+            self.max_pp2 = attack.pp if attack else 0
+            self.pp2 = self.max_pp2
+        elif slot == 3:
+            self.attack3 = attack
+            self.max_pp3 = attack.pp if attack else 0
+            self.pp3 = self.max_pp3
+        elif slot == 4:
+            self.attack4 = attack
+            self.max_pp4 = attack.pp if attack else 0
+            self.pp4 = self.max_pp4
+    
+    def get_attack_pp(self, attack):
+        """
+        Récupère les PP actuels d'une attaque spécifique.
+        
+        :param attack: L'attaque dont on veut connaître les PP
+        :return: PP actuels ou 0 si l'attaque n'est pas trouvée
+        """
+        if attack == self.attack1:
+            return self.pp1
+        elif attack == self.attack2:
+            return self.pp2
+        elif attack == self.attack3:
+            return self.pp3
+        elif attack == self.attack4:
+            return self.pp4
+        return 0
+    
+    def use_pp(self, attack, amount=1):
+        """
+        Consomme des PP pour une attaque donnée.
+        
+        :param attack: L'attaque utilisée
+        :param amount: Nombre de PP à consommer (défaut: 1)
+        :return: True si les PP ont été consommés, False si pas assez de PP
+        """
+        current_pp = self.get_attack_pp(attack)
+        if current_pp < amount:
+            return False
+        
+        if attack == self.attack1:
+            self.pp1 = max(0, self.pp1 - amount)
+        elif attack == self.attack2:
+            self.pp2 = max(0, self.pp2 - amount)
+        elif attack == self.attack3:
+            self.pp3 = max(0, self.pp3 - amount)
+        elif attack == self.attack4:
+            self.pp4 = max(0, self.pp4 - amount)
+        
+        return True
+    
+    def restore_pp(self, attack, amount):
+        """
+        Restaure des PP pour une attaque donnée.
+        
+        :param attack: L'attaque à restaurer
+        :param amount: Nombre de PP à restaurer
+        """
+        if attack == self.attack1:
+            self.pp1 = min(self.max_pp1, self.pp1 + amount)
+        elif attack == self.attack2:
+            self.pp2 = min(self.max_pp2, self.pp2 + amount)
+        elif attack == self.attack3:
+            self.pp3 = min(self.max_pp3, self.pp3 + amount)
+        elif attack == self.attack4:
+            self.pp4 = min(self.max_pp4, self.pp4 + amount)
+    
+    def has_usable_attack(self):
+        """
+        Vérifie si le Pokémon a au moins une attaque avec des PP disponibles.
+        
+        :return: True si au moins une attaque a des PP > 0
+        """
+        return (self.pp1 > 0 and self.attack1 is not None) or \
+               (self.pp2 > 0 and self.attack2 is not None) or \
+               (self.pp3 > 0 and self.attack3 is not None) or \
+               (self.pp4 > 0 and self.attack4 is not None)
+    
+    def get_usable_attacks(self):
+        """
+        Retourne la liste des attaques utilisables (avec PP > 0).
+        
+        :return: Liste des attaques utilisables
+        """
+        usable = []
+        if self.attack1 and self.pp1 > 0:
+            usable.append(self.attack1)
+        if self.attack2 and self.pp2 > 0:
+            usable.append(self.attack2)
+        if self.attack3 and self.pp3 > 0:
+            usable.append(self.attack3)
+        if self.attack4 and self.pp4 > 0:
+            usable.append(self.attack4)
+        return usable
+    
+    def restore_all_pp(self):
+        """
+        Restaure tous les PP au maximum (pour les soins au Centre Pokémon).
+        """
+        self.pp1 = self.max_pp1
+        self.pp2 = self.max_pp2
+        self.pp3 = self.max_pp3
+        self.pp4 = self.max_pp4
     
 def tailwind_mod(poke, fight):
     team_id = fight.get_team_id(poke)
@@ -411,3 +527,55 @@ def tailwind_mod(poke, fight):
         return 2.0
     else:
         return 1.0
+    
+def apply_stat_changes(target_poke, stat_changes, source="unknown", fight=None):
+    """
+    Applique des modifications de statistiques en gérant les talents qui peuvent les intercepter.
+    
+    :param target_poke: Le Pokémon dont les stats vont être modifiées
+    :param stat_changes: Dict des modifications {stat_name: change_value}
+    :param source: L'origine de la modification ("opponent", "self", "field", etc.)
+    :param fight: L'instance de combat
+    :return: True si des modifications ont été appliquées, False sinon
+    """
+    if not stat_changes:
+        return False
+    
+    # Convertir les noms de stats en indices si nécessaire
+    stat_mapping = {
+        "Attack": 0,
+        "Defense": 1,
+        "Sp. Atk": 2,
+        "Sp. Def": 3,
+        "Speed": 4
+    }
+    
+    # Déclencher l'événement on_stat_change pour le Pokémon ciblé
+    talent_changes = trigger_talent(target_poke, "on_stat_change", stat_changes, source, fight)
+    item_changes = trigger_item(target_poke, "on_stat_change", talent_changes, source, fight) # Surtout pour la White Herb
+    final_changes = item_changes
+    if final_changes is None:
+        final_changes = stat_changes
+    
+    # Appliquer les modifications finales
+    changes_applied = False
+    for stat, change in final_changes.items():
+        if change != 0:
+            if isinstance(stat, str) and stat in stat_mapping:
+                stat_index = stat_mapping[stat]
+            elif isinstance(stat, int):
+                stat_index = stat
+            else:
+                continue
+                
+            # Appliquer la modification avec les limites (-6 à +6)
+            old_value = target_poke.stats_modifier[stat_index]
+            target_poke.stats_modifier[stat_index] = max(-6, min(6, old_value + change))
+            
+            if target_poke.stats_modifier[stat_index] != old_value:
+                changes_applied = True
+    
+    if changes_applied:
+        target_poke.actualize_stats()
+    
+    return changes_applied

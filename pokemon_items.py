@@ -3,6 +3,7 @@ class Item:
         """
         This method is called at the end of each turn to apply the item's effect.
         """
+        
         pass
     def after_attack(self, poke, fight, attacker, attack):
         """
@@ -32,7 +33,23 @@ class Item:
         """
         return None
     
+    def on_defense(self, poke, attack, fight=None):
+        """
+        This method is called when the Pokémon is attacked to apply the item's effect.
+        """
+        return None
 
+    def on_stat_change(self, poke, stat_changes, source, fight=None):
+        """
+        Appelé quand une tentative de modification de stats est effectuée.
+        
+        :param poke: Le Pokémon ciblé par la modification
+        :param stat_changes: Dict des changements de stats proposés {stat: modification}
+        :param source: Source du changement ('self', 'opponent', 'field', etc.)
+        :param fight: Instance du combat
+        :return: Dict des changements de stats autorisés (peut être modifié)
+        """
+        return stat_changes
 
 class Leftovers(Item):
     def on_turn_end(self, poke, fight=None):
@@ -96,7 +113,7 @@ class ChestoBerry(Item):
 class AssaultVest(Item):
     def modify_stat(self, poke, fight=None):
         poke.stats["Sp. Def"] += int(poke.stats_with_no_modifier["Sp. Def"] * 0.5)
-
+    
 class RockyHelmet(Item):
     """
     Rocky Helmet inflige des dégâts à l'attaquant si l'attaque était de contact.    
@@ -119,7 +136,7 @@ class FocusSash(Item):
     """
     Focus Sash permet au Pokémon de survivre à une attaque qui le mettrait KO, en restant à 1 PV à la place. Ne fonctionne que si le Pokémon était à pleine santé.
     """
-    def before_attack(self, poke, attack, fight=None):
+    def on_attack(self, poke, attack, fight=None):
         # La Ceinture Force ne fonctionne que si le Pokémon est à pleine santé
         if poke.current_hp == poke.max_hp:
             poke.focus_sash_ready = True
@@ -164,7 +181,63 @@ class WideLens(Item):
     """
     def on_attack(self, poke, attack, fight=None):
         return {"attack": 1.0, "power": 1.0, "accuracy": 1.1}
+
+class AirBalloon(Item):
+    """
+    Air Balloon permet au Pokémon de léviter et d'être immunisé aux attaques de type Sol.
+    Se brise si le Pokémon subit des dégâts.
+    """
+    def on_entry(self, poke, fight=None):
+        print(f"{poke.name} flotte grâce à son Air Balloon !")
+        poke.air_balloon_active = True
+        
+    def on_defense(self, poke, attack, fight=None):
+        # Immunité aux attaques de type Sol si le ballon est actif
+        if getattr(poke, 'air_balloon_active', True) and attack.type == "Ground":
+            print(f"{poke.name} évite l'attaque grâce à son Air Balloon !")
+            return {"attack": 0.0, "power": 0.0, "accuracy": 1.0}
+        return None
+        
+    def after_attack(self, poke, fight=None, attacker=None, attack=None):
+        # Le ballon se brise si le Pokémon subit des dégâts
+        if (getattr(poke, 'air_balloon_active', True) and attack.type != "Ground" and attack.category != "Status" and not poke.protect and attacker != poke):
+            self.destroy_balloon(poke)
     
+    def on_entry(self, poke, fight=None):
+        team_id = fight.get_team_id(poke)
+        if team_id == 1:
+            if fight.hazards_team1["Stealth Rock"]:
+                self.destroy_balloon(poke)
+        elif team_id == 2:
+            if fight.hazards_team2["Stealth Rock"]:
+                self.destroy_balloon(poke)
+
+    def destroy_balloon(self, poke):
+        """
+        Détruit l'Air Balloon du Pokémon.
+        """
+        print(f"L'Air Balloon de {poke.name} éclate !")
+        poke.air_balloon_active = False
+        poke.item = None
+
+class WhiteHerb(Item):
+    """
+    White Herb restaure les stats du Pokémon si elles ont été baissées.
+    """
+    def on_stat_change(self, poke, stat_changes, source, fight=None):
+        # Vérifie s'il y a des stats qui baissent
+        has_negative_changes = any(change < 0 for change in stat_changes.values())
+        
+        if has_negative_changes:
+            print(f"{poke.name} utilise sa White Herb !")
+            # Annule toutes les baisses de stats
+            for stat in stat_changes:
+                if stat_changes[stat] < 0:
+                    stat_changes[stat] = 0
+            # Consomme l'objet une seule fois
+            poke.item = None
+        
+        return stat_changes
 
 item_registry = {
     "Leftovers": Leftovers(),
@@ -182,7 +255,9 @@ item_registry = {
     "Black Glasses": BlackGlasses(),
     "Life Orb": LifeOrb(),
     "Toxic Orb": ToxicOrb(),
-    "Wide Lens": WideLens()
+    "Wide Lens": WideLens(),
+    "Air Balloon": AirBalloon(),
+    "White Herb": WhiteHerb(),
 }
 
 def trigger_item(poke, event, *args):

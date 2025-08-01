@@ -140,6 +140,7 @@ class SnowWarning(Talent):
 class Intimidate(Talent):
     """ Talent qui réduit l'attaque de l'adversaire de 1 niveau."""
     def on_entry(self, poke, fight):
+        from pokemon import apply_stat_changes
         opponent = fight.active2 if poke == fight.active1 else fight.active1
 
         # Vérifie que l'adversaire n'est pas déjà KO
@@ -155,26 +156,27 @@ class QuarkDrive(Talent):
     """ Talent qui booste la stat la plus élevée du Pokémon sous le soleil ou dans le terrain électrique."""
     def on_entry(self, poke, fight):
         if fight.weather['current'] == "Electric Terrain":
-            stat_max = max(poke.stats, key = poke.stats.get)
-            if stat_max == "Speed":
-                poke.hidden_modifier["Speed"] *= 1.5
-            else:
-                poke.hidden_modifier[stat_max] *= 1.3
+            self._boost_highest_stat(poke)
 
 class Protosynthesis(Talent):
     """ Talent qui booste la stat la plus élevée du Pokémon sous le soleil ou dans le terrain électrique."""
     def on_entry(self, poke, fight):
-        if fight.weather['current'] == "Electric Terrain":
-            stat_max = max(poke.stats, key = poke.stats.get)
-            if stat_max == "Speed":
-                poke.hidden_modifier["Speed"] *= 1.5
-            else:
-                poke.hidden_modifier[stat_max] *= 1.3
+        if fight.weather['current'] == "Sunny":
+            self._boost_highest_stat(poke)
+    
+    def _boost_highest_stat(self, poke):
+        """Méthode commune pour booster la stat la plus élevée"""
+        stat_max = max(poke.stats, key=poke.stats.get)
+        if stat_max == "Speed":
+            poke.hidden_modifier["Speed"] *= 1.5
+        else:
+            poke.hidden_modifier[stat_max] *= 1.3
 
 class FlashFire(Talent):
     """ Talent qui absorbe les attaques de type Feu et augmente l'Attaque Spéciale."""
     def on_defense(self, poke, incoming_attack, attacker_poke=None, fight=None):
         if incoming_attack.type == "Fire":
+            from pokemon import apply_stat_changes
             apply_stat_changes(poke, {"Sp. Atk": 1}, "self", fight)
             print(f"{poke.name} absorbe le feu et augmente son Attaque Spéciale !")
             return 0  # annule les dégâts
@@ -190,6 +192,7 @@ class Stamina(Talent):
     """ Talent qui augmente la Défense de 1 niveau à chaque fois que le Pokémon subit des dégâts."""
     def on_defense(self, poke, incoming_attack, attacker_poke=None, fight=None):
         if incoming_attack.category in ["Physical", "Special"]:
+            from pokemon import apply_stat_changes
             apply_stat_changes(poke, {"Defense": 1}, "self", fight)
             print(f"{poke.name} augmente sa Défense grâce à Endurance !")
         return None
@@ -398,6 +401,7 @@ class DauntlessShield(Talent):
     """Augmente la Défense de 1 niveau quand le Pokémon entre pour la première sur le terrain."""
     def on_entry(self, poke, fight):
         if not hasattr(poke, "dauntless_shield_activated"):
+            from pokemon import apply_stat_changes
             poke.dauntless_shield_activated = True
             apply_stat_changes(poke, {"Defense": 1}, "self", fight)
             print(f"{poke.name} active Egide Inflexible et augmente sa Défense !")
@@ -407,6 +411,7 @@ class IntrepidSword(Talent):
     """Augmente l'Attaque de 1 niveau quand le Pokémon entre pour la première sur le terrain."""
     def on_entry(self, poke, fight):
         if not hasattr(poke, "intrepid_sword_activated"):
+            from pokemon import apply_stat_changes
             poke.intrepid_sword_activated = True
             apply_stat_changes(poke, {"Attack": 1}, "self", fight)
             print(f"{poke.name} active Epée Intrépide et augmente son Attaque !")
@@ -524,56 +529,6 @@ class Regenerator(Talent):
             print(f"{poke.name} récupère {actual_healed} PV grâce à Regenerator !")
             return "activated"
         return None
-
-def apply_stat_changes(target_poke, stat_changes, source="unknown", fight=None):
-    """
-    Applique des modifications de statistiques en gérant les talents qui peuvent les intercepter.
-    
-    :param target_poke: Le Pokémon dont les stats vont être modifiées
-    :param stat_changes: Dict des modifications {stat_name: change_value}
-    :param source: L'origine de la modification ("opponent", "self", "field", etc.)
-    :param fight: L'instance de combat
-    :return: True si des modifications ont été appliquées, False sinon
-    """
-    if not stat_changes:
-        return False
-    
-    # Convertir les noms de stats en indices si nécessaire
-    stat_mapping = {
-        "Attack": 0,
-        "Defense": 1,
-        "Sp. Atk": 2,
-        "Sp. Def": 3,
-        "Speed": 4
-    }
-    
-    # Déclencher l'événement on_stat_change pour le Pokémon ciblé
-    final_changes = trigger_talent(target_poke, "on_stat_change", stat_changes, source, fight)
-    if final_changes is None:
-        final_changes = stat_changes
-    
-    # Appliquer les modifications finales
-    changes_applied = False
-    for stat, change in final_changes.items():
-        if change != 0:
-            if isinstance(stat, str) and stat in stat_mapping:
-                stat_index = stat_mapping[stat]
-            elif isinstance(stat, int):
-                stat_index = stat
-            else:
-                continue
-                
-            # Appliquer la modification avec les limites (-6 à +6)
-            old_value = target_poke.stats_modifier[stat_index]
-            target_poke.stats_modifier[stat_index] = max(-6, min(6, old_value + change))
-            
-            if target_poke.stats_modifier[stat_index] != old_value:
-                changes_applied = True
-    
-    if changes_applied:
-        target_poke.actualize_stats()
-    
-    return changes_applied
 
 
 def trigger_talent(poke, event_name, *args):

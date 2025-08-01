@@ -1,9 +1,9 @@
-from pokemon import pokemon
+from pokemon import pokemon, apply_stat_changes
 import random 
 import donnees 
-from donnees import bcolors
-from pokemon_items import trigger_item
-from pokemon_talents import trigger_talent, apply_stat_changes
+from colors_utils import Colors as bcolors
+from pokemon_items import trigger_item, item_registry
+from pokemon_talents import trigger_talent
 from pokemon_attacks import Attack, process_future_sight_attacks
 
 class Fight():
@@ -45,6 +45,10 @@ class Fight():
         ## Tailwind
         self.tailwind_team1 = 0
         self.tailwind_team2 = 0
+
+        ## Trick Room - inverse l'ordre de vitesse
+        self.trick_room_active = False
+        self.trick_room_turns_left = 0
 
         ## Talents de ruine actifs ##
         self.ruin_effects_active = {
@@ -140,37 +144,45 @@ class Fight():
         Applique les effets de la météo actuelle sur les Pokémon.
         Et notamment les degats infligés par la tempete de sable et la neige aux Pokémon non-Roche/Acier/Sol et non-Glace.
         """
-        match self.weather['current']:
-            case "Sandstorm":
-                for pokemon in [self.active1, self.active2]:
-                    if not any(t in pokemon.types for t in ["Rock", "Steel", "Ground"]):
-                        damage = int(pokemon.max_hp * 0.0625)
-                        self.damage_method(pokemon, damage, True)
-            case "Snow":
-                for pokemon in [self.active1, self.active2]:
-                    if "Ice" not in pokemon.types:
-                        damage = int(pokemon.max_hp * 0.0625)
-                        self.damage_method(pokemon, damage, True)
-            case "Rain":
-                for pokemon in [self.active1, self.active2]:
-                    # Si l'un des Pokémons a le talent "Rain Dish", il regagne des PV
-                    if pokemon.talent == "Rain Dish" and not getattr(pokemon, 'heal_blocked', False):
-                        heal_amount = int(pokemon.max_hp * 0.0625) # Régénération de 1/16 des PV max
-                        self.damage_method(pokemon, -heal_amount, True)
-                    elif pokemon.talent == "Rain Dish" and getattr(pokemon, 'heal_blocked', False):
-                        print(f"{pokemon.name} ne peut pas bénéficier de Rain Dish à cause de Heal Block !")
-                    # Si l'un des Pokémons a le talent "Dry Skin", il perd des PV
-                    if pokemon.talent == "Dry Skin" and not getattr(pokemon, 'heal_blocked', False):
-                        heal_amount = int(pokemon.max_hp * 0.125)
-                        self.damage_method(pokemon, -heal_amount, True)  # Régénération de 1/8 des PV max
-                    elif pokemon.talent == "Dry Skin" and getattr(pokemon, 'heal_blocked', False):
-                        print(f"{pokemon.name} ne peut pas bénéficier de Dry Skin à cause de Heal Block !")
-            case "Sunny":
-                for pokemon in [self.active1, self.active2]:
-                    # Si l'un des Pokémons a le talent "Dry Skin", il perd des PV
-                    if pokemon.talent == "Dry Skin":
-                        damage = int(pokemon.max_hp * 0.125)
-                        self.damage_method(pokemon, damage, True)
+        weather = self.weather['current']
+        if not weather:
+            return
+            
+        active_pokemon = [self.active1, self.active2]
+        
+        if weather == "Sandstorm":
+            immune_types = {"Rock", "Steel", "Ground"}
+            for pokemon in active_pokemon:
+                if not any(t in immune_types for t in pokemon.types):
+                    damage = int(pokemon.max_hp * 0.0625)
+                    self.damage_method(pokemon, damage, True)
+        elif weather == "Snow":
+            for pokemon in active_pokemon:
+                if "Ice" not in pokemon.types:
+                    damage = int(pokemon.max_hp * 0.0625)
+                    self.damage_method(pokemon, damage, True)
+        elif weather == "Rain":
+            for pokemon in active_pokemon:
+                self._apply_rain_effects(pokemon)
+        elif weather == "Sunny":
+            for pokemon in active_pokemon:
+                if pokemon.talent == "Dry Skin":
+                    damage = int(pokemon.max_hp * 0.125)
+                    self.damage_method(pokemon, damage, True)
+    
+    def _apply_rain_effects(self, pokemon):
+        """Applique les effets spécifiques de la pluie sur un Pokémon"""
+        if pokemon.talent == "Rain Dish" and not getattr(pokemon, 'heal_blocked', False):
+            heal_amount = int(pokemon.max_hp * 0.0625)
+            self.damage_method(pokemon, -heal_amount, True)
+        elif pokemon.talent == "Rain Dish" and getattr(pokemon, 'heal_blocked', False):
+            print(f"{pokemon.name} ne peut pas bénéficier de Rain Dish à cause de Heal Block !")
+        
+        if pokemon.talent == "Dry Skin" and not getattr(pokemon, 'heal_blocked', False):
+            heal_amount = int(pokemon.max_hp * 0.125)
+            self.damage_method(pokemon, -heal_amount, True)
+        elif pokemon.talent == "Dry Skin" and getattr(pokemon, 'heal_blocked', False):
+            print(f"{pokemon.name} ne peut pas bénéficier de Dry Skin à cause de Heal Block !")
                     
     def weather_boost_modifier(self):
         """
@@ -278,8 +290,35 @@ class Fight():
                 print(f"L'écran {effect} de l'équipe 2 a expiré.")
 
     def tailwind_update(self):
-        self.tailwind_team1 = min(self.tailwind_team1 - 1, 0)
-        self.tailwind_team2 = min(self.tailwind_team2 - 1, 0)
+        self.tailwind_team1 = max(self.tailwind_team1 - 1, 0)
+        self.tailwind_team2 = max(self.tailwind_team2 - 1, 0)
+
+    def set_trick_room(self, duration=5):
+        """
+        Active ou désactive Trick Room.
+        Si Trick Room est déjà actif, le désactive.
+        Sinon, l'active pour la durée spécifiée.
+        
+        :param duration: Nombre de tours pendant lesquels Trick Room est actif (défaut: 5)
+        """
+        if self.trick_room_active:
+            print("Trick Room se dissipe !")
+            self.trick_room_active = False
+            self.trick_room_turns_left = 0
+        else:
+            print("Les dimensions se tordent ! Trick Room est activé !")
+            self.trick_room_active = True
+            self.trick_room_turns_left = duration
+
+    def trick_room_update(self):
+        """
+        Met à jour Trick Room : décrémente les tours restants et le désactive si expiré.
+        """
+        if self.trick_room_active and self.trick_room_turns_left > 0:
+            self.trick_room_turns_left -= 1
+            if self.trick_room_turns_left <= 0:
+                print("Trick Room se dissipe !")
+                self.trick_room_active = False
 
     def damage_method(self, pokemon : pokemon, damage : int, bypass_substitute=False, is_draining=False):
         """
@@ -349,12 +388,18 @@ class Fight():
         # Afficher les effets de terrain s'il y en a
         if self.field and self.field_turn_left:
             print(f"Effet de terrain actif: {self.field} ({self.field_turn_left} tours restants)")
-        print(f"{bcolors.ENDC}", end="")
+        
+        # Afficher Trick Room s'il est actif
+        if self.trick_room_active:
+            print(f"{bcolors.OKMAGENTA}Trick Room actif ! ({self.trick_room_turns_left} tours restants){bcolors.RESET}")
+        
+        print(f"{bcolors.RESET}", end="")
         display_hazards(self)
         display_weather(self)
+        print(f"1:{self.active1.protect_turns} / 2:{self.active2.protect_turns}")
 
     def fight(self):
-        print(f"{bcolors.BG_WHITE}{bcolors.BOLD}{bcolors.BLACK}Le combat oppose {self.active1.name} à {self.active2.name} !{bcolors.ENDC}{bcolors.UNBOLD}{bcolors.BG_DEFAULT}")
+        print(f"{bcolors.BG_WHITE}{bcolors.BOLD}{bcolors.BLACK}Le combat oppose {self.active1.name} à {self.active2.name} !{bcolors.RESET}{bcolors.UNBOLD}{bcolors.BG_DEFAULT}")
 
     def next_turn(self):
         """
@@ -377,14 +422,16 @@ class Fight():
             self.apply_status_damage(p)  # Appliquer les dégâts liés aux statuts persistants
             trigger_item(p, "on_turn_end", self)  # Appliquer les effets des objets à la fin du tour
             trigger_talent(p, "on_turn_end", self)  # Appliquer les effets des talents à la fin du tour
+            if p.flinched:
+                p.flinched = False  # Réinitialiser le statut de flinch à la fin du tour
             
             # Gérer les statuts temporaires
             self.manage_temporary_status(p)
         
         if self.active1.current_hp == 0:
             print(f"{self.active1.name} est K.O. !")
-            defeated_team = self.team1 if self.active1 == self.active1 else self.team2
-            team_id = 1 if self.active1 == self.active1 else 2
+            defeated_team = self.team1
+            team_id = 1
             if self.is_team_defeated(defeated_team):
                 if self.check_battle_end():
                     return
@@ -396,16 +443,16 @@ class Fight():
 
         if self.active2.current_hp == 0:
             print(f"{self.active2.name} est K.O. !")
-            defeated_team = self.team1 if self.active2 == self.active1 else self.team2
-            team_id = 1 if self.active2 == self.active1 else 2
+            defeated_team = self.team2
+            team_id = 2
             if self.is_team_defeated(defeated_team):
                 if self.check_battle_end():
                     return
             else:
-                if team_id == 1:  # Joueur humain
-                    self.player_choice_switch(team_id)
-                else:  # IA
+                if team_id == 2:  # IA
                     self.auto_switch(team_id)
+                else:  # Joueur humain
+                    self.player_choice_switch(team_id)
 
         self.turn += 1
         self.weather_update()
@@ -415,13 +462,13 @@ class Fight():
         self.weather_boost_modifier()
 
         if self.weather['current'] == "Sunny":
-            print(f"{bcolors.OKRED}Le soleil brille ! Les attaques de type Feu sont boostées.{bcolors.ENDC}")
+            print(f"{bcolors.OKRED}Le soleil brille ! Les attaques de type Feu sont boostées.{bcolors.RESET}")
         elif self.weather['current'] == "Rain":
-            print(f"{bcolors.OKBLUE}Il pleut ! Les attaques de type Eau sont boostées.{bcolors.ENDC}")
+            print(f"{bcolors.OKBLUE}Il pleut ! Les attaques de type Eau sont boostées.{bcolors.RESET}")
         elif self.weather['current'] == "Sandstorm":
-            print(f"{bcolors.OKYELLOW}Une tempête de sable souffle ! Les Pokémon du mauvais type subissent des dégâts.{bcolors.ENDC}")
+            print(f"{bcolors.OKYELLOW}Une tempête de sable souffle ! Les Pokémon du mauvais type subissent des dégâts.{bcolors.RESET}")
         elif self.weather['current'] == "Snow":
-            print(f"{bcolors.OKCYAN}Il neige ! Les Pokémon du mauvais type subissent des dégâts.{bcolors.ENDC}")
+            print(f"{bcolors.OKCYAN}Il neige ! Les Pokémon du mauvais type subissent des dégâts.{bcolors.RESET}")
         
         # Gérer les effets de terrain
         self.apply_field()
@@ -432,6 +479,9 @@ class Fight():
         
         # Gérer tailwind
         self.tailwind_update()
+        
+        # Gérer Trick Room
+        self.trick_room_update()
 
         for p in [self.active1, self.active2]:
             trigger_talent(p, "modify_stat", self)
@@ -460,7 +510,7 @@ class Fight():
         process_future_sight_attacks(self)
             
     #def attack(pokemon : pokemon, attack : dict, target : pokemon, fight : Fight):
-    def attack_power(self, user_pokemon : pokemon, attack : Attack, target_pokemon : pokemon, multiplier=1.0, talent_mod=None, item_mod=None):
+    def attack_power(self, user_pokemon : pokemon, attack : Attack, target_pokemon : pokemon, multiplier, talent_mod, item_mod, defense_item_mod):
         """
         Effectue une attaque d'un Pokémon sur une cible.
 
@@ -481,7 +531,8 @@ class Fight():
             talent_mod = {"attack": 1.0, "power": 1.0, "accuracy": 1.0, "type": None}
         if item_mod is None:
             item_mod = {"attack": 1.0, "power": 1.0, "accuracy": 1.0}
-            
+        if defense_item_mod is None:
+            defense_item_mod = {"attack": 1.0, "power": 1.0, "accuracy": 1.0}
         # Le coup critique est déterminé avant car s'il y a un coup critique, on ne prend pas en compte les modificateurs de stats
         attack_boost = attack.boosted_attack(user_pokemon, target_pokemon, self) if hasattr(attack, 'boosted_attack') else 1.0
         
@@ -492,8 +543,6 @@ class Fight():
             base_power = attack.base_power * talent_mod["power"] * item_mod["power"]
             
         attack_stat = user_pokemon.current_stats()['Attack'] if attack.category == 'Physical' else user_pokemon.current_stats()['Sp. Atk']
-        attack_stat *= talent_mod["attack"] if talent_mod and talent_mod["attack"] is not None else 1.0  # Modificateur de l'attaque du Pokémon
-        attack_stat *= item_mod["attack"] if item_mod and item_mod["attack"] is not None else 1.0  # Modificateur de l'attaque de l'objet
         terrain_boost = attack_terrain_boost(attack, self)  # Modificateur de puissance des attaques en fonction du terrain
         weather_boost = attack_weather_boost(attack, self)  # Modificateur de puissance des attaques en fonction de la météo
         berry = berry_boost(target_pokemon, attack)  # Placeholder pour l'effet de la baie, si applicable
@@ -524,14 +573,14 @@ class Fight():
                     defense_stat = target_pokemon.current_stats()["Sp. Def"]
                 else:
                     defense_stat = target_pokemon.stats_with_no_modifier['Sp. Def']
-            damage = ((22 * base_power * (attack_stat / defense_stat)) / 50 + 2) * burn * screen * type_eff * terrain_boost * weather_boost * critical * stab * rdm * berry * attack_boost * multiplier
+            damage = ((22 * base_power * (attack_stat / defense_stat)) / 50 + 2) * burn * screen * type_eff * terrain_boost * weather_boost * critical * stab * rdm * berry * attack_boost * multiplier * item_mod["attack"] * talent_mod["attack"] * defense_item_mod["attack"]
             # A changer car les crits ne prennent pas en compte les modificateurs de stats
         else:
             critical = 1.0
             defense_stat = target_pokemon.current_stats()['Defense'] if attack.category == 'Physical' else target_pokemon.current_stats()['Sp. Def']
-            damage = ((22 * base_power * (attack_stat / defense_stat)) / 50 + 2) * burn * screen * type_eff * terrain_boost * weather_boost * critical * stab * rdm * berry * attack_boost * multiplier
+            damage = ((22 * base_power * (attack_stat / defense_stat)) / 50 + 2) * burn * screen * type_eff * terrain_boost * weather_boost * critical * stab * rdm * berry * attack_boost * multiplier * item_mod["attack"] * talent_mod["attack"] * defense_item_mod["attack"]
         
-        print(f"{bcolors.OKMAGENTA}Dégâts calculés : {damage} (base_power: {base_power}, attack_stat: {attack_stat}, defense_stat: {defense_stat}, burn: {burn}, screen: {screen}, weather_boost: {weather_boost}, terrain_boost: {terrain_boost}, critical: {critical}, stab: {stab}, rdm: {rdm}, type_eff: {type_eff}, berry: {berry}, boost: {attack_boost}, coef talent: {multiplier}){bcolors.ENDC}")
+        print(f"{bcolors.OKMAGENTA}Dégâts calculés : {damage} (base_power: {base_power}, attack_stat: {attack_stat}, defense_stat: {defense_stat}, burn: {burn}, screen: {screen}, weather_boost: {weather_boost}, terrain_boost: {terrain_boost}, critical: {critical}, stab: {stab}, rdm: {rdm}, type_eff: {type_eff}, berry: {berry}, boost: {attack_boost}, coef talent: {multiplier}, item_mod: {item_mod}, talent_mod: {talent_mod}, defense_item_mod: {defense_item_mod}){bcolors.RESET}")
         return damage
     
 ###### Actions ######
@@ -680,9 +729,22 @@ class Fight():
             return
 
         print(f"{attacker.name} utilise {attack.name} !")
+        
+        # Consommation des PP (sauf pour Struggle qui a des PP infinis)
+        if attack.name != "Struggle":
+            pp_cost = 1
+            # Vérifier si l'adversaire a le talent Pressure (augmente la consommation de PP)
+            if hasattr(defender, 'talent') and defender.talent == "Pressure":
+                pp_cost = 2
+                print(f"{defender.name}'s Pressure increases PP consumption!")
+            
+            # Consommer les PP
+            if not attacker.use_pp(attack, pp_cost):
+                print(f"ERREUR: {attacker.name} n'a pas assez de PP pour {attack.name} !")
+                return
     
         if defender.protect:
-            print(f"{bcolors.LIGHT_BLUE}{defender.name} se protège !{bcolors.ENDC}")
+            print(f"{bcolors.LIGHT_BLUE}{defender.name} se protège !{bcolors.RESET}")
             return
 
         # Verification attaques qui se lancent que au tour d'entrée du pokemon
@@ -722,9 +784,9 @@ class Fight():
             # Pour les attaques normales, appliquer les dégâts ici
             # Pour les multi-coups, les dégâts sont déjà appliqués dans handle_multi_hit_attack
             self.apply_damage(dmg, defender, attack, attacker)
-        
-        if health_before - dmg < 0:
-            dmg = health_before  # Si les dégâts dépassent les PV restants, ajuster au nombre de dégâts pour atteindre 0 PV
+        if not health_before == None and defender.current_hp < health_before:
+            if health_before - dmg < 0:
+                dmg = health_before  # Si les dégâts dépassent les PV restants, ajuster au nombre de dégâts pour atteindre 0 PV
 
         # Effets secondaires de l'attaque (seulement si pas déjà appelé pour les attaques à charge)
         if charging_result != "attack":
@@ -737,7 +799,9 @@ class Fight():
         # Enregistrer la dernière attaque utilisée (pour Encore et autres effets)
         attacker.last_used_attack = attack
 
-        attacker.protect_turns = 0  # Réinitialiser les tours de protection à chaque tour
+        if not attacker.protect:
+            attacker.protect_turns = 0  # Réinitialiser les tours de protection à chaque tour
+
         attacker.first_attack = False  # Réinitialiser le premier tour d'attaque
 
         # Nettoyer les attributs temporaires pour éviter les doubles activations de talents
@@ -849,14 +913,16 @@ class Fight():
         multiplier = trigger_talent(defender, "on_defense", attack, attacker, self)
         on_attack_mod = trigger_talent(attacker, "on_attack", attack, self)
         item_mod = trigger_item(attacker, "on_attack", attack, self)
-
+        defense_mod = trigger_item(defender, "on_defense", attack, self)
         # Valeur par défaut si on_attack_mod est None
         if on_attack_mod is None:
             on_attack_mod = {"attack": 1.0, "power": 1.0, "accuracy": 1.0, "type": None}
 
         if item_mod is None:
             item_mod = {"attack": 1.0, "power": 1.0, "accuracy" : 1.0}
-            
+
+        if defense_mod is None:
+            defense_mod = {"attack": 1.0, "power": 1.0, "accuracy": 1.0}
         # S'assurer que multiplier est un nombre
         if multiplier is None or not isinstance(multiplier, (int, float)):
             multiplier = 1.0
@@ -865,7 +931,7 @@ class Fight():
 
         if attack.category != "Status":
             # Calculer les dégâts finaux
-            damage = self.attack_power(attacker, attack, defender, multiplier, on_attack_mod, item_mod)
+            damage = self.attack_power(attacker, attack, defender, multiplier, on_attack_mod, item_mod, defense_mod)
             damage = int(damage)
             
         return damage
@@ -897,14 +963,13 @@ class Fight():
             # Attaques avec un nombre variable de coups (comme Bullet Seed)
             hit_count = attack.get_hit_count()
         else:
-            # Fallback : 2-5 coups aléatoires
-            import random
-            rand = random.random()
-            if rand < 0.375:
+            # Fallback : 2-5 coups aléatoires - optimisation: éviter l'import dans la boucle
+            rand_val = random.random()
+            if rand_val < 0.375:
                 hit_count = 2
-            elif rand < 0.75:
+            elif rand_val < 0.75:
                 hit_count = 3
-            elif rand < 0.875:
+            elif rand_val < 0.875:
                 hit_count = 4
             else:
                 hit_count = 5
@@ -961,7 +1026,7 @@ class Fight():
         :param attacker: Instance de la classe Pokemon qui attaque (pour Rocky Helmet).
         """
         # Afficher et appliquer les dégâts
-        print(f"{bcolors.DARK_RED}{defender.name} subit {damage} points de dégâts.{bcolors.ENDC}")
+        print(f"{bcolors.DARK_RED}{defender.name} subit {damage} points de dégâts.{bcolors.RESET}")
         # Vérifier si l'attaque ignore les substituts
         bypass_substitute = "authentic" in attack.flags
         self.damage_method(defender, damage, bypass_substitute)
@@ -975,7 +1040,7 @@ class Fight():
             
             # Rocky Helmet inflige 1/6 des PV max de l'attaquant
             helmet_damage = max(1, attacker.max_hp // 6)
-            print(f"{bcolors.OKRED}{attacker.name} subit {helmet_damage} dégâts à cause du Rocky Helmet de {defender.name} !{bcolors.ENDC}")
+            print(f"{bcolors.OKRED}{attacker.name} subit {helmet_damage} dégâts à cause du Rocky Helmet de {defender.name} !{bcolors.RESET}")
             self.damage_method(attacker, helmet_damage, bypass_substitute=True)
 
     def compute_priority(self, pokemon, attack = Attack):
@@ -1051,17 +1116,35 @@ class Fight():
         elif prio2 > prio1:
             first, first_attack, second, second_attack = p2, atk2, p1, atk1
         else:
-            speed1 = p1.stats['Speed']
-            speed2 = p2.stats['Speed']
-            if speed1 > speed2:
-                first, first_attack, second, second_attack = p1, atk1, p2, atk2
-            elif speed2 > speed1:
-                first, first_attack, second, second_attack = p2, atk2, p1, atk1
-            else:
-                if random.random() < 0.5:
+            # Même priorité : départager par la vitesse
+            speed1 = p1.current_stats()['Speed']
+            speed2 = p2.current_stats()['Speed']
+            
+            # Trick Room inverse l'ordre de vitesse (les plus lents vont en premier)
+            if self.trick_room_active:
+                if speed1 < speed2:  # Inversé : plus lent en premier
                     first, first_attack, second, second_attack = p1, atk1, p2, atk2
-                else:
+                elif speed2 < speed1:  # Inversé : plus lent en premier
                     first, first_attack, second, second_attack = p2, atk2, p1, atk1
+                else:
+                    # Vitesses égales : aléatoire
+                    if random.random() < 0.5:
+                        first, first_attack, second, second_attack = p1, atk1, p2, atk2
+                    else:
+                        first, first_attack, second, second_attack = p2, atk2, p1, atk1
+            else:
+                # Ordre normal : plus rapide en premier
+                if speed1 > speed2:
+                    first, first_attack, second, second_attack = p1, atk1, p2, atk2
+                elif speed2 > speed1:
+                    first, first_attack, second, second_attack = p2, atk2, p1, atk1
+                else:
+                    # Vitesses égales : aléatoire
+                    if random.random() < 0.5:
+                        first, first_attack, second, second_attack = p1, atk1, p2, atk2
+                    else:
+                        first, first_attack, second, second_attack = p2, atk2, p1, atk1
+
 
         # Update des protects
         protect_update(p1, atk1)
@@ -1139,7 +1222,6 @@ class Fight():
                     print(f"Le voile magique de {pokemon.name} disparaît.")
         
         # Ajouter d'autres statuts temporaires ici si nécessaire...
-
 
     def manage_temporary_status(self, pokemon):
         """
@@ -1275,8 +1357,8 @@ class Fight():
             self.damage_method(pokemon, dmg, True)
         elif pokemon.status == "poison":
             if pokemon.talent == "Poison Heal":
-                dmg = -int(pokemon.max_hp * 0.125)
                 print(f"{pokemon.name} regagne {dmg} PV grâce à Poison Heal ! ")
+                dmg = -int(pokemon.max_hp * 0.125)
             else:
                 dmg = int(pokemon.max_hp * 0.125)
                 print(f"{pokemon.name} est empoisonné ! Il perd {dmg} PV.")
@@ -1285,8 +1367,8 @@ class Fight():
             if not hasattr(pokemon, "toxic_counter"):
                 pokemon.toxic_counter = 1
             if pokemon.talent == "Poison Heal":
-                dmg = -int(pokemon.max_hp * 0.0625 * pokemon.toxic_counter)
                 print(f"{pokemon.name} regagne {dmg} PV grâce à Poison Heal ! ")
+                dmg = -int(pokemon.max_hp * 0.125)
             else:
                 dmg = int(pokemon.max_hp * 0.0625 * pokemon.toxic_counter)
                 print(f"{pokemon.name} est gravement empoisonné ! Il perd {dmg} PV.")
@@ -1617,11 +1699,8 @@ def on_entry_hazards(pokemon, fight):
     
     if hazards["Sticky Web"]:
         if pokemon.talent != "Levitate" and "Flying" not in pokemon.types:
-            if pokemon.stats_modifier[4] > -6:  # Vérifier qu'on peut encore réduire (Speed est l'index 4)
-                pokemon.stats_modifier[4] -= 1  # Réduit la vitesse de 1 stage
-                print(f"{pokemon.name} est ralenti par Sticky Web ! Sa vitesse est réduite !")
-            else:
-                print(f"La vitesse de {pokemon.name} ne peut pas être réduite davantage !")
+            stat_change = {"Speed": -1}  # Réduit la vitesse de 1 stage
+            pokemon.apply_stat_change(stat_change)
         else:
             print(f"{pokemon.name} évite Sticky Web grâce à son type/talent !")
 
@@ -1634,7 +1713,7 @@ def display_pokemon(poke : pokemon):
     ratio = poke.current_hp / poke.max_hp
     color = Colors.color_hp(ratio)
     color_team = Colors.TEAM1 if poke.fight.get_team_id(poke) == 1 else Colors.TEAM2
-    print(f"{Colors.BOLD}{color_team}{poke.name}{Colors.RESET} (HP: {color}{poke.current_hp}/{poke.max_hp}{Colors.RESET})")
+    print(f"{Colors.BOLD}{color_team}{poke.name}{Colors.RESET} (HP: {color}{poke.current_hp}/{poke.max_hp}{Colors.RESET}) - {poke.status} - {poke.item if poke.item else 'Aucun objet'}")
 
 def display_weather(fight : Fight):
     weath = fight.weather["current"]
@@ -1661,8 +1740,8 @@ def display_hazards(fight : Fight):
     tspike = Colors.TOXIC_SPIKES
     sticky = Colors.STICKY_WEB
     rocks = Colors.STEALTH_ROCK
-    print(f"{Colors.TEAM1}Equipe 1: {rocks}Piège de Roc: {fight.hazards_team1["Stealth Rock"]}, {spike}Spikes: {fight.hazards_team1["Spikes"]}/3, {tspike}Toxic Spikes: {fight.hazards_team1["Toxic Spikes"]}/2, {sticky}Sticky Web: {fight.hazards_team1["Sticky Web"]} {Colors.RESET}")
-    print(f"{Colors.TEAM2}Equipe 2: {rocks}Piège de Roc: {fight.hazards_team2["Stealth Rock"]}, {spike}Spikes: {fight.hazards_team2["Spikes"]}/3, {tspike}Toxic Spikes: {fight.hazards_team2["Toxic Spikes"]}/2, {sticky}Sticky Web: {fight.hazards_team2["Sticky Web"]} {Colors.RESET}")
+    print(f"{Colors.TEAM1}Equipe 1: {rocks}Piège de Roc: {fight.hazards_team1['Stealth Rock']}, {spike}Spikes: {fight.hazards_team1['Spikes']}/3, {tspike}Toxic Spikes: {fight.hazards_team1['Toxic Spikes']}/2, {sticky}Sticky Web: {fight.hazards_team1['Sticky Web']} {Colors.RESET}")
+    print(f"{Colors.TEAM2}Equipe 2: {rocks}Piège de Roc: {fight.hazards_team2['Stealth Rock']}, {spike}Spikes: {fight.hazards_team2['Spikes']}/3, {tspike}Toxic Spikes: {fight.hazards_team2['Toxic Spikes']}/2, {sticky}Sticky Web: {fight.hazards_team2['Sticky Web']} {Colors.RESET}")
 
 
 # Affichage du menu

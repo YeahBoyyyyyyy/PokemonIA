@@ -1131,8 +1131,6 @@ pokemon_data = {
         "fully_evolved": True
     },
 
-
-    #########################################################################################""
     "Duraludon": {
         "name": "Duraludon",
         "types": ["Steel", "Dragon"],
@@ -1568,4 +1566,35 @@ pokemon_data = {
         "weight": 79.5,
         "fully_evolved": True
     },
+    "Iron Treads": {
+        "name": "Iron Treads",
+        "types": ["Ground", "Steel"],
+        "abilities": ["Quark Drive"],
+        "stats": {
+            "HP": 90,
+            "Attack": 112,
+            "Defense": 120,
+            "Sp. Atk": 72,
+            "Sp. Def": 70,
+            "Speed": 106
+        },
+        "weight": 240.0,
+        "fully_evolved": True
+    },
+    "Deoxys-Speed": {
+        "name": "Deoxys-Speed",
+        "types": ["Psychic"],
+        "abilities": ["Pressure", "Keen Eye"],
+        "stats": {
+            "HP": 50,
+            "Attack": 95,
+            "Defense": 90,
+            "Sp. Atk": 95,
+            "Sp. Def": 90,
+            "Speed": 180
+        },
+        "weight": 60.8,
+        "fully_evolved": True
+    },
+    
 }

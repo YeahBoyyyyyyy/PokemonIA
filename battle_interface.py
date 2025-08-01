@@ -3,7 +3,7 @@ import pokemon as pk
 import pokemon_attacks as ATTACKES
 import pokemon_datas as STATS
 import random
-from donnees import bcolors
+from colors_utils import Colors as bcolors
 from fight import display_menu
 
 def can_terastallize(pokemon, fight, team_id):
@@ -29,6 +29,10 @@ def can_use_attack(pokemon, attack):
     Retourne (True, "") si l'attaque peut être utilisée, 
     ou (False, "raison") si elle ne peut pas être utilisée.
     """
+    # Vérifier si l'attaque a des PP disponibles
+    if pokemon.get_attack_pp(attack) <= 0:
+        return False, f"{pokemon.name} n'a plus de PP pour {attack.name} !"
+    
     # Vérifier Heal Block : empêche l'utilisation d'attaques de soin
     if getattr(pokemon, 'heal_blocked', False) and "heal" in attack.flags:
         return False, f"{pokemon.name} ne peut pas utiliser {attack.name} car il est sous l'effet de Heal Block !"
@@ -65,9 +69,9 @@ def print_pokemon_stats(pokemon : pk.pokemon):
     
     # Afficher les types avec indication Tera
     if pokemon.tera_activated:
-        print(f"Types: {', '.join(pokemon.types)} {bcolors.OKMAGENTA}(Tera actif: {pokemon.tera_type}) ✨{bcolors.ENDC}")
+        print(f"Types: {', '.join(pokemon.types)} {bcolors.OKMAGENTA}(Tera actif: {pokemon.tera_type}) ✨{bcolors.RESET}")
     else:
-        print(f"Types: {', '.join(pokemon.types)} {bcolors.GRAY}(Tera: {pokemon.tera_type}){bcolors.ENDC}")
+        print(f"Types: {', '.join(pokemon.types)} {bcolors.GRAY}(Tera: {pokemon.tera_type}){bcolors.RESET}")
     print(f"Status: {pokemon.status}")
     for stat in ["Attack", "Defense", "Sp. Atk", "Sp. Def", "Speed"]:
         print(f"{stat}: {pokemon.stats[stat]}")
@@ -76,8 +80,13 @@ def print_pokemon_stats(pokemon : pk.pokemon):
     print(f"{bcolors.LIGHT_RED}Attaques:")
     for i, atk in enumerate([pokemon.attack1, pokemon.attack2, pokemon.attack3, pokemon.attack4], 1):
         if atk:
-            print(f"  {i}. {atk.name}")
-    print(f"{bcolors.ENDC}")
+            current_pp = pokemon.get_attack_pp(atk)
+            max_pp = getattr(pokemon, f'max_pp{i}', 0)
+            pp_display = f"({current_pp}/{max_pp} PP)"
+            if current_pp == 0:
+                pp_display = f"{bcolors.OKRED}{pp_display}{bcolors.LIGHT_RED}"
+            print(f"  {i}. {atk.name} {pp_display}")
+    print(f"{bcolors.RESET}")
 
 
 def choose_switch_pokemon(fight, team_id):
@@ -87,7 +96,7 @@ def choose_switch_pokemon(fight, team_id):
     team = fight.team1 if team_id == 1 else fight.team2
     team_name = "joueur 1" if team_id == 1 else "joueur 2"
     
-    print(f"\n{bcolors.OKYELLOW}Le Pokémon du {team_name} est KO ! Choisissez un remplaçant :{bcolors.ENDC}")
+    print(f"\n{bcolors.OKYELLOW}Le Pokémon du {team_name} est KO ! Choisissez un remplaçant :{bcolors.RESET}")
     
     while True:
         available_pokemon = []
@@ -123,7 +132,7 @@ def choose_uturn_switch_pokemon(fight, team_id):
     team = fight.team1 if team_id == 1 else fight.team2
     current_pokemon = fight.active1 if team_id == 1 else fight.active2
     
-    print(f"\n{bcolors.OKBLUE}Choisissez le Pokémon à faire entrer :{bcolors.ENDC}")
+    print(f"\n{bcolors.OKBLUE}Choisissez le Pokémon à faire entrer :{bcolors.RESET}")
     
     while True:
         available_pokemon = []
@@ -153,6 +162,11 @@ def choose_uturn_switch_pokemon(fight, team_id):
 
 
 def launch_battle(team1: list[pk.pokemon], team2: list[pk.pokemon]):
+    # Initialiser les PP pour les deux équipes
+    from pp_manager import setup_team_pp
+    setup_team_pp(team1)
+    setup_team_pp(team2)
+    
     fight = Fight(team1, team2)
     
     # Initialiser les variables de téracristalisation
@@ -180,6 +194,14 @@ def launch_battle(team1: list[pk.pokemon], team2: list[pk.pokemon]):
         if fight.check_battle_end():
             break
 
+        # Vérifier si le Pokémon actif du joueur est KO et forcer un changement
+        if fight.active1.current_hp <= 0:
+            if not fight.is_team_defeated(fight.team1):
+                print(f"\n{bcolors.OKYELLOW}{fight.active1.name} est K.O. ! Vous devez choisir un remplaçant.{bcolors.RESET}")
+                choose_switch_pokemon(fight, 1)
+            else:
+                break  # L'équipe est défaite, sortir de la boucle
+
         fight.print_fight_status()
 
         # Boucle de sélection d'action
@@ -187,13 +209,21 @@ def launch_battle(team1: list[pk.pokemon], team2: list[pk.pokemon]):
             attacker = fight.active1
             
             # Afficher le numéro de tour (ajuster +1 car le tour sera incrémenté à la fin)
-            print(f"\n{bcolors.OKMAGENTA}═══ TOUR {fight.turn + 1} ═══{bcolors.ENDC}")
+            print(f"\n{bcolors.OKMAGENTA}═══ TOUR {fight.turn + 1} ═══{bcolors.RESET}")
             
             display_menu()
             action1 = input("Action (1-4) : ").strip()
 
             if action1 == "1":
                 attacker = fight.active1
+                
+                # Vérifier si le Pokémon a des attaques utilisables
+                if not attacker.has_usable_attack():
+                    from pokemon_attacks import STRUGGLE_ATTACK
+                    print(f"\n{bcolors.OKYELLOW}{attacker.name} n'a plus de PP et doit utiliser Struggle !{bcolors.RESET}")
+                    act1 = (attacker, STRUGGLE_ATTACK)
+                    break
+                
                 if attacker.charging and attacker.charging_attack:
                     attacks = [attacker.charging_attack]
                 else:
@@ -205,31 +235,35 @@ def launch_battle(team1: list[pk.pokemon], team2: list[pk.pokemon]):
                     can_use, reason = can_use_attack(attacker, attacker.charging_attack)
                     if not can_use:
                         print(f"\n{bcolors.OKRED}{reason}")
-                        print(f"{attacker.name} ne peut pas terminer sa charge !{bcolors.ENDC}")
+                        print(f"{attacker.name} ne peut pas terminer sa charge !{bcolors.RESET}")
                         # Dans ce cas, on laisse le joueur choisir une autre attaque
                     else:
-                        print(f"\n{bcolors.OKYELLOW}{attacker.name} termine sa charge avec {attacker.charging_attack.name} !{bcolors.ENDC}")
+                        print(f"\n{bcolors.OKYELLOW}{attacker.name} termine sa charge avec {attacker.charging_attack.name} !{bcolors.RESET}")
                         act1 = (attacker, attacker.charging_attack)
                         break
 
                 # Afficher des messages informatifs pour Encore et Choice items
                 if attacker.encored_turns > 0 and attacker.encored_attack:
-                    print(f"\n{bcolors.OKYELLOW}{attacker.name} est sous l'effet d'Encore ! ({attacker.encored_turns} tour(s) restant(s)){bcolors.ENDC}")
+                    print(f"\n{bcolors.OKYELLOW}{attacker.name} est sous l'effet d'Encore ! ({attacker.encored_turns} tour(s) restant(s)){bcolors.RESET}")
                 
                 if attacker.item and "Choice" in attacker.item and attacker.locked_attack:
-                    print(f"\n{bcolors.OKYELLOW}{attacker.name} est verrouillé par {attacker.item} !{bcolors.ENDC}")
+                    print(f"\n{bcolors.OKYELLOW}{attacker.name} est verrouillé par {attacker.item} !{bcolors.RESET}")
 
                 while True:
                     print(f"\n{bcolors.GRAY}Choisissez une attaque (ou tapez R pour revenir en arrière) :")
                     for i, atk in enumerate(attacks):
                         if atk:
+                            current_pp = attacker.get_attack_pp(atk)
+                            max_pp = getattr(attacker, f'max_pp{i+1}', 0)
+                            pp_display = f"({current_pp}/{max_pp} PP)"
+                            
                             can_use, reason = can_use_attack(attacker, atk)
                             if can_use:
-                                print(f"{i+1}. {atk.name}")
+                                print(f"{i+1}. {atk.name} {pp_display}")
                             else:
-                                print(f"{i+1}. {bcolors.DARK_RED}{atk.name} (BLOQUÉE){bcolors.ENDC}")
-                                print(f"    {bcolors.GRAY}Raison: {reason}{bcolors.ENDC}")
-                    print(f"{bcolors.ENDC}")
+                                print(f"{i+1}. {bcolors.DARK_RED}{atk.name} {pp_display} (BLOQUÉE){bcolors.RESET}")
+                                print(f"    {bcolors.GRAY}Raison: {reason}{bcolors.RESET}")
+                    print(f"{bcolors.RESET}")
                     choice = input("Numéro d'attaque : ").strip()
                     if choice.lower() == "r":
                         break  # Retour au menu principal
@@ -239,7 +273,7 @@ def launch_battle(team1: list[pk.pokemon], team2: list[pk.pokemon]):
                         # Vérifier si l'attaque peut être utilisée (Taunt, Assault Vest, etc.)
                         can_use, reason = can_use_attack(attacker, atk1)
                         if not can_use:
-                            print(f"{bcolors.OKRED}{reason}{bcolors.ENDC}")
+                            print(f"{bcolors.OKRED}{reason}{bcolors.RESET}")
                             continue  # Demander une autre attaque
                         
                         # Après avoir choisi une attaque valide, proposer la téracristalisation
@@ -248,16 +282,16 @@ def launch_battle(team1: list[pk.pokemon], team2: list[pk.pokemon]):
                             print(f"\n{bcolors.OKCYAN}Voulez-vous téracristaliser {attacker.name} avant d'attaquer ?")
                             print(f"Type Tera : {attacker.tera_type}")
                             print(f"Types actuels : {', '.join(attacker.types)}")
-                            print(f"{bcolors.ENDC}")
+                            print(f"{bcolors.RESET}")
                             tera_choice = input("Téracristaliser ? (o/n) : ").strip().lower()
                             if tera_choice in ['o', 'oui', 'y', 'yes']:
                                 success = attacker.terastallize(attacker.tera_type)
                                 if success:
                                     fight.tera_used_team1 = True
-                                    print(f"\n{bcolors.OKMAGENTA}✨ {attacker.name} téracristallise en type {attacker.tera_type} ! ✨{bcolors.ENDC}")
+                                    print(f"\n{bcolors.OKMAGENTA}✨ {attacker.name} téracristallise en type {attacker.tera_type} ! ✨{bcolors.RESET}")
                                     act1 = ("terastallize_attack", attacker.tera_type, attacker, atk1)
                                 else:
-                                    print(f"{bcolors.OKRED}Échec de la téracristalisation !{bcolors.ENDC}")
+                                    print(f"{bcolors.OKRED}Échec de la téracristalisation !{bcolors.RESET}")
                                     act1 = (attacker, atk1)
                             else:
                                 act1 = (attacker, atk1)
@@ -313,7 +347,7 @@ def launch_battle(team1: list[pk.pokemon], team2: list[pk.pokemon]):
         # Tour de l'IA
         attacker2 = fight.active2
         attacks2 = [attacker2.attack1, attacker2.attack2, attacker2.attack3, attacker2.attack4]
-        valid_attacks = [atk for atk in attacks2 if atk is not None]
+        valid_attacks = [atk for atk in attacks2 if atk is not None and attacker2.get_attack_pp(atk) > 0]
         
         # L'IA peut téracristaliser de façon aléatoire (20% de chance si possible)
         ai_tera_action = None
@@ -324,9 +358,10 @@ def launch_battle(team1: list[pk.pokemon], team2: list[pk.pokemon]):
                 success = attacker2.terastallize(attacker2.tera_type)
                 if success:
                     fight.tera_used_team2 = True
-                    print(f"\n{bcolors.OKMAGENTA}✨ L'IA fait téracristaliser {attacker2.name} en type {attacker2.tera_type} ! ✨{bcolors.ENDC}")
+                    print(f"\n{bcolors.OKMAGENTA}✨ L'IA fait téracristaliser {attacker2.name} en type {attacker2.tera_type} ! ✨{bcolors.RESET}")
                     ai_tera_action = True  # Simplement marquer que l'IA a téracristallisé
         
+        # Déterminer l'attaque de l'IA
         if valid_attacks:
             # Vérifier si le Pokémon est en train de charger une attaque (priorité absolue)
             if attacker2.charging and attacker2.charging_attack:
@@ -339,44 +374,46 @@ def launch_battle(team1: list[pk.pokemon], team2: list[pk.pokemon]):
                 atk2 = attacker2.locked_attack
             else:
                 atk2 = random.choice(valid_attacks)
-            
-            act2 = (attacker2, atk2)
-
-            # Résolution du tour - logique simplifiée
-            
-            # Cas spécial : Switch du joueur
-            if isinstance(act1, tuple) and act1[0] == "switch":
-                fight.player_switch(1, act1[1])
-                print(f"\n{fight.active2.name} attaque le nouveau Pokémon !")
-                fight.player_attack(fight.active2, atk2, fight.active1)
-                fight.next_turn()
-                continue  # Passer au tour suivant
-            
-            # Normaliser l'action du joueur (gérer téracristalisation)
-            if isinstance(act1, tuple) and act1[0] == "terastallize_attack":
-                _, tera_type, pokemon, attack = act1
-                print(f"\n{bcolors.OKMAGENTA}{pokemon.name} téracristallise et attaque !{bcolors.ENDC}")
-                act1 = (pokemon, attack)
-            elif isinstance(act1, tuple) and act1[0] == "terastallize":
-                # Téracristalisation pure (ne devrait plus arriver)
-                print(f"\n{bcolors.OKMAGENTA}{act1[2].name} téracristallise !{bcolors.ENDC}")
-                fight.player_attack(fight.active2, atk2, fight.active1)
-                fight.next_turn()
-                continue
-            
-            # Message pour téracristalisation de l'IA
-            if ai_tera_action:
-                print(f"\n{bcolors.OKMAGENTA}✨ L'IA fait téracristaliser {attacker2.name} ! ✨{bcolors.ENDC}")
-            
-            # Résolution normale du tour (attaque vs attaque)
-            fight.resolve_turn(act1, act2)
         else:
-            # Si l'adversaire n'a pas d'attaque, faire seulement le switch
-            if isinstance(act1, tuple) and act1[0] == "switch":
-                fight.player_switch(1, act1[1])
-                # Incrémenter le tour même si seulement un switch
-                fight.next_turn()
-            print(f"{attacker2.name} n'a pas d'attaque disponible !")
+            # Aucune attaque utilisable, utiliser Struggle
+            from pokemon_attacks import STRUGGLE_ATTACK
+            atk2 = STRUGGLE_ATTACK
+            print(f"\n{bcolors.OKYELLOW}{attacker2.name} n'a plus de PP et utilise Struggle !{bcolors.RESET}")
+        
+        act2 = (attacker2, atk2)
+
+        # Résolution du tour - logique simplifiée
+        
+        # Cas spécial : Switch du joueur
+        if isinstance(act1, tuple) and act1[0] == "switch":
+            fight.player_switch(1, act1[1])
+            print(f"\n{fight.active2.name} attaque le nouveau Pokémon !")
+            fight.player_attack(fight.active2, atk2, fight.active1)
+            fight.next_turn()
+            continue  # Passer au tour suivant
+        
+        # Normaliser l'action du joueur (gérer téracristalisation)
+        if isinstance(act1, tuple) and act1[0] == "terastallize_attack":
+            _, tera_type, pokemon, attack = act1
+            print(f"\n{bcolors.OKMAGENTA}{pokemon.name} téracristallise et attaque !{bcolors.RESET}")
+            act1 = (pokemon, attack)
+        elif isinstance(act1, tuple) and act1[0] == "terastallize":
+            # Téracristalisation pure (ne devrait plus arriver)
+            print(f"\n{bcolors.OKMAGENTA}{act1[2].name} téracristallise !{bcolors.RESET}")
+            fight.player_attack(fight.active2, atk2, fight.active1)
+            fight.next_turn()
+            continue
+        
+        # Message pour téracristalisation de l'IA
+        if ai_tera_action:
+            print(f"\n{bcolors.OKMAGENTA}✨ L'IA fait téracristaliser {attacker2.name} ! ✨{bcolors.RESET}")
+        
+        # Résolution normale du tour (attaque vs attaque)
+        fight.resolve_turn(act1, act2)
+        
+        # Vérifier si le combat est terminé après la résolution du tour
+        if fight.check_battle_end():
+            break
 
 
 
