@@ -93,6 +93,19 @@ class Attack:
         """
         return self.accuracy  # Par défaut, retourne la précision de base
         
+class AquaJet(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Aqua Jet",
+            type_="Water",
+            category="Physical",
+            power=40,
+            accuracy=100,
+            priority=1,
+            pp=20,
+            flags=["contact", "protect", "mirror"],
+            target="Foe"
+        )
 
 class Flamethrower(Attack):
     def __init__(self):
@@ -149,6 +162,25 @@ class Protect(Attack):
             print("L'attaque échoue !")
             user.protect = False
             user.protect_turns = 0
+
+class MalignantChain(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Malignant Chain",
+            type_="Poison",
+            category="Physical",
+            power=100,
+            accuracy=100,
+            priority=0,
+            pp=10,
+            flags=["contact", "protect", "mirror"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """ A 50% de chance de gravement empoisonner la cible."""
+        if random.randint(1, 100) <= 50:
+            target.apply_status("badly_poisoned")
 
 class RockSlide(Attack):
     def __init__(self):
@@ -3136,6 +3168,53 @@ class Struggle(Attack):
 # Instance globale de Struggle pour tous les Pokémon
 STRUGGLE_ATTACK = Struggle()
 
+class FoulPlay(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Foul Play",
+            type_="Dark",
+            category="Physical",
+            power=95,
+            accuracy=100,
+            priority=0,
+            pp=15,
+            flags=["contact", "protect", "mirror"],
+            target="Foe"
+        )
+
+    def get_power(self, user, target, fight):
+        """
+        La puissance de Foul Play est basée sur l'Attaque du Pokémon adverse.
+        """
+        value = int(((2 * target.base_stats["Attack"] + target.ivs["Attack"] + target.evs["Attack"] // 4) * 0.5 + 5) * target.nature_modifier[0])
+        return value  # Puissance basée sur l'Attaque de la cible
+
+class IceFang(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Ice Fang",
+            type_="Ice",
+            category="Physical",
+            power=65,
+            accuracy=95,
+            priority=0,
+            pp=15,
+            flags=["contact", "bite", "protect", "mirror"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        A 10 % de chance de geler la cible ou de la faire flancher.
+        """
+        if random.random() < 0.1:
+            if not target.flinched:
+                target.flinched = True
+                print(f"{target.name} est appeuré !")
+        if random.random() < 0.1:
+            target.apply_status("frozen")
+            print(f"{target.name} est gelé par Ice Fang !")
+
 class Liquidation(Attack):
     def __init__(self):
         super().__init__(
@@ -3349,6 +3428,7 @@ def execute_future_sight(future_attack, fight):
 
 attack_registry = {
     "Aerial Ace": AerialAce(),
+    "Aqua Jet": AquaJet(),
     "Aurora Veil": AuroraVeil(),
     "Behemoth Blade": BehemothBlade(),
     "Body Press": BodyPress(),
@@ -3380,6 +3460,7 @@ attack_registry = {
     "Flip Turn": FlipTurn(),
     "Flower Trick": FlowerTrick(),
     "Focus Blast": FocusBlast(),
+    "Foul Play": FoulPlay(),
     "Future Sight": FutureSight(),
     "Grass Knot": GrassKnot(),
     "Gunk Shot": GunkShot(),
@@ -3390,6 +3471,7 @@ attack_registry = {
     "Hydro Pump": HydroPump(),
     "Hyper Beam": HyperBeam(),
     "Ice Beam": IceBeam(),
+    "Ice Fang": IceFang(),
     "Ice Shard": IceShard(),
     "Ice Spinner": IceSpinner(),
     "Icicle Spear": IcicleSpear(),
@@ -3404,6 +3486,7 @@ attack_registry = {
     "Low Kick": LowKick(),
     "Magic Coat": MagicCoat(),
     "Make It Rain": MakeItRain(),
+    "Malignant Chain": MalignantChain(),
     "Moonblast": Moonblast(),
     "Mortal Spin": MortalSpin(),
     "Nasty Plot": NastyPlot(),
@@ -3416,6 +3499,7 @@ attack_registry = {
     "Protect": Protect(),
     "Psycho Boost": PsychoBoost(),
     "Psychic": Psychic(),
+    "Psychic Noise": PsychicNoise(),
     "Rain Dance": RainDance(),
     "Rapid Spin": RapidSpin(),
     "Razor Shell": RazorShell(),

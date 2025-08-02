@@ -239,6 +239,16 @@ class WhiteHerb(Item):
         
         return stat_changes
 
+class SoulDew(Item):
+    """
+    La Soul Dew augmente la puissance des capacités de type psy ou dragon lorsque tenu par latias ou latios.
+    """
+    def on_attack(self, poke, attack, fight=None):
+        if poke.name == "Latias" or poke.name == "Latios":
+            if attack.type == "Psychic" or attack.type == "Dragon":
+                return {"attack": 1.0, "power": 1.2, "accuracy": 1.0}    
+        return {"attack": 1.0, "power": 1.0, "accuracy": 1.0}
+
 item_registry = {
     "Leftovers": Leftovers(),
     "Sitrus Berry": SitrusBerry(),
@@ -258,6 +268,7 @@ item_registry = {
     "Wide Lens": WideLens(),
     "Air Balloon": AirBalloon(),
     "White Herb": WhiteHerb(),
+    "Soul Dew": SoulDew(),
 }
 
 def trigger_item(poke, event, *args):

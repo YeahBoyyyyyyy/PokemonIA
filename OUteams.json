@@ -7,7 +7,7 @@
             "team1": {
                 "1": {"name": "Deoxys-Speed",
                       "item": "Life Orb",
-                      "moves": ["Psycho Boost", "Superpower", "Knock Off", "Ice Beam"],
+                      "moves": ["Dynamic Punch", "Superpower", "Knock Off", "Ice Beam"],
                       "ability": "Pressure",
                       "nature": "Naive",
                       "tera_type": "Fighting",
@@ -170,6 +170,62 @@
                       "tera_type": "Steel",
                       "evs": {"HP": 192, "Sp. Atk": 252, "Speed": 64},
                       "ivs": {"Attack": 0, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
+                    }
+            },
+            "team4" : {
+                "1" : {"name": "Darkrai",
+                      "item": "Heavy-Duty Boots",
+                      "moves": ["Will-O-Wisp", "Dark Pulse", "Ice Beam", "Knock Off"],
+                      "ability": "Bad Dreams",
+                      "nature": "Timid",
+                      "tera_type": "Ghost",
+                      "evs": {"Sp. Atk": 252, "Sp. Def": 4, "Speed": 252},
+                      "ivs": {"Attack": 0, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
+                    },
+                "2" : {"name": "Samurott-Hisui",
+                      "item": "Assault Vest",
+                      "moves": ["Ceaseless Edge", "Razor Shell", "Aqua Jet", "Knock Off"],
+                      "ability": "Sharpness",
+                      "nature": "Adamant",
+                      "tera_type": "Fire",
+                      "evs": {"HP": 252, "Attack": 88, "Defense": 20, "Sp. Def": 56, "Speed": 92},
+                      "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
+                    },
+                "3" : {"name": "Latios",
+                      "item": "Soul Dew",
+                      "moves": ["Calm Mind", "Draco Meteor", "Psychic Noise", "Recover"],
+                      "ability": "Levitate",
+                      "nature": "Timid",
+                      "tera_type": "Steel",
+                      "evs": {"Defense": 4, "Sp. Atk": 252, "Speed": 252},
+                      "ivs": {"Attack": 0, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
+                    },
+                "4" : {"name": "Pecharunt",
+                      "item": "Heavy-Duty Boots",
+                      "moves": ["Malignant Chain", "Foul Play", "Parting Shot", "Recover"],
+                      "ability": "Poison Puppeteer",
+                      "nature": "Bold",
+                      "tera_type": "Flying",
+                      "evs": {"HP": 252, "Defense": 252, "Sp. Def": 4},
+                      "ivs": {"Attack": 0, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
+                    },
+                "5" : {"name": "Zamazenta",
+                      "item": "Heavy-Duty Boots",
+                      "moves": ["Close Combat", "Heavy Slam", "Crunch", "Ice Fang"],
+                      "ability": "Dauntless Shield",
+                      "nature": "Jolly",
+                      "tera_type": "Fire",
+                      "evs": {"HP": 104, "Attack": 252, "Speed": 152},
+                      "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
+                    },
+                "6" : {"name": "Landorus-Therian",
+                      "item": "Rocky Helmet",
+                      "moves": ["Stealth Rock", "Earthquake", "Stone Edge", "U-turn"],
+                      "ability": "Intimidate",
+                      "nature": "Jolly",
+                      "tera_type": "Water",
+                      "evs": {"HP": 248, "Attack": 8, "Speed": 252},
+                      "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
                     }
             }
         }

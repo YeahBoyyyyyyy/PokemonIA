@@ -1,3 +1,4 @@
+import fight
 from pokemon import pokemon
 import sys
 sys.path.append("C:/Users/natha/OneDrive/Desktop/Travail/IA Combats pokémons/PokemonIA/Materials")
@@ -7,6 +8,9 @@ sys.path.append("C:/Users/natha/OneDrive/Desktop/Travail/IA Combats pokémons/Po
 import json
 
 def import_team_from_json(id):
+    """
+    Importe une équipe de Pokémon à partir d'un fichier JSON. Tout est initialisé, stats, tera et PP.
+    """
     teamid = "team" + str(id)
     pokemon_team = []
     with open("OUteams.json", "r") as f:
@@ -19,6 +23,10 @@ def import_team_from_json(id):
             carac = team_data[str(i)]
             poke = import_pokemon_from_json(carac)
             pokemon_team.append(poke)
+
+    # Initialiser les PP de l'équipe
+    from pp_manager import setup_team_pp
+    setup_team_pp(pokemon_team)
     return pokemon_team
 
 def import_pokemon_from_json(carac : dict):

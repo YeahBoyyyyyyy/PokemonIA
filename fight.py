@@ -81,6 +81,7 @@ class Fight():
         """
         return all(p.current_hp <= 0 for p in team)
     
+    ##### Gerer les switch #######
     def auto_switch(self, team_id):
         """
         Sélectionne automatiquement le prochain Pokémon vivant dans l'équipe.
@@ -98,8 +99,86 @@ class Fight():
         Permet au joueur de choisir quel Pokémon faire entrer.
         Cette méthode doit être surchargée par l'interface utilisateur.
         """
-        # Par défaut, utilise l'auto-switch si pas surchargé
-        self.auto_switch(team_id)
+        if team_id == 1:  # Joueur humain
+            # Vérifier si c'est un changement forcé par U-turn
+            current_pokemon = self.active1 if team_id == 1 else self.active2
+            if current_pokemon.must_switch_after_attack:
+                self.choose_uturn_switch_pokemon(team_id)
+            else:
+                self.choose_switch_pokemon(team_id)
+        else:  # IA
+            self.auto_switch(team_id)
+
+    def choose_switch_pokemon(self, team_id):
+        """
+        Permet au joueur de choisir quel Pokémon faire entrer quand son Pokémon actuel est KO.
+        """
+        team = self.team1 if team_id == 1 else self.team2
+        team_name = "joueur 1" if team_id == 1 else "joueur 2"
+        
+        print(f"\n{bcolors.OKYELLOW}Le Pokémon du {team_name} est KO ! Choisissez un remplaçant :{bcolors.RESET}")
+        
+        while True:
+            available_pokemon = []
+            for i, p in enumerate(team):
+                if p.current_hp > 0:
+                    available_pokemon.append((i, p))
+            
+            if not available_pokemon:
+                return None  # Aucun Pokémon disponible
+            
+            print("\nPokémon disponibles :")
+            for idx, (i, p) in enumerate(available_pokemon):
+                print(f"{idx}. {p.name} (HP: {p.current_hp}/{p.max_hp})")
+            
+            choice = input("Choisissez un Pokémon (numéro) : ").strip()
+            
+            if choice.isdigit():
+                choice_idx = int(choice)
+                if 0 <= choice_idx < len(available_pokemon):
+                    pokemon_index = available_pokemon[choice_idx][0]
+                    self.player_switch(team_id, pokemon_index)
+                    return pokemon_index
+                else:
+                    print("Choix invalide.")
+            else:
+                print("Veuillez entrer un numéro valide.")
+
+
+    def choose_uturn_switch_pokemon(fight, team_id):
+        """
+        Permet au joueur de choisir quel Pokémon faire entrer après U-turn / Flip Turn / Volt Switch / Parting Shot.
+        """
+        team = fight.team1 if team_id == 1 else fight.team2
+        current_pokemon = fight.active1 if team_id == 1 else fight.active2
+        
+        print(f"\n{bcolors.OKBLUE}Choisissez le Pokémon à faire entrer :{bcolors.RESET}")
+        
+        while True:
+            available_pokemon = []
+            for i, p in enumerate(team):
+                if p.current_hp > 0 and p != current_pokemon:
+                    available_pokemon.append((i, p))
+            
+            if not available_pokemon:
+                return None  # Aucun Pokémon disponible
+            
+            print("\nPokémon disponibles :")
+            for idx, (i, p) in enumerate(available_pokemon):
+                print(f"{idx}. {p.name} (HP: {p.current_hp}/{p.max_hp})")
+            
+            choice = input("Choisissez un Pokémon (numéro) : ").strip()
+            
+            if choice.isdigit():
+                choice_idx = int(choice)
+                if 0 <= choice_idx < len(available_pokemon):
+                    pokemon_index = available_pokemon[choice_idx][0]
+                    fight.player_switch(team_id, pokemon_index)
+                    return pokemon_index
+                else:
+                    print("Choix invalide.")
+            else:
+                print("Veuillez entrer un numéro valide.")
 
     def check_battle_end(self):
         """
@@ -398,7 +477,7 @@ class Fight():
         display_weather(self)
         print(f"1:{self.active1.protect_turns} / 2:{self.active2.protect_turns}")
 
-    def fight(self):
+    def print_fight(self):
         print(f"{bcolors.BG_WHITE}{bcolors.BOLD}{bcolors.BLACK}Le combat oppose {self.active1.name} à {self.active2.name} !{bcolors.RESET}{bcolors.UNBOLD}{bcolors.BG_DEFAULT}")
 
     def next_turn(self):
@@ -594,7 +673,7 @@ class Fight():
                 
                 trigger_item(self.active1, "on_entry", self)
                 trigger_talent(self.active1, "on_entry", self)
-                on_entry_hazards(self.active1, self)
+                self.on_entry_hazards(self.active1)
 
         elif team == 2:
             if self.team2[index].current_hp > 0:
@@ -618,7 +697,7 @@ class Fight():
                 
                 trigger_item(self.active2, "on_entry", self)
                 trigger_talent(self.active2, "on_entry", self)
-                on_entry_hazards(self.active2, self)       
+                self.on_entry_hazards(self.active2)       
 
     def player_attack(self, attacker : pokemon, attack : Attack, defender : pokemon, defender_attack : Attack = None):
         """
@@ -1110,52 +1189,11 @@ class Fight():
         Résout un tour de jeu en fonction des priorités (modifiées par les talents), vitesses, et gère les égalités aléatoirement.
         action = (pokemon, attack_dict)
         """
-        p1, atk1 = action1
-        p2, atk2 = action2
-
-        prio1 = self.compute_priority(p1, atk1)
-        prio2 = self.compute_priority(p2, atk2)
-
-        # Déterminer l'ordre d'action
-        if prio1 > prio2:
-            first, first_attack, second, second_attack = p1, atk1, p2, atk2
-        elif prio2 > prio1:
-            first, first_attack, second, second_attack = p2, atk2, p1, atk1
-        else:
-            # Même priorité : départager par la vitesse
-            speed1 = p1.current_stats()['Speed']
-            speed2 = p2.current_stats()['Speed']
-            
-            # Trick Room inverse l'ordre de vitesse (les plus lents vont en premier)
-            if self.trick_room_active:
-                if speed1 < speed2:  # Inversé : plus lent en premier
-                    first, first_attack, second, second_attack = p1, atk1, p2, atk2
-                elif speed2 < speed1:  # Inversé : plus lent en premier
-                    first, first_attack, second, second_attack = p2, atk2, p1, atk1
-                else:
-                    # Vitesses égales : aléatoire
-                    if random.random() < 0.5:
-                        first, first_attack, second, second_attack = p1, atk1, p2, atk2
-                    else:
-                        first, first_attack, second, second_attack = p2, atk2, p1, atk1
-            else:
-                # Ordre normal : plus rapide en premier
-                if speed1 > speed2:
-                    first, first_attack, second, second_attack = p1, atk1, p2, atk2
-                elif speed2 > speed1:
-                    first, first_attack, second, second_attack = p2, atk2, p1, atk1
-                else:
-                    # Vitesses égales : aléatoire
-                    if random.random() < 0.5:
-                        first, first_attack, second, second_attack = p1, atk1, p2, atk2
-                    else:
-                        first, first_attack, second, second_attack = p2, atk2, p1, atk1
-
-
+        first, first_attack, second, second_attack = self.get_turn_order(action1, action2)
         # Update des protects
-        protect_update(p1, atk1)
-        protect_update(p2, atk2)
-        
+        protect_update(first, first_attack)
+        protect_update(second, second_attack)
+
         # Première attaque
         if self.check_status_before_attack(first):
             self.player_attack(first, first_attack, second, second_attack)
@@ -1350,6 +1388,7 @@ class Fight():
         # Calcul normal de précision
         base_accuracy = effective_accuracy / 100.0 * talent_mod["accuracy"] * item_mod["accuracy"]
         final_accuracy = base_accuracy * attacker.accuracy / defender.evasion
+        print(f"{attacker.name} a {round(final_accuracy / 100, 3)} % de chances de toucher {defender.name} avec {attack.name}.")
         return random.random() <= final_accuracy
     
 #### appliquer les degats des statuts ####
@@ -1437,6 +1476,115 @@ class Fight():
             return False
         
         return True
+
+    def on_entry_hazards(self, pokemon):
+        """
+        Applique les effets des pièges d'entrée (Spikes, Stealth Rock, etc.) sur un Pokémon à son entrée dans le combat.
+        
+        :param pokemon: Instance de la classe Pokemon qui entre dans le combat.
+        :param fight: Instance de la classe Fight contenant les informations sur les pièges d'entrée.
+        """
+        team = self.get_team_id(pokemon)
+        # IMPORTANT : Les hazards affectent l'équipe OPPOSÉE à celle qui les a posés
+        match team:
+            case 1:
+                hazards = self.hazards_team1  # L'équipe 1 subit les hazards posés par l'équipe 2
+            case 2:
+                hazards = self.hazards_team2  # L'équipe 2 subit les hazards posés par l'équipe 1
+            case _:
+                raise ValueError("Invalid team ID")
+        
+        if pokemon.has_substitute():
+            print(f"{pokemon.name} a un clone qui bloque les pièges d'entrée !")
+            return
+        
+        if pokemon.item == "Heavy-Duty Boots":
+            print(f"{pokemon.name} porte des Heavy-Duty Boots et ignore les pièges d'entrée !")
+            return
+
+        # Vérifier les pièges d'entrée
+        if hazards["Spikes"] > 0 and "Flying" not in pokemon.types and pokemon.talent != "Levitate":
+            damage = int(pokemon.max_hp * 0.0625 * hazards["Spikes"])  # 1/16 par couche de Spikes
+            print(f"{pokemon.name} subit {damage} points de dégâts à cause des Spikes !")
+            self.damage_method(pokemon, damage)
+
+        if hazards["Stealth Rock"]:
+            rock_damage = int(pokemon.max_hp * 0.125)  # 1/8 des PV max
+            type_eff = type_effectiveness("Rock", pokemon)
+            total_damage = int(rock_damage * type_eff)
+            print(f"{pokemon.name} subit {total_damage} points de dégâts à cause des Piège de Roc !")
+            self.damage_method(pokemon, total_damage)
+
+        if hazards["Toxic Spikes"] > 0:
+            if "Poison" in pokemon.types or "Steel" in pokemon.types:
+                if "Poison" in pokemon.types:
+                    hazards["Toxic Spikes"] = 0  # Neutralisé par les Pokémon Poison
+                    print(f"{pokemon.name} absorbe les Toxic Spikes !")
+                else:
+                    print(f"{pokemon.name} est immunisé contre les Toxic Spikes !")
+            elif "Flying" in pokemon.types or pokemon.talent == "Levitate":
+                pass  # Ignoré par Flying et Levitate
+            else:
+                if hazards["Toxic Spikes"] == 1:
+                    pokemon.apply_status("poison")
+                    print(f"{pokemon.name} est empoisonné par les Toxic Spikes !")
+                elif hazards["Toxic Spikes"] >= 2:
+                    pokemon.apply_status("badly_poisoned")
+                    print(f"{pokemon.name} est gravement empoisonné par les Toxic Spikes !")
+        
+        if hazards["Sticky Web"]:
+            if pokemon.talent != "Levitate" and "Flying" not in pokemon.types:
+                stat_change = {"Speed": -1}  # Réduit la vitesse de 1 stage
+                pokemon.apply_stat_change(stat_change)
+            else:
+                print(f"{pokemon.name} évite Sticky Web grâce à son type/talent !")
+
+    def get_turn_order(self, action1, action2):
+        
+        p1, atk1 = action1
+        p2, atk2 = action2
+
+        prio1 = self.compute_priority(p1, atk1)
+        prio2 = self.compute_priority(p2, atk2)
+
+        first, first_attack, second, second_attack = None, None, None, None
+
+        # Déterminer l'ordre d'action
+        if prio1 > prio2:
+            first, first_attack, second, second_attack = p1, atk1, p2, atk2
+        elif prio2 > prio1:
+            first, first_attack, second, second_attack = p2, atk2, p1, atk1
+        else:
+            # Même priorité : départager par la vitesse
+            speed1 = p1.current_stats()['Speed']
+            speed2 = p2.current_stats()['Speed']
+            
+            # Trick Room inverse l'ordre de vitesse (les plus lents vont en premier)
+            if self.trick_room_active:
+                if speed1 < speed2:  # Inversé : plus lent en premier
+                    first, first_attack, second, second_attack = p1, atk1, p2, atk2
+                elif speed2 < speed1:  # Inversé : plus lent en premier
+                    first, first_attack, second, second_attack = p2, atk2, p1, atk1
+                else:
+                    # Vitesses égales : aléatoire
+                    if random.random() < 0.5:
+                        first, first_attack, second, second_attack = p1, atk1, p2, atk2
+                    else:
+                        first, first_attack, second, second_attack = p2, atk2, p1, atk1
+            else:
+                # Ordre normal : plus rapide en premier
+                if speed1 > speed2:
+                    first, first_attack, second, second_attack = p1, atk1, p2, atk2
+                elif speed2 > speed1:
+                    first, first_attack, second, second_attack = p2, atk2, p1, atk1
+                else:
+                    # Vitesses égales : aléatoire
+                    if random.random() < 0.5:
+                        first, first_attack, second, second_attack = p1, atk1, p2, atk2
+                    else:
+                        first, first_attack, second, second_attack = p2, atk2, p1, atk1
+    
+        return (first, first_attack, second, second_attack)
 
 #
 # Ensemble des fonctions pour gérer la puissance d'une attaque contre un autre pokémon.
@@ -1647,70 +1795,6 @@ def protect_update(pokemon : pokemon, attack : Attack):
     if not "protection" in attack.flags:
         pokemon.protect = False
         pokemon.protect_turns = 0
-
-def on_entry_hazards(pokemon, fight):
-    """
-    Applique les effets des pièges d'entrée (Spikes, Stealth Rock, etc.) sur un Pokémon à son entrée dans le combat.
-    
-    :param pokemon: Instance de la classe Pokemon qui entre dans le combat.
-    :param fight: Instance de la classe Fight contenant les informations sur les pièges d'entrée.
-    """
-    team = fight.get_team_id(pokemon)
-    # IMPORTANT : Les hazards affectent l'équipe OPPOSÉE à celle qui les a posés
-    match team:
-        case 1:
-            hazards = fight.hazards_team1  # L'équipe 1 subit les hazards posés par l'équipe 2
-        case 2:
-            hazards = fight.hazards_team2  # L'équipe 2 subit les hazards posés par l'équipe 1
-        case _:
-            raise ValueError("Invalid team ID")
-    
-    if pokemon.has_substitute():
-        print(f"{pokemon.name} a un clone qui bloque les pièges d'entrée !")
-        return
-    
-    if pokemon.item == "Heavy-Duty Boots":
-        print(f"{pokemon.name} porte des Heavy-Duty Boots et ignore les pièges d'entrée !")
-        return
-
-    # Vérifier les pièges d'entrée
-    if hazards["Spikes"] > 0 and "Flying" not in pokemon.types and pokemon.talent != "Levitate":
-        damage = int(pokemon.max_hp * 0.0625 * hazards["Spikes"])  # 1/16 par couche de Spikes
-        print(f"{pokemon.name} subit {damage} points de dégâts à cause des Spikes !")
-        fight.damage_method(pokemon, damage)
-
-    if hazards["Stealth Rock"]:
-        rock_damage = int(pokemon.max_hp * 0.125)  # 1/8 des PV max
-        type_eff = type_effectiveness("Rock", pokemon)
-        total_damage = int(rock_damage * type_eff)
-        print(f"{pokemon.name} subit {total_damage} points de dégâts à cause des Piège de Roc !")
-        fight.damage_method(pokemon, total_damage)
-
-    if hazards["Toxic Spikes"] > 0:
-        if "Poison" in pokemon.types or "Steel" in pokemon.types:
-            if "Poison" in pokemon.types:
-                hazards["Toxic Spikes"] = 0  # Neutralisé par les Pokémon Poison
-                print(f"{pokemon.name} absorbe les Toxic Spikes !")
-            else:
-                print(f"{pokemon.name} est immunisé contre les Toxic Spikes !")
-        elif "Flying" in pokemon.types or pokemon.talent == "Levitate":
-            pass  # Ignoré par Flying et Levitate
-        else:
-            if hazards["Toxic Spikes"] == 1:
-                pokemon.apply_status("poison")
-                print(f"{pokemon.name} est empoisonné par les Toxic Spikes !")
-            elif hazards["Toxic Spikes"] >= 2:
-                pokemon.apply_status("badly_poisoned")
-                print(f"{pokemon.name} est gravement empoisonné par les Toxic Spikes !")
-    
-    if hazards["Sticky Web"]:
-        if pokemon.talent != "Levitate" and "Flying" not in pokemon.types:
-            stat_change = {"Speed": -1}  # Réduit la vitesse de 1 stage
-            pokemon.apply_stat_change(stat_change)
-        else:
-            print(f"{pokemon.name} évite Sticky Web grâce à son type/talent !")
-
-
 
 from colors_utils import Colors
 

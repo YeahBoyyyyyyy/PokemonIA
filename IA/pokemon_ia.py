@@ -130,8 +130,8 @@ class RandomAI(PokemonAI):
             active_pokemon = fight.active2
             team = fight.team2
             tera_used = getattr(fight, 'tera_used_team2', False)
-        
-        possible_attacks = active_pokemon.possible_attacks()
+
+        possible_attacks = active_pokemon.get_usable_attacks()
 
         # Actions disponibles
         available_actions = {

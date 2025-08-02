@@ -4,6 +4,7 @@ import sys
 sys.path.append("C:/Users/natha/OneDrive/Desktop/Travail/IA Combats pokémons/PokemonIA/Materials")
 from Materials.pokemon_items import trigger_item
 from Materials.pokemon_talents import trigger_talent
+from colors_utils import Colors as bcolors
 '''
 Véritable Intelligence Artificielle pour faire des combats pokémon : On va ici implémenenter toutes les particularités d'un combat pokémon,
 c'est-à-dire : les pokémons avec leurs stats, talents, attaques, les 6 pokémons de l'équipe, les effets des attaques, les changements de stats, 
@@ -367,6 +368,35 @@ class pokemon():
             print(f"{self.name} tient un {self.item}.")
         else:
             print(f"{self.name} ne tient pas d'objet.")
+
+    # Option pour afficher les stats d'un Pokémon
+    def print_pokemon_stats(self):
+
+        print(f"\n{bcolors.LIGHT_GREEN}Stats de {bcolors.BOLD}{self.name}{bcolors.UNBOLD}:")
+        print(f"Talent: {self.talent}")
+        print(f"Objet: {self.item}")
+        print(f"PV: {self.current_hp}/{self.max_hp}")
+        
+        # Afficher les types avec indication Tera
+        if self.tera_activated:
+            print(f"Types: {', '.join(self.types)} {bcolors.OKMAGENTA}(Tera actif: {self.tera_type}) ✨{bcolors.RESET}")
+        else:
+            print(f"Types: {', '.join(self.types)} {bcolors.GRAY}(Tera: {self.tera_type}){bcolors.RESET}")
+        print(f"Status: {self.status}")
+        for stat in ["Attack", "Defense", "Sp. Atk", "Sp. Def", "Speed"]:
+            print(f"{stat}: {self.stats[stat]}")
+        print(f"Modificateurs de stats: {self.stats_modifier}")
+        print(f"Modificateurs de stats cachés: {self.hidden_modifier}")
+        print(f"{bcolors.LIGHT_RED}Attaques:")
+        for i, atk in enumerate([self.attack1, self.attack2, self.attack3, self.attack4], 1):
+            if atk:
+                current_pp = self.get_attack_pp(atk)
+                max_pp = getattr(self, f'max_pp{i}', 0)
+                pp_display = f"({current_pp}/{max_pp} PP)"
+                if current_pp == 0:
+                    pp_display = f"{bcolors.OKRED}{pp_display}{bcolors.LIGHT_RED}"
+                print(f"  {i}. {atk.name} {pp_display}")
+        print(f"{bcolors.RESET}")
 
     def init_fight(self, fight):
         self.fight = fight  # ← Ajout important

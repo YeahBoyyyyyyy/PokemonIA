@@ -1626,4 +1626,34 @@ pokemon_data = {
         "weight": 58.2,
         "fully_evolved": True
     },
+    "Landorus-Therian": {
+        "name": "Landorus-Therian",
+        "types": ["Ground", "Flying"],
+        "abilities": ["Intimidate"],
+        "stats": {
+            "HP": 89,
+            "Attack": 145,
+            "Defense": 90,
+            "Sp. Atk": 105,
+            "Sp. Def": 80,
+            "Speed": 91
+        },
+        "weight": 68.0,
+        "fully_evolved": True
+    },
+    "Latios": {
+        "name": "Latios",
+        "types": ["Dragon", "Psychic"],
+        "abilities": ["Levitate"],
+        "stats": {
+            "HP": 80,
+            "Attack": 90,
+            "Defense": 80,
+            "Sp. Atk": 130,
+            "Sp. Def": 110,
+            "Speed": 110
+        },
+        "weight": 60.0,
+        "fully_evolved": True
+    },
 }

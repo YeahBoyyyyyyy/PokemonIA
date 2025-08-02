@@ -7,113 +7,9 @@ from colors_utils import Colors as bcolors
 from fight import display_menu
 from utilities import *
 
-# Option pour afficher les stats d'un Pokémon
-def print_pokemon_stats(pokemon : pk.pokemon):
-
-    print(f"\n{bcolors.LIGHT_GREEN}Stats de {bcolors.BOLD}{pokemon.name}{bcolors.UNBOLD}:")
-    print(f"Talent: {pokemon.talent}")
-    print(f"Objet: {pokemon.item}")
-    print(f"PV: {pokemon.current_hp}/{pokemon.max_hp}")
-    
-    # Afficher les types avec indication Tera
-    if pokemon.tera_activated:
-        print(f"Types: {', '.join(pokemon.types)} {bcolors.OKMAGENTA}(Tera actif: {pokemon.tera_type}) ✨{bcolors.RESET}")
-    else:
-        print(f"Types: {', '.join(pokemon.types)} {bcolors.GRAY}(Tera: {pokemon.tera_type}){bcolors.RESET}")
-    print(f"Status: {pokemon.status}")
-    for stat in ["Attack", "Defense", "Sp. Atk", "Sp. Def", "Speed"]:
-        print(f"{stat}: {pokemon.stats[stat]}")
-    print(f"Modificateurs de stats: {pokemon.stats_modifier}")
-    print(f"Modificateurs de stats cachés: {pokemon.hidden_modifier}")
-    print(f"{bcolors.LIGHT_RED}Attaques:")
-    for i, atk in enumerate([pokemon.attack1, pokemon.attack2, pokemon.attack3, pokemon.attack4], 1):
-        if atk:
-            current_pp = pokemon.get_attack_pp(atk)
-            max_pp = getattr(pokemon, f'max_pp{i}', 0)
-            pp_display = f"({current_pp}/{max_pp} PP)"
-            if current_pp == 0:
-                pp_display = f"{bcolors.OKRED}{pp_display}{bcolors.LIGHT_RED}"
-            print(f"  {i}. {atk.name} {pp_display}")
-    print(f"{bcolors.RESET}")
 
 
-def choose_switch_pokemon(fight, team_id):
-    """
-    Permet au joueur de choisir quel Pokémon faire entrer quand son Pokémon actuel est KO.
-    """
-    team = fight.team1 if team_id == 1 else fight.team2
-    team_name = "joueur 1" if team_id == 1 else "joueur 2"
-    
-    print(f"\n{bcolors.OKYELLOW}Le Pokémon du {team_name} est KO ! Choisissez un remplaçant :{bcolors.RESET}")
-    
-    while True:
-        available_pokemon = []
-        for i, p in enumerate(team):
-            if p.current_hp > 0:
-                available_pokemon.append((i, p))
-        
-        if not available_pokemon:
-            return None  # Aucun Pokémon disponible
-        
-        print("\nPokémon disponibles :")
-        for idx, (i, p) in enumerate(available_pokemon):
-            print(f"{idx}. {p.name} (HP: {p.current_hp}/{p.max_hp})")
-        
-        choice = input("Choisissez un Pokémon (numéro) : ").strip()
-        
-        if choice.isdigit():
-            choice_idx = int(choice)
-            if 0 <= choice_idx < len(available_pokemon):
-                pokemon_index = available_pokemon[choice_idx][0]
-                fight.player_switch(team_id, pokemon_index)
-                return pokemon_index
-            else:
-                print("Choix invalide.")
-        else:
-            print("Veuillez entrer un numéro valide.")
-
-
-def choose_uturn_switch_pokemon(fight, team_id):
-    """
-    Permet au joueur de choisir quel Pokémon faire entrer après U-turn.
-    """
-    team = fight.team1 if team_id == 1 else fight.team2
-    current_pokemon = fight.active1 if team_id == 1 else fight.active2
-    
-    print(f"\n{bcolors.OKBLUE}Choisissez le Pokémon à faire entrer :{bcolors.RESET}")
-    
-    while True:
-        available_pokemon = []
-        for i, p in enumerate(team):
-            if p.current_hp > 0 and p != current_pokemon:
-                available_pokemon.append((i, p))
-        
-        if not available_pokemon:
-            return None  # Aucun Pokémon disponible
-        
-        print("\nPokémon disponibles :")
-        for idx, (i, p) in enumerate(available_pokemon):
-            print(f"{idx}. {p.name} (HP: {p.current_hp}/{p.max_hp})")
-        
-        choice = input("Choisissez un Pokémon (numéro) : ").strip()
-        
-        if choice.isdigit():
-            choice_idx = int(choice)
-            if 0 <= choice_idx < len(available_pokemon):
-                pokemon_index = available_pokemon[choice_idx][0]
-                fight.player_switch(team_id, pokemon_index)
-                return pokemon_index
-            else:
-                print("Choix invalide.")
-        else:
-            print("Veuillez entrer un numéro valide.")
-
-
-def launch_battle(team1: list[pk.pokemon], team2: list[pk.pokemon]):
-    # Initialiser les PP pour les deux équipes
-    from pp_manager import setup_team_pp
-    setup_team_pp(team1)
-    setup_team_pp(team2)
+def launch_battle(team1: list[pk.pokemon], team2: list[pk.pokemon]):    
     
     fight = Fight(team1, team2)
     
@@ -121,22 +17,7 @@ def launch_battle(team1: list[pk.pokemon], team2: list[pk.pokemon]):
     fight.tera_used_team1 = False
     fight.tera_used_team2 = False
     
-    # Surcharger la méthode player_choice_switch pour permettre au joueur de choisir
-    def player_choice_switch_override(team_id):
-        if team_id == 1:  # Joueur humain
-            # Vérifier si c'est un changement forcé par U-turn
-            current_pokemon = fight.active1 if team_id == 1 else fight.active2
-            if current_pokemon.must_switch_after_attack:
-                choose_uturn_switch_pokemon(fight, team_id)
-            else:
-                choose_switch_pokemon(fight, team_id)
-        else:  # IA
-            fight.auto_switch(team_id)
-    
-    # Remplacer la méthode de la classe Fight
-    fight.player_choice_switch = player_choice_switch_override
-    
-    fight.fight()
+    fight.print_fight()
 
     while True:
         if fight.check_battle_end():
@@ -284,7 +165,7 @@ def launch_battle(team1: list[pk.pokemon], team2: list[pk.pokemon]):
                     print(f"{i}. {poke.name}")
                 choice = input("Numéro du Pokémon à inspecter : ").strip()
                 if choice.isdigit() and 0 <= int(choice) < len(liste):
-                    print_pokemon_stats(liste[int(choice)])
+                    pk.print_pokemon_stats(liste[int(choice)])
                 else:
                     print("Choix invalide.")
 
@@ -303,7 +184,7 @@ def launch_battle(team1: list[pk.pokemon], team2: list[pk.pokemon]):
         # L'IA peut téracristaliser de façon aléatoire (20% de chance si possible)
         ai_tera_action = None
         if random.random() < 0.2:  # 20% de chance
-            can_tera, _ = can_terastallize(attacker2, fight, 2)
+            can_tera = can_terastallize(attacker2, fight, 2)
             if can_tera:
                 # L'IA utilise son type Tera prédéfini
                 success = attacker2.terastallize(attacker2.tera_type)

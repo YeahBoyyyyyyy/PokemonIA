@@ -187,6 +187,14 @@ class ThickFat(Talent):
         if incoming_attack.type in ["Fire", "Ice"]:
             print(f"{poke.name} réduit de moitié les dégâts grâce à sa graisse !")
             return 0.5
+        
+class Levitate(Talent):
+    """ Talent qui immunise aux capacités de type sol."""
+    def on_defense(self, poke, incoming_attack, attacker_poke=None, fight=None):
+        if incoming_attack.type == "Ground":
+            print(f"{poke.name} est immunisé aux attaques de type Sol grâce à Lévitation !")
+            return 0
+        return 1.0
 
 class Stamina(Talent):
     """ Talent qui augmente la Défense de 1 niveau à chaque fois que le Pokémon subit des dégâts."""
@@ -606,5 +614,6 @@ talent_registry = {
     "Good as Gold": GoodAsGold(),
     "Regenerator": Regenerator(),
     "Prankster": Prankster(),
-    "Snow Warning": SnowWarning()
+    "Snow Warning": SnowWarning(),
+    "Levitate": Levitate(),
 }
