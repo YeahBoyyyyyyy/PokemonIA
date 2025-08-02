@@ -88,10 +88,11 @@ def launch_battle(team1: list[pk.pokemon], team2: list[pk.pokemon]):
                             current_pp = attacker.get_attack_pp(atk)
                             max_pp = getattr(attacker, f'max_pp{i+1}', 0)
                             pp_display = f"({current_pp}/{max_pp} PP)"
+                            accuracy = atk.accuracy
                             
                             can_use, reason = can_use_attack(attacker, atk)
                             if can_use:
-                                print(f"{i+1}. {atk.name} {pp_display}")
+                                print(f"{i+1}. {atk.name} {pp_display} Précision: {accuracy}")
                             else:
                                 print(f"{i+1}. {bcolors.DARK_RED}{atk.name} {pp_display} (BLOQUÉE){bcolors.RESET}")
                                 print(f"    {bcolors.GRAY}Raison: {reason}{bcolors.RESET}")
@@ -165,7 +166,7 @@ def launch_battle(team1: list[pk.pokemon], team2: list[pk.pokemon]):
                     print(f"{i}. {poke.name}")
                 choice = input("Numéro du Pokémon à inspecter : ").strip()
                 if choice.isdigit() and 0 <= int(choice) < len(liste):
-                    pk.print_pokemon_stats(liste[int(choice)])
+                    liste[int(choice)].print_pokemon_stats()
                 else:
                     print("Choix invalide.")
 

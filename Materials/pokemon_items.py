@@ -1,3 +1,9 @@
+ON_ATTACK_MOD_DICT = {
+    "attack": 1.0,
+    "power": 1.0,
+    "accuracy": 1.0
+}
+
 class Item:
     def on_turn_end(self, fight=None):
         """
@@ -142,7 +148,9 @@ class FocusSash(Item):
             poke.focus_sash_ready = True
         else:
             poke.focus_sash_ready = False
-        
+
+        return ON_ATTACK_MOD_DICT    
+    
 class BlackGlasses(Item):
     """
     Black Glasses augmente la puissance des attaques de type Ténèbres de 20%.
@@ -157,7 +165,7 @@ class LifeOrb(Item):
     Life Orb augmente la puissance des attaques de 30%, mais inflige 10% de dégâts au Pokémon après chaque attaque.
     """
     def on_attack(self, poke, attack, fight=None):
-        return {"attack": 1.3, "power": 1.0}
+        return {"attack": 1.3, "power": 1.0, "accuracy":1.0}
     
     def after_attack(self, poke, fight, attacker=None, attack=None):
         if attacker == poke and attack.category != "Status":
@@ -247,7 +255,7 @@ class SoulDew(Item):
         if poke.name == "Latias" or poke.name == "Latios":
             if attack.type == "Psychic" or attack.type == "Dragon":
                 return {"attack": 1.0, "power": 1.2, "accuracy": 1.0}    
-        return {"attack": 1.0, "power": 1.0, "accuracy": 1.0}
+        return ON_ATTACK_MOD_DICT
 
 item_registry = {
     "Leftovers": Leftovers(),

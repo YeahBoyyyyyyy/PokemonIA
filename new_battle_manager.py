@@ -3,6 +3,7 @@ from pokemon import *
 import random
 from colors_utils import Colors
 from utilities import *
+from import_pokemon_team_from_json import import_team_from_json
 
 def print_fight(ia1, ia2):
     print(f"{Colors.BG_WHITE}{Colors.BOLD}{Colors.BLACK}Le combat oppose une {ia1.name} à une {ia2.name} !{Colors.RESET}{Colors.UNBOLD}{Colors.BG_DEFAULT}")
@@ -41,4 +42,8 @@ def battle_manager(team1: list[pokemon], team2: list[pokemon]):
         action1 = ia1.choose_action(fight, available_actions1)
         action2 = ia2.choose_action(fight, available_actions2)
 
-        
+        print(f"Action IA1: {action1}")
+        print(f"Action IA2: {action2}")
+
+        break
+

@@ -2,9 +2,6 @@ import pokemon as pk
 from battle_interface import launch_battle
 from import_pokemon_team_from_json import import_team_from_json
 
-
-
-
 # Créer l'équipe française
 french_team = import_team_from_json(1)
 competitive_team = import_team_from_json(4)

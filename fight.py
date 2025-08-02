@@ -776,6 +776,7 @@ class Fight():
 
         on_attack_mod = trigger_talent(attacker, "on_attack", attack, self)
         on_item_mod = trigger_item(attacker, "on_attack", attack, self)
+        talent_mod_dict = trigger_talent(attacker, "on_attack", attack, self)
 
         if on_item_mod is None:
             on_item_mod = {"attack": 1.0, "power": 1.0, "accuracy" : 1.0}
@@ -783,8 +784,11 @@ class Fight():
         if on_attack_mod is None:
             on_attack_mod = {"attack": 1.0, "power": 1.0, "accuracy": 1.0, "type": None}
 
+        if talent_mod_dict is None:
+            talent_mod_dict = {"attack": 1.0, "power": 1.0, "accuracy": 1.0, "type": None}
+
         # Vérification Précision avec modificateurs
-        if not self.calculate_hit_chance(attacker, defender, attack, on_attack_mod, on_item_mod):
+        if not self.calculate_hit_chance(attacker, defender, attack, talent_mod_dict, on_item_mod):
             print(f"{attacker.name} rate son attaque !")
             return
 
@@ -1375,7 +1379,8 @@ class Fight():
         :return: True si l'attaque touche, False sinon.
         """
         # Vérifier les talents qui garantissent la précision (comme No Guard)
-        if talent_mod["accuracy"] == True:
+        print(talent_mod["accuracy"])
+        if isinstance(talent_mod["accuracy"], bool) and talent_mod["accuracy"] == True:
             return True 
         
         # Utiliser la précision effective de l'attaque (conditions météo, etc.)
@@ -1388,7 +1393,7 @@ class Fight():
         # Calcul normal de précision
         base_accuracy = effective_accuracy / 100.0 * talent_mod["accuracy"] * item_mod["accuracy"]
         final_accuracy = base_accuracy * attacker.accuracy / defender.evasion
-        print(f"{attacker.name} a {round(final_accuracy / 100, 3)} % de chances de toucher {defender.name} avec {attack.name}.")
+        final_accuracy_percent = min(final_accuracy * 100, 100)  # Limiter à 100% pour l'affichage1
         return random.random() <= final_accuracy
     
 #### appliquer les degats des statuts ####
