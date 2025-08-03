@@ -799,6 +799,26 @@ class CalmMind(Attack):
         if success:
             print(f"{user.name} utilise Calm Mind ! Son Attaque Spéciale et sa Défense Spéciale augmentent de 1 niveau.")
 
+class QuiverDance(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Quiver Dance",
+            type_="Bug",
+            category="Status",
+            power=0,
+            accuracy=True,
+            priority=0,
+            pp=20,
+            flags=[],
+            target="User"
+        )
+    
+    def apply_effect(self, user : PK.pokemon, target, fight):
+        stat_changes = {"Sp. Atk": 1, "Sp. Def": 1, "Speed": 1}
+        success = apply_stat_changes(user, stat_changes, "self", fight)
+        if success:
+            print(f"{user.name} utilise Papillodanse ! Sa Défense et son Attaque Spéciale ainsi que sa Vitesse augmentent !")
+
 class BulkUp(Attack):
     def __init__(self):
         super().__init__(
@@ -2308,6 +2328,28 @@ class SludgeBomb(Attack):
             target.apply_status("poison")
             print(f"{target.name} est empoisonné !")
 
+class BugBuzz(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Bug Buzz",
+            type_="Bug",
+            category="Special",
+            power=80,
+            accuracy=100,
+            priority=0,
+            pp=10,
+            flags=["protect", "mirror"],
+            target="Foe"
+        )
+    
+    def apply_effect(self, user, target, fight):
+        """
+        A 10 % de baisser de 1 cran la Sp. Def de la cible.
+        """
+        if random.random() < 0.1:
+            stat_changes = {"Sp. Def": -1}
+            apply_stat_changes(target, stat_changes, "opponent", fight)
+
 class DarkPulse(Attack):
     def __init__(self):
         super().__init__(
@@ -3432,6 +3474,7 @@ attack_registry = {
     "Aurora Veil": AuroraVeil(),
     "Behemoth Blade": BehemothBlade(),
     "Body Press": BodyPress(),
+    "Bug Buzz": BugBuzz(),
     "Bulk Up": BulkUp(),
     "Bullet Seed": BulletSeed(),
     "Blizzard": Blizzard(),
@@ -3500,6 +3543,7 @@ attack_registry = {
     "Psycho Boost": PsychoBoost(),
     "Psychic": Psychic(),
     "Psychic Noise": PsychicNoise(),
+    "Quiver Dance": QuiverDance(),
     "Rain Dance": RainDance(),
     "Rapid Spin": RapidSpin(),
     "Razor Shell": RazorShell(),

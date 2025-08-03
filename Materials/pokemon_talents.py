@@ -545,6 +545,11 @@ class Regenerator(Talent):
             return "activated"
         return None
 
+class WonderSkin(Talent):
+    """Talent qui fait que le pokemon a 50% de chance de faire échouer les capacités de statut dont il est la cible."""
+    def on_defense(self, poke, incoming_attack, attacker_poke, fight=None):
+        if incoming_attack.category == "Status" and attacker_poke != poke and random.random() < 0.5:
+            print(f"{poke.name} fait échouer l'attaque de statut adverse grâce à Peau Miracle")
 
 def trigger_talent(poke, event_name, *args):
     """
@@ -616,4 +621,5 @@ talent_registry = {
     "Prankster": Prankster(),
     "Snow Warning": SnowWarning(),
     "Levitate": Levitate(),
+    "Wonder Skin": WonderSkin()
 }

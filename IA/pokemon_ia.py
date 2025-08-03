@@ -93,13 +93,13 @@ class RandomAI(PokemonAI):
         Returns:
             tuple: (action_type, action_data, extra_data)
         """
-        action_type = random.choice(['attack', 'switch', 'terastallize'], [0.85, 0.05, 0.10])
+        action_type = random.choices(['attack', 'switch', 'terastallize'], [0.85, 0.05, 0.10])[0]
         
         if action_type == 'attack':
             attack_index = random.randint(0, len(available_actions['attacks']) - 1)
             can_tera = available_actions['can_terastallize']
             return ('attack', attack_index, can_tera)
-        
+
         elif action_type == 'switch':
             if available_actions['switches']:
                 pokemon_index = random.randint(0, len(available_actions['switches']) - 1)
@@ -113,7 +113,9 @@ class RandomAI(PokemonAI):
                 return ('terastallize', attack_index, None)
             else:
                 return None  # Pas de possibilité de terastalliser
-    
+
+        print("il s''est rien passé")
+
     def get_available_actions(self, fight):
         """
         Détermine les actions disponibles pour l'IA.
