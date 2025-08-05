@@ -27,10 +27,21 @@ def battle_manager(team1: list[pokemon], team2: list[pokemon]):
     fight.tera_used_team1 = False
     fight.tera_used_team2 = False
 
-    # Initialiser les IAs
-    from IA.pokemon_ia import RandomAI
-    ia1 = RandomAI(1)  # Seul le team_id est nécessaire
-    ia2 = RandomAI(2)
+    # Initialiser les IAs - Exemple: Joueur vs IA
+    from IA.pokemon_ia import RandomAI, PlayerAI
+    
+    # Option 1: IA vs IA (comme avant)
+    # ia1 = RandomAI(1)
+    # ia2 = RandomAI(2)
+    
+    # Option 2: Joueur vs IA (pour l'apprentissage supervisé)
+    ia1 = PlayerAI(1, "Joueur Humain")  # Joueur humain
+    ia2 = RandomAI(2)  # IA adverse
+    
+    # Option 3: IA vs Joueur
+    # ia1 = RandomAI(1)  # IA
+    # ia2 = PlayerAI(2, "Joueur Humain")  # Joueur humain
+    
     print_fight(ia1, ia2)
 
     while True:
@@ -39,8 +50,9 @@ def battle_manager(team1: list[pokemon], team2: list[pokemon]):
             break
 
         fight.print_fight_status()
-        # Petite pause pour lancer le tour
-        input("Appuyez sur Entrée pour continuer...")  # Optionnel pour debug
+        
+        # Plus besoin de pause manuelle car PlayerAI gère son propre rythme
+        # input("Appuyez sur Entrée pour continuer...")  # Optionnel pour debug
          
         # Selection des actions pour chaque IA
         available_actions1 = ia1.get_available_actions(fight)
