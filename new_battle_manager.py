@@ -37,26 +37,29 @@ def battle_manager(team1: list[pokemon], team2: list[pokemon]):
         if fight.check_battle_end():
             print("Battle terminé!")
             break
-       
+
+        fight.print_fight_status()
+        # Petite pause pour lancer le tour
+        input("Appuyez sur Entrée pour continuer...")  # Optionnel pour debug
+         
         # Selection des actions pour chaque IA
         available_actions1 = ia1.get_available_actions(fight)
         available_actions2 = ia2.get_available_actions(fight)
 
-        print(f"Available Actions AI1: {available_actions1}")
-        print(f"Available Actions AI2: {available_actions2}")
+        #print(f"Available Actions AI1: {available_actions1}")
+        #print(f"Available Actions AI2: {available_actions2}")
+
 
         act1 = ia1.choose_action(fight, available_actions1)
         act2 = ia2.choose_action(fight, available_actions2)
 
-        print(f"Action IA1: {act1}")
-        print(f"Action IA2: {act2}")
+        #print(f"Action IA1: {act1}")
+        #print(f"Action IA2: {act2}")
 
         poke1_action = (ia1, act1)
         poke2_action = (ia2, act2)
 
         fight.new_resolve_turn(poke1_action, poke2_action)
         
-        # Petite pause pour voir les résultats
-        input("Appuyez sur Entrée pour continuer...")  # Optionnel pour debug
 
 battle_manager(teamAI1, teamAI2)

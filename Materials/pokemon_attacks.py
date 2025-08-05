@@ -1639,7 +1639,7 @@ class Scald(Attack):
 
     def apply_effect(self, user, target, fight):
         if random.random() < 0.3:
-            target.apply_status("burned")
+            target.apply_status("burn")
             print(f"{target.name} est brûlé !")
         
 class DynamicPunch(Attack):

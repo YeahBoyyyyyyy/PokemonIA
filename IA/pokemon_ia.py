@@ -62,6 +62,9 @@ class PokemonAI(ABC):
     def choose_switch_in(self, fight):
         """
         Détermine quel pokemon choisit pour remplacer le pokémo actuel sur le terrain.
+        
+        Returns:
+            int: Index du Pokémon à faire entrer dans l'équipe
         """
 
     def get_pokemon_info(self, fight):
@@ -156,10 +159,7 @@ class RandomAI(PokemonAI):
         elif action_type == 'switch':
             if available_actions['switches']:
                 # Récupérer l'index dans l'équipe complète
-                switch_pokemon = random.choice(available_actions['switches'])
-                pokemon_info = self.get_pokemon_info(fight)
-                my_team = pokemon_info['my_team']
-                team_index = my_team.index(switch_pokemon)
+                team_index = self.choose_switch_in(fight)
                 return ('switch', team_index, None)
             else:
                 # Fallback vers attaque si pas de switch possible
@@ -174,6 +174,22 @@ class RandomAI(PokemonAI):
         
         # Fallback de sécurité
         return ('attack', Struggle, False)  # Struggle
+
+    def choose_switch_in(self, fight):
+        """
+        Choisit le Pokémon à faire entrer lors d'un changement de pokémon.
+        """
+        
+        available_pokemon = self.get_available_actions(fight)['switches']
+        if not available_pokemon:
+            return None
+        else:
+            # Choisir un Pokémon aléatoire parmi ceux disponibles
+            switch_pokemon = random.choice(available_pokemon)
+            pokemon_info = self.get_pokemon_info(fight)
+            my_team = pokemon_info['my_team']
+            poke_index_in_team = my_team.index(switch_pokemon)
+            return poke_index_in_team
 
     def get_available_actions(self, fight):
         """
