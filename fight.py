@@ -1,16 +1,17 @@
 from pokemon import pokemon, apply_stat_changes
 import random 
 import utilities 
+from IA.pokemon_ia import PokemonAI
 from colors_utils import Colors as bcolors
 from Materials.pokemon_items import trigger_item, item_registry
 from Materials.pokemon_talents import trigger_talent
 from Materials.pokemon_attacks import Attack, process_future_sight_attacks
 
 class Fight():
-    def __init__(self, team1, team2):
+    def __init__(self, team1 : list[pokemon], team2 : list[pokemon]):
         self.team1 = team1  # Liste de 6 pokémon
         self.team2 = team2
-        self.active1 = team1[0]  # Pokémon actuellement en combat
+        self.active1 = team1[0] # Pokémon actuellement en combat
         self.active2 = team2[0]
 
 ####### Effets de combats : Terrain, Météo, Murs, Hazards #######
@@ -74,112 +75,131 @@ class Fight():
         for p in [self.active1, self.active2]:
             p.actualize_stats()  # Met à jour les stats des Pokémon actifs au début du combat
 
-    
+    ##### Gerer les switch #######
+    def handle_switch(self, team_id, forced=False, pokemon_index=None):
+        """
+        Gère tous les types de changements de Pokémon : automatique, forcé ou par choix.
+        
+        :param team_id: ID de l'équipe (1 ou 2)
+        :param forced: Si True, c'est un changement forcé (KO, U-turn, etc.)
+        :param pokemon_index: Index du Pokémon à faire entrer (None = choix automatique/manuel)
+        :return: Index du Pokémon qui entre, ou None si impossible
+        """
+        team = self.team1 if team_id == 1 else self.team2
+        current_active = self.active1 if team_id == 1 else self.active2
+        team_name = "joueur 1" if team_id == 1 else "joueur 2"
+        
+        # Vérifier si c'est un changement forcé par U-turn
+        is_uturn_switch = (hasattr(current_active, 'must_switch_after_attack') and 
+                        current_active.must_switch_after_attack and 
+                        current_active.current_hp > 0)
+        
+        # Obtenir la liste des Pokémon disponibles
+        available_pokemon = []
+        for i, p in enumerate(team):
+            if p.current_hp > 0 and p != current_active:
+                available_pokemon.append((i, p))
+        
+        if not available_pokemon:
+            return None  # Aucun Pokémon disponible
+        
+        # Déterminer l'index du Pokémon à faire entrer
+        switch_index = None
+        
+        if pokemon_index is not None:
+            # Index spécifié directement (IA ou choix prédéfini)
+            if any(i == pokemon_index for i, _ in available_pokemon):
+                switch_index = pokemon_index
+            else:
+                print(f"ERREUR: Pokémon #{pokemon_index} non disponible !")
+                return None
+        
+        elif team_id == 2:  # IA - choix automatique
+            switch_index = available_pokemon[0][0]  # Premier Pokémon disponible
+        
+        else:  # team_id == 1 - Joueur humain - choix manuel
+            switch_index = self._get_player_choice(available_pokemon, team_name, forced, is_uturn_switch)
+        
+        # Effectuer le changement
+        if switch_index is not None:
+            self.player_switch(team_id, switch_index)
+            return switch_index
+        
+        return None
+
+    def _get_player_choice(self, available_pokemon, team_name, forced, is_uturn_switch):
+        """
+        Gère le choix du joueur humain pour le changement de Pokémon.
+        """
+        # Afficher le message approprié
+        if forced and not is_uturn_switch:
+            print(f"\n{bcolors.OKYELLOW}Le Pokémon du {team_name} est KO ! Choisissez un remplaçant :{bcolors.RESET}")
+        elif is_uturn_switch:
+            print(f"\n{bcolors.OKBLUE}Choisissez le Pokémon à faire entrer :{bcolors.RESET}")
+        
+        # Boucle de choix pour le joueur humain
+        while True:
+            print("\nPokémon disponibles :")
+            for idx, (i, p) in enumerate(available_pokemon):
+                print(f"{idx}. {p.name} (HP: {p.current_hp}/{p.max_hp})")
+            
+            choice = input("Choisissez un Pokémon (numéro) : ").strip()
+            
+            if choice.isdigit():
+                choice_idx = int(choice)
+                if 0 <= choice_idx < len(available_pokemon):
+                    return available_pokemon[choice_idx][0]
+                else:
+                    print("Choix invalide.")
+            else:
+                print("Veuillez entrer un numéro valide.")
+
+    def handle_forced_switches(self):
+        """
+        Gère les changements forcés après les attaques comme U-turn, Volt Switch, etc.
+        """
+        for team_id, active_pokemon in [(1, self.active1), (2, self.active2)]:
+            if (hasattr(active_pokemon, 'must_switch_after_attack') and 
+                active_pokemon.must_switch_after_attack and 
+                active_pokemon.current_hp > 0):
+                
+                team = self.team1 if team_id == 1 else self.team2
+                available_pokemon = [p for p in team if p.current_hp > 0 and p != active_pokemon]
+                
+                if available_pokemon:
+                    switch_reason = getattr(active_pokemon, 'switch_reason', 'une attaque')
+                    print(f"{active_pokemon.name} revient grâce à {switch_reason} !")
+                    self.handle_switch(team_id, forced=False)  # U-turn n'est pas "forced" au sens KO
+                
+                # Réinitialiser les attributs
+                active_pokemon.must_switch_after_attack = False
+                if hasattr(active_pokemon, 'switch_reason'):
+                    active_pokemon.switch_reason = None
+
+    # Raccourcis pour compatibilité avec l'ancien code
+    def auto_switch(self, team_id):
+        """Changement automatique pour l'IA."""
+        return self.handle_switch(team_id, forced=False)
+
+    def choose_switch_pokemon(self, team_id):
+        """Choix manuel de Pokémon pour remplacement KO."""
+        return self.handle_switch(team_id, forced=True)
+
+    def choose_uturn_switch_pokemon(self, team_id):
+        """Choix manuel après U-turn/Volt Switch."""
+        current_pokemon = self.active1 if team_id == 1 else self.active2
+        if hasattr(current_pokemon, 'must_switch_after_attack'):
+            current_pokemon.must_switch_after_attack = True
+        return self.handle_switch(team_id, forced=False)
+
+
+##### Vérifications fin de combat #######
     def is_team_defeated(self, team):
         """
         Vérifie si tous les Pokémon de l'équipe sont K.O.
         """
         return all(p.current_hp <= 0 for p in team)
     
-    ##### Gerer les switch #######
-    def auto_switch(self, team_id):
-        """
-        Sélectionne automatiquement le prochain Pokémon vivant dans l'équipe.
-        """
-        team = self.team1 if team_id == 1 else self.team2
-        current_active = self.active1 if team_id == 1 else self.active2
-        
-        for i, p in enumerate(team):
-            if p.current_hp > 0 and p != current_active:
-                self.player_switch(team_id, i)
-                return
-
-    def player_choice_switch(self, team_id):
-        """
-        Permet au joueur de choisir quel Pokémon faire entrer.
-        Cette méthode doit être surchargée par l'interface utilisateur.
-        """
-        if team_id == 1:  # Joueur humain
-            # Vérifier si c'est un changement forcé par U-turn
-            current_pokemon = self.active1 if team_id == 1 else self.active2
-            if current_pokemon.must_switch_after_attack:
-                self.choose_uturn_switch_pokemon(team_id)
-            else:
-                self.choose_switch_pokemon(team_id)
-        else:  # IA
-            self.auto_switch(team_id)
-
-    def choose_switch_pokemon(self, team_id):
-        """
-        Permet au joueur de choisir quel Pokémon faire entrer quand son Pokémon actuel est KO.
-        """
-        team = self.team1 if team_id == 1 else self.team2
-        team_name = "joueur 1" if team_id == 1 else "joueur 2"
-        
-        print(f"\n{bcolors.OKYELLOW}Le Pokémon du {team_name} est KO ! Choisissez un remplaçant :{bcolors.RESET}")
-        
-        while True:
-            available_pokemon = []
-            for i, p in enumerate(team):
-                if p.current_hp > 0:
-                    available_pokemon.append((i, p))
-            
-            if not available_pokemon:
-                return None  # Aucun Pokémon disponible
-            
-            print("\nPokémon disponibles :")
-            for idx, (i, p) in enumerate(available_pokemon):
-                print(f"{idx}. {p.name} (HP: {p.current_hp}/{p.max_hp})")
-            
-            choice = input("Choisissez un Pokémon (numéro) : ").strip()
-            
-            if choice.isdigit():
-                choice_idx = int(choice)
-                if 0 <= choice_idx < len(available_pokemon):
-                    pokemon_index = available_pokemon[choice_idx][0]
-                    self.player_switch(team_id, pokemon_index)
-                    return pokemon_index
-                else:
-                    print("Choix invalide.")
-            else:
-                print("Veuillez entrer un numéro valide.")
-
-
-    def choose_uturn_switch_pokemon(fight, team_id):
-        """
-        Permet au joueur de choisir quel Pokémon faire entrer après U-turn / Flip Turn / Volt Switch / Parting Shot.
-        """
-        team = fight.team1 if team_id == 1 else fight.team2
-        current_pokemon = fight.active1 if team_id == 1 else fight.active2
-        
-        print(f"\n{bcolors.OKBLUE}Choisissez le Pokémon à faire entrer :{bcolors.RESET}")
-        
-        while True:
-            available_pokemon = []
-            for i, p in enumerate(team):
-                if p.current_hp > 0 and p != current_pokemon:
-                    available_pokemon.append((i, p))
-            
-            if not available_pokemon:
-                return None  # Aucun Pokémon disponible
-            
-            print("\nPokémon disponibles :")
-            for idx, (i, p) in enumerate(available_pokemon):
-                print(f"{idx}. {p.name} (HP: {p.current_hp}/{p.max_hp})")
-            
-            choice = input("Choisissez un Pokémon (numéro) : ").strip()
-            
-            if choice.isdigit():
-                choice_idx = int(choice)
-                if 0 <= choice_idx < len(available_pokemon):
-                    pokemon_index = available_pokemon[choice_idx][0]
-                    fight.player_switch(team_id, pokemon_index)
-                    return pokemon_index
-                else:
-                    print("Choix invalide.")
-            else:
-                print("Veuillez entrer un numéro valide.")
-
     def check_battle_end(self):
         """
         Vérifie si le combat est terminé. Retourne True si oui, False sinon.
@@ -192,8 +212,6 @@ class Fight():
             print("Tous les Pokémon de l'équipe 2 sont K.O. ! Victoire de l'équipe 1 !")
             return True
         return False
-
-
 
 ###### Méthodes pour gérer les effets de la météo #######
     def set_weather(self, weather, duration=5):
@@ -704,6 +722,10 @@ class Fight():
         Gère l'action "Attaquer" d'un Pokémon sur un autre, en prenant en compte les effets de statut, multi-tours et priorités.
         """
 
+        if defender.current_hp <= 0:
+            print(f"{defender.name} est K.O. et ne peut pas être attaqué !")
+            return
+
         # Si le Pokémon doit se recharger, il ne peut pas attaquer
         if attacker.must_recharge:
             print(f"{attacker.name} se repose et ne peut pas attaquer ce tour-ci.")
@@ -794,6 +816,16 @@ class Fight():
 
         print(f"{attacker.name} utilise {attack.name} !")
         
+        # Vérifie si l'objet de choix le verrouille sur une attaque
+        if attacker.item and "Choice" in attacker.item:
+            if attacker.locked_attack and attacker.locked_attack != attack:
+                print(f"{attacker.name} est verrouillé sur {attacker.locked_attack.name} à cause de {attacker.item} !")
+                attack = attacker.locked_attack  # Force l'utilisation de l'attaque verrouillée
+            
+            # Verrouille sur l'attaque utilisée (soit celle choisie, soit celle forcée)
+            if not attacker.locked_attack:
+                attacker.locked_attack = attack
+
         # Consommation des PP (sauf pour Struggle qui a des PP infinis)
         if attack.name != "Struggle":
             pp_cost = 1
@@ -827,16 +859,6 @@ class Fight():
         if multiplier == 0:
             print(f"{defender.name} n’est pas affecté grâce à son talent !")
             return 
-        
-        # Vérifie si l'objet de choix le verrouille sur une attaque
-        if attacker.item and "Choice" in attacker.item:
-            if attacker.locked_attack and attacker.locked_attack != attack:
-                print(f"{attacker.name} est verrouillé sur {attacker.locked_attack.name} à cause de {attacker.item} !")
-                attack = attacker.locked_attack  # Force l'utilisation de l'attaque verrouillée
-            
-            # Verrouille sur l'attaque utilisée (soit celle choisie, soit celle forcée)
-            if not attacker.locked_attack:
-                attacker.locked_attack = attack
         
         # Déclencher les objets before_attack pour le défenseur (ex: Focus Sash)
         trigger_item(defender, "before_attack", attack, self)
@@ -891,14 +913,12 @@ class Fight():
         else:
             return  # Pokémon pas actif, pas besoin de remplacement
         
+        
         if self.is_team_defeated(team):
-            if self.check_battle_end():
-                return
+            self.check_battle_end()
+            return
         else:
-            if team_id == 1:  # Joueur humain
-                self.player_choice_switch(team_id)
-            else:  # IA
-                self.auto_switch(team_id)
+            self.handle_switch(team_id, forced=True)
 
     def apply_secondary_effects(self, attacker, defender, attack, damage_dealt=0):
         """
@@ -1149,45 +1169,6 @@ class Fight():
             base_priority += 7
         return base_priority
 
-    def handle_forced_switches(self):
-        """
-        Gère les changements forcés après les attaques comme U-turn, Volt Switch, etc.
-        """
-        
-        # Vérifier le Pokémon actif de l'équipe 1
-        if self.active1.must_switch_after_attack and self.active1.current_hp > 0:
-            team_id = 1
-            team = self.team1
-            available_pokemon = [p for p in team if p.current_hp > 0 and p != self.active1]
-            
-            if available_pokemon:
-                print(f"{self.active1.name} revient grâce à {self.active1.switch_reason} !")
-                if team_id == 1:  # Joueur humain
-                    self.player_choice_switch(team_id)
-                else:  # IA
-                    self.auto_switch(team_id)
-            
-            # Réinitialiser les attributs
-            self.active1.must_switch_after_attack = False
-            self.active1.switch_reason = None
-        
-        # Vérifier le Pokémon actif de l'équipe 2
-        if self.active2.must_switch_after_attack and self.active2.current_hp > 0:
-            team_id = 2
-            team = self.team2
-            available_pokemon = [p for p in team if p.current_hp > 0 and p != self.active2]
-            
-            if available_pokemon:
-                print(f"{self.active2.name} revient grâce à {self.active2.switch_reason} !")
-                if team_id == 2:  # IA
-                    self.auto_switch(team_id)
-                else:  # Joueur humain (ne devrait jamais arriver ici pour team_id=2)
-                    self.player_choice_switch(team_id)
-            
-            # Réinitialiser les attributs
-            self.active2.must_switch_after_attack = False
-            self.active2.switch_reason = None
-
     def resolve_turn(self, action1, action2):
         """
         Résout un tour de jeu en fonction des priorités (modifiées par les talents), vitesses, et gère les égalités aléatoirement.
@@ -1379,7 +1360,6 @@ class Fight():
         :return: True si l'attaque touche, False sinon.
         """
         # Vérifier les talents qui garantissent la précision (comme No Guard)
-        print(talent_mod["accuracy"])
         if isinstance(talent_mod["accuracy"], bool) and talent_mod["accuracy"] == True:
             return True 
         
@@ -1590,11 +1570,157 @@ class Fight():
                         first, first_attack, second, second_attack = p2, atk2, p1, atk1
     
         return (first, first_attack, second, second_attack)
+    
+    def new_get_turn_order(self, pokemon1, attack1, pokemon2, attack2):
+        """
+        Nouvelle méthode pour obtenir l'ordre des attaques en tenant compte des actions de type ('type_action', int, tera_used).
+        :param pokemon1: Instance de la classe Pokemon 1.
+        :param attack1: Instance de la classe Attack 1.
+        :param pokemon2: Instance de la classe Pokemon 2.
+        :param attack2: Instance de la classe Attack 2.
+        :return: Tuple (first, first_attack, second, second_attack) avec l'ordre des attaques.
+        """
+        prio1 = self.compute_priority(pokemon1, attack1)
+        prio2 = self.compute_priority(pokemon2, attack2)
 
-#
+        if prio1 > prio2:
+            return (pokemon1, attack1, pokemon2, attack2)
+        elif prio2 > prio1:
+            return (pokemon2, attack2, pokemon1, attack1)
+        else:
+            # Même priorité : départager par la vitesse
+            speed1 = pokemon1.current_stats()["Speed"]
+            speed2 = pokemon2.current_stats()["Speed"]
+            
+            if self.trick_room_active:
+                if speed1 < speed2:
+                    return (pokemon1, attack1, pokemon2, attack2)
+                elif speed2 < speed1:
+                    return (pokemon2, attack2, pokemon1, attack1)
+                else:
+                    return (pokemon1 if random.random() < 0.5 else pokemon2,
+                            attack1 if random.random() < 0.5 else attack2,
+                            pokemon2 if random.random() < 0.5 else pokemon1,
+                            attack2 if random.random() < 0.5 else attack1)
+            else:
+                if speed1 > speed2:
+                    return (pokemon1, attack1, pokemon2, attack2)
+                elif speed2 > speed1:
+                    return (pokemon2, attack2, pokemon1, attack1)
+                else:
+                    return (pokemon1 if random.random() < 0.5 else pokemon2,
+                            attack1 if random.random() < 0.5 else attack2,
+                            pokemon2 if random.random() < 0.5 else pokemon1,
+                            attack2 if random.random() < 0.5 else attack1)
+
+    def new_resolve_turn(self, poke1_action : tuple[PokemonAI,(Attack, int, bool)], poke2_action : tuple[PokemonAI,(Attack, int, bool)]):
+        """
+        Nouvelle méthode resolve_turn pour prendre en charge des actions du type ('type_action', int, tera_used)
+        qui seront données notamment par les IA et qui va être utilisée dans new_battle_manager.py.
+        Les différents tuples possibles sont :  
+            - ("attack", attack_index, can_tera) 
+            - ("switch", pokemon_index, None)
+            - ("terastallize", attack_index, None)
+        :param poke1_action: tuple de la forme (pokemon1, action1)
+        :param poke2_action: tuple de la forme (pokemon2, action2)
+        """
+        
+        ai1, action1 = poke1_action
+        ai2, action2 = poke2_action
+
+        # DEBUG : Afficher les actions reçues
+        print(f"DEBUG - Action1 reçue: {action1}")
+        print(f"DEBUG - Action2 reçue: {action2}")
+        print(f"DEBUG - Pokémon actuel team1: {self.active1.name}")
+        print(f"DEBUG - Pokémon actuel team2: {self.active2.name}")
+
+        pokemon1 = self.active1
+        pokemon2 = self.active2
+
+        action1_type, action1_value, action1_tera_used = action1
+        action2_type, action2_value, action2_tera_used = action2
+
+        # Prendre en charge les différents cas facilement
+        # On gère d'abord le cas du double switch
+        if action1_type == "switch" and action2_type == "switch":
+            first, second = None, None
+            pokemon1_speed, pokemon2_speed = pokemon1.current_stats()["Speed"], pokemon2.current_stats()["Speed"]
+            if  pokemon1_speed > pokemon2_speed:
+                first, second = pokemon1, pokemon2
+                first_switch_in, second_switch_in = action1_value, action2_value
+            elif pokemon1_speed < pokemon2_speed:
+                first, second = pokemon2, pokemon1
+                first_switch_in, second_switch_in = action2_value, action1_value
+            else:
+                if random.random() < 0.5:
+                    first, second = pokemon1, pokemon2
+                    first_switch_in, second_switch_in = action1_value, action2_value
+                else:
+                    first, second = pokemon2, pokemon1
+                    first_switch_in, second_switch_in = action2_value, action1_value
+
+            first_team_id, second_team_id = self.get_team_id(first), self.get_team_id(second)
+            
+            # Gérer les switch.
+            self.player_switch(first_team_id, first_switch_in)
+            self.player_switch(second_team_id, second_switch_in)
+
+        # Ensuite le cas ou les deux attaquent
+        elif action1_type in ["attack", "terastallize"] and action2_type in ["attack", "terastallize"]:
+
+            first, first_attack, second, second_attack = self.new_get_turn_order(pokemon1, action1_value, pokemon2, action2_value)
+
+            # Vérifier les possibles téracristallisations qui se font avant les attaques des 2 pokémons
+            if action1_type == "terastallize":
+                pokemon1.terastallize(pokemon1.tera_type)
+            if action2_type == "terastallize":
+                pokemon2.terastallize(pokemon2.tera_type)
+
+            # Update des protects
+            protect_update(first, first_attack)
+            protect_update(second, second_attack)
+
+            # Première attaque
+            if self.check_status_before_attack(first):
+                self.player_attack(first, first_attack, second, second_attack)
+            
+            for p in [self.active1, self.active2]:
+                trigger_item(p, "after_attack", self, first, first_attack)  # Appliquer les effets des objets après l'attaque
+
+            # Gérer les changements forcés après la première attaque (U-turn, Volt Switch, etc.)   
+            self.handle_forced_switches()    
+            
+            # Seconde attaque si vivant
+            if second.current_hp > 0:
+                if self.check_status_before_attack(second):
+                    self.player_attack(second, second_attack, first, first_attack)
+            
+            for p in [self.active1, self.active2]:
+                trigger_item(p, "after_attack", self, second, second_attack)  # Appliquer les effets des objets après l'attaque
+
+            # Gérer les changements forcés après la deuxième attaque (U-turn, Volt Switch, etc.)
+            self.handle_forced_switches()
+        # Enfin le dernier cas possible est obligeatoirement que un des deux joueurs swicth et l'autre attaque.
+        else:
+            switcher, switch_in_id, attacker, attack_id = None, None, None, None
+            if action1_type == "switch":
+                switcher, switch_in_id, attacker, attack_id = pokemon1, action1_value, pokemon2, action2_value
+            else:
+                switcher, switch_in_id, attacker, attack_id = pokemon2, action2_value, pokemon1, action1_value
+
+            self.player_switch(self.get_team_id(switcher), switch_in_id)
+
+            # Vérifier si l'attaquant peut attaquer
+            if self.check_status_before_attack(attacker):
+                self.player_attack(attacker, attack_id, switcher)
+
+            # Gérer les changements forcés après la deuxième attaque (U-turn, Volt Switch, etc.)
+            self.handle_forced_switches()
+
+        self.next_turn()   
+        
 # Ensemble des fonctions pour gérer la puissance d'une attaque contre un autre pokémon.
 # Utilisées dans la méthode attack_power de la classe Fight.
-#
 
 def type_effectiveness(attack_type, target):
     """

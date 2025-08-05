@@ -28,7 +28,7 @@ class PokemonAI(ABC):
         Returns:
             tuple: (action_type, action_data, extra_data)
             - ("attack", attack_index, can_tera) 
-            - ("switch", pokemon_index, None)
+            - ("switch", team_index, None)
             - ("terastallize", attack_index, None)
         """
         pass
@@ -59,6 +59,11 @@ class PokemonAI(ABC):
         
         return available_actions
     
+    def choose_switch_in(self, fight):
+        """
+        Détermine quel pokemon choisit pour remplacer le pokémo actuel sur le terrain.
+        """
+
     def get_pokemon_info(self, fight):
         """Récupère les informations sur les Pokémon pour l'IA"""
         if self.team_id == 1:
@@ -79,10 +84,17 @@ class PokemonAI(ABC):
             'enemy_team': enemy_team
         }
     
+class PLAYERAI(PokemonAI):
+    """Joueur Humain qui rentre ses actions manuellement comme dans battle_interface.py"""
+
+    def choose_action(self, fight, available_actions):
+        return 
+
 class RandomAI(PokemonAI):
     """IA Pokémon qui choisit des actions aléatoires"""
     
     def choose_action(self, fight, available_actions):
+        from Materials.pokemon_attacks import Struggle
         """
         Choisit une action aléatoire parmi les actions disponibles.
         
@@ -93,28 +105,75 @@ class RandomAI(PokemonAI):
         Returns:
             tuple: (action_type, action_data, extra_data)
         """
-        action_type = random.choices(['attack', 'switch', 'terastallize'], [0.85, 0.05, 0.10])[0]
+        # Assurer qu'on a bien les actions disponibles
+        if available_actions is None:
+            available_actions = self.get_available_actions(fight)
         
+        # Vérifier les actions possibles
+        possible_actions = []
+        
+        # Attaquer (si on a des attaques utilisables)
+        if available_actions['attacks']:
+            possible_actions.append('attack')
+        
+        # Changer (si on a des Pokémon disponibles)
+        if available_actions['switches']:
+            possible_actions.append('switch')
+        
+        # Téracristaliser (si possible ET si on a des attaques)
+        if available_actions['can_terastallize'] and available_actions['attacks']:
+            possible_actions.append('terastallize')
+        
+        # Si aucune action possible, forcer l'attaque (Struggle)
+        if not possible_actions:
+            return ('attack', Struggle, False)
+
+        # Choisir aléatoirement avec pondération
+        if len(possible_actions) == 1:
+            action_type = possible_actions[0]
+        else:
+            # Pondération : 80% attaque, 15% switch, 5% tera
+            weights = []
+            for action in possible_actions:
+                if action == 'attack':
+                    weights.append(0.8)
+                elif action == 'switch':
+                    weights.append(0.15)
+                elif action == 'terastallize':
+                    weights.append(0.05)
+            
+            action_type = random.choices(possible_actions, weights=weights)[0]
+        
+        # Exécuter l'action choisie
         if action_type == 'attack':
-            attack_index = random.randint(0, len(available_actions['attacks']) - 1)
-            can_tera = available_actions['can_terastallize']
-            return ('attack', attack_index, can_tera)
+            if available_actions['attacks']:
+                # Récuperer l'instance de l'attaque choisie
+                attack = random.choice(available_actions['attacks'])
+                return ('attack', attack, False)
+            else:
+                return ('attack', Struggle, False)  # Struggle
 
         elif action_type == 'switch':
             if available_actions['switches']:
-                pokemon_index = random.randint(0, len(available_actions['switches']) - 1)
-                return ('switch', pokemon_index, None)
+                # Récupérer l'index dans l'équipe complète
+                switch_pokemon = random.choice(available_actions['switches'])
+                pokemon_info = self.get_pokemon_info(fight)
+                my_team = pokemon_info['my_team']
+                team_index = my_team.index(switch_pokemon)
+                return ('switch', team_index, None)
             else:
-                return None  # Pas de Pokémon à switcher
-        
-        elif action_type == 'terastallize':
-            if available_actions['can_terastallize']:
-                attack_index = random.randint(0, len(available_actions['attacks']) - 1)
-                return ('terastallize', attack_index, None)
-            else:
-                return None  # Pas de possibilité de terastalliser
+                # Fallback vers attaque si pas de switch possible
+                return ('attack', Struggle, False)
 
-        print("il s''est rien passé")
+        elif action_type == 'terastallize':
+            if available_actions['can_terastallize'] and available_actions['attacks']:
+                attack = random.choice(available_actions['attacks'])
+                return ('terastallize', attack, None)
+            else:
+                return ('attack', Struggle, False)  # Struggle
+        
+        # Fallback de sécurité
+        return ('attack', Struggle, False)  # Struggle
 
     def get_available_actions(self, fight):
         """

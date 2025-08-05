@@ -251,7 +251,7 @@
                     },
                 "3" : {
                   "name":"Venusaur",
-                  "item":"Choice Specs",
+                  "item":"Leftovers",
                   "moves":["Solar Beam", "Sludge Bomb", "Protect"],
                   "ability":"Chlorophyll",
                   "nature":"Modest",

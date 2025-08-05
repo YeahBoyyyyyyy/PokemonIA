@@ -29,28 +29,34 @@ def battle_manager(team1: list[pokemon], team2: list[pokemon]):
 
     # Initialiser les IAs
     from IA.pokemon_ia import RandomAI
-    ia1 = RandomAI(team1, 1)
-    ia2 = RandomAI(team2, 2)
+    ia1 = RandomAI(1)  # Seul le team_id est nécessaire
+    ia2 = RandomAI(2)
     print_fight(ia1, ia2)
 
     while True:
         if fight.check_battle_end():
+            print("Battle terminé!")
             break
        
-            # Selection des actions pour chaque IA. Pas besoin de le faire comme battle_interface.py
-            # car on ne gère pas les actions de l'utilisateur.
+        # Selection des actions pour chaque IA
         available_actions1 = ia1.get_available_actions(fight)
         available_actions2 = ia2.get_available_actions(fight)
 
         print(f"Available Actions AI1: {available_actions1}")
         print(f"Available Actions AI2: {available_actions2}")
 
-        action1 = ia1.choose_action(fight, available_actions1)
-        action2 = ia2.choose_action(fight, available_actions2)
+        act1 = ia1.choose_action(fight, available_actions1)
+        act2 = ia2.choose_action(fight, available_actions2)
 
-        print(f"Action IA1: {action1}")
-        print(f"Action IA2: {action2}")
+        print(f"Action IA1: {act1}")
+        print(f"Action IA2: {act2}")
 
-        break
+        poke1_action = (ia1, act1)
+        poke2_action = (ia2, act2)
+
+        fight.new_resolve_turn(poke1_action, poke2_action)
+        
+        # Petite pause pour voir les résultats
+        input("Appuyez sur Entrée pour continuer...")  # Optionnel pour debug
 
 battle_manager(teamAI1, teamAI2)

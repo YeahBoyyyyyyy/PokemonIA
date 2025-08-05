@@ -7,8 +7,6 @@ from colors_utils import Colors as bcolors
 from fight import display_menu
 from utilities import *
 
-
-
 def launch_battle(team1: list[pk.pokemon], team2: list[pk.pokemon]):    
     
     fight = Fight(team1, team2)

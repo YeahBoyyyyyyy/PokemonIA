@@ -525,22 +525,67 @@ class pokemon():
                (self.pp3 > 0 and self.attack3 is not None) or \
                (self.pp4 > 0 and self.attack4 is not None)
     
+    def get_attack_id(self, attack):
+        attacks = [self.attack1, self.attack2, self.attack3, self.attack4]
+        for i in range(len(attacks)):
+            if attacks[i] == attack:
+                return (i+1)
+
     def get_usable_attacks(self):
         """
-        Retourne la liste des attaques utilisables (avec PP > 0).
+        Retourne la liste des attaques utilisables (avec PP > 0), attaques bloquées par disable, les items (assault vest, choice items).
         
         :return: Liste des attaques utilisables
         """
+        from Materials.pokemon_attacks import STRUGGLE_ATTACK
         usable = []
-        if self.attack1 and self.pp1 > 0:
-            usable.append(self.attack1)
-        if self.attack2 and self.pp2 > 0:
-            usable.append(self.attack2)
-        if self.attack3 and self.pp3 > 0:
-            usable.append(self.attack3)
-        if self.attack4 and self.pp4 > 0:
-            usable.append(self.attack4)
-        return usable
+        
+        # Si le Pokémon doit récupérer après une attaque, aucune attaque n'est disponible
+        if self.must_recharge:
+            usable.append(STRUGGLE_ATTACK)
+            return usable
+
+        # Gestion des attaques verrouillées par les "Choice" Item ou en charge
+
+        if self.locked_attack:
+            locked_attack_id = self.get_attack_id(self.locked_attack)
+            if getattr(self, "pp" + str(locked_attack_id)) > 0:
+                usable.append(self.locked_attack)
+        elif self.charging_attack:
+            charging_attack_id = self.get_attack_id(self.charging_attack)
+            if getattr(self, "pp" + str(charging_attack_id)) > 0:
+                usable.append(self.charging_attack)
+        elif self.encored_attack:
+            usable.append(self.encored_attack)
+        else:
+            # Ajouter toutes les attaques avec PP > 0
+            if self.attack1 and self.pp1 > 0:
+                usable.append(self.attack1)
+            if self.attack2 and self.pp2 > 0:
+                usable.append(self.attack2)
+            if self.attack3 and self.pp3 > 0:
+                usable.append(self.attack3)
+            if self.attack4 and self.pp4 > 0:
+                usable.append(self.attack4)
+        
+        # Filtrer les attaques bloquées (créer une nouvelle liste pour éviter les erreurs)
+        filtered_usable = []
+        for atk in usable:
+            # Vérifier Taunt et l'Assault Vest (bloquent les attaques de statut)
+            if (self.is_taunted() or (self.item and self.item == "Assault Vest")) and atk.category == "Status":
+                continue
+            
+            # Vérifier Disable (bloque une attaque spécifique)
+            if self.disabled_attacks and atk == self.disabled_attacks:
+                continue
+            
+            filtered_usable.append(atk)
+        
+        # Si aucune attaque n'est utilisable, forcer Struggle
+        if len(filtered_usable) == 0:
+            filtered_usable.append(STRUGGLE_ATTACK)
+            
+        return filtered_usable
     
     def restore_all_pp(self):
         """
@@ -584,7 +629,10 @@ def apply_stat_changes(target_poke, stat_changes, source="unknown", fight=None):
     
     # Déclencher l'événement on_stat_change pour le Pokémon ciblé
     talent_changes = trigger_talent(target_poke, "on_stat_change", stat_changes, source, fight)
-    item_changes = trigger_item(target_poke, "on_stat_change", talent_changes, source, fight) # Surtout pour la White Herb
+    if talent_changes:
+        item_changes = trigger_item(target_poke, "on_stat_change", talent_changes, source, fight)
+    else:
+        item_changes = trigger_item(target_poke, "on_stat_change", stat_changes, source, fight)
     final_changes = item_changes
     if final_changes is None:
         final_changes = stat_changes
