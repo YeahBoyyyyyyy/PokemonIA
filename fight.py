@@ -64,8 +64,7 @@ class Fight():
         self.check_ability_weather(self.active2)
         """
 
-        self.active1.init_fight(self)
-        self.active2.init_fight(self)
+        self.set_fight_attribute()
 
         trigger_talent(self.active1, "on_entry", self)
         trigger_talent(self.active2, "on_entry", self)
@@ -74,6 +73,10 @@ class Fight():
         
         for p in [self.active1, self.active2]:
             p.actualize_stats()  # Met à jour les stats des Pokémon actifs au début du combat
+
+    def set_fight_attribute(self):
+        for poke in self.team1 + self.team2:
+            poke.init_fight(self)
 
     ##### Gerer les switch #######
     def handle_switch(self, team_id, forced=False, pokemon_index=None):
@@ -207,11 +210,11 @@ class Fight():
         """
         if self.is_team_defeated(self.team1):
             print("Tous les Pokémon de l'équipe 1 sont K.O. ! Victoire de l'équipe 2 !")
-            return True
+            return True, 1
         elif self.is_team_defeated(self.team2):
             print("Tous les Pokémon de l'équipe 2 sont K.O. ! Victoire de l'équipe 1 !")
-            return True
-        return False
+            return True, 2
+        return False, None
 
 ###### Méthodes pour gérer les effets de la météo #######
     def set_weather(self, weather, duration=5):
@@ -585,81 +588,7 @@ class Fight():
         
         # Traiter les attaques Future Sight programmées
         process_future_sight_attacks(self)
-            
-    #def attack(pokemon : pokemon, attack : dict, target : pokemon, fight : Fight):
-    def attack_power(self, user_pokemon : pokemon, attack : Attack, target_pokemon : pokemon, multiplier, talent_mod, item_mod, defense_item_mod):
-        """
-        Effectue une attaque d'un Pokémon sur une cible.
-
-        :param pokemon: Instance de la classe Pokemon qui attaque.
-        :param attack: Dictionnaire contenant les détails de l'attaque.
-        :param target: Instance de la classe Pokemon qui est la cible de l'attaque.
-        :return: Dégâts infligés à la cible.
-
-        formule de calcul des dégâts :
-        damage = ((22 * base_power * (attack_stat / defense_stat)) / 50 + 2) * burn * screen * weather * FF * critical * item * stab * random * Type1 * Type2 * Berry
-        """
-    
-        if not (isinstance(multiplier, int) or isinstance(multiplier, float)):
-            multiplier = 1.0
-            
-        # Valeurs par défaut pour talent_mod et item_mod si elles sont None
-        if talent_mod is None:
-            talent_mod = {"attack": 1.0, "power": 1.0, "accuracy": 1.0, "type": None}
-        if item_mod is None:
-            item_mod = {"attack": 1.0, "power": 1.0, "accuracy": 1.0}
-        if defense_item_mod is None:
-            defense_item_mod = {"attack": 1.0, "power": 1.0, "accuracy": 1.0}
-        # Le coup critique est déterminé avant car s'il y a un coup critique, on ne prend pas en compte les modificateurs de stats
-        attack_boost = attack.boosted_attack(user_pokemon, target_pokemon, self) if hasattr(attack, 'boosted_attack') else 1.0
         
-        # Vérifier si l'attaque a une méthode get_power pour calculer la puissance dynamiquement
-        if hasattr(attack, 'get_power'):
-            base_power = attack.get_power(user_pokemon, target_pokemon, self) * talent_mod["power"] * item_mod["power"]
-        else:
-            base_power = attack.base_power * talent_mod["power"] * item_mod["power"]
-            
-        attack_stat = user_pokemon.current_stats()['Attack'] if attack.category == 'Physical' else user_pokemon.current_stats()['Sp. Atk']
-        terrain_boost = attack_terrain_boost(attack, self)  # Modificateur de puissance des attaques en fonction du terrain
-        weather_boost = attack_weather_boost(attack, self)  # Modificateur de puissance des attaques en fonction de la météo
-        berry = berry_boost(target_pokemon, attack)  # Placeholder pour l'effet de la baie, si applicable
-        burn = burn_effect(user_pokemon, attack)  # Si le Pokémon est brûlé, les dégâts sont réduits de moitié
-        rdm = random.uniform(0.85, 1.0)  # Valeur aléatoire entre 0.85 et 1.0
-        defender_team_id = self.get_team_id(target_pokemon)
-        screen = screen_effect(attack, self, defender_team_id)  # Effet de l'écran de protection actif pour l'équipe du défenseur
-        if talent_mod["type"] != None:
-            type_eff = type_effectiveness(talent_mod["type"], target_pokemon)
-            attack_copy = attack.copy()
-            attack_copy.type = talent_mod["type"]  # Changer le type de l'attaque si un talent modifie le type
-            stab = is_stab(user_pokemon, attack_copy)  # Vérifier si l'attaque est STAB
-        else:
-            type_eff = type_effectiveness(attack.type, target_pokemon)  # Calcul de l'efficacité du type
-            stab = is_stab(user_pokemon, attack)
-        
-
-        if is_critical_hit(user_pokemon, attack, target_pokemon):
-            print(f"{user_pokemon.name} porte un coup critique avec {attack.name} !")
-            critical = 1.5  # Coup critique inflige 1.5x les dégâts
-            if attack.category == 'Physical':
-                if target_pokemon.current_stats()['Defense'] < target_pokemon.stats_with_no_modifier['Defense']:
-                    defense_stat = target_pokemon.current_stats()["Defense"]
-                else:
-                    defense_stat = target_pokemon.stats_with_no_modifier['Defense']
-            else:
-                if target_pokemon.current_stats()['Sp. Def'] < target_pokemon.stats_with_no_modifier['Sp. Def']:
-                    defense_stat = target_pokemon.current_stats()["Sp. Def"]
-                else:
-                    defense_stat = target_pokemon.stats_with_no_modifier['Sp. Def']
-            damage = ((22 * base_power * (attack_stat / defense_stat)) / 50 + 2) * burn * screen * type_eff * terrain_boost * weather_boost * critical * stab * rdm * berry * attack_boost * multiplier * item_mod["attack"] * talent_mod["attack"] * defense_item_mod["attack"]
-            # A changer car les crits ne prennent pas en compte les modificateurs de stats
-        else:
-            critical = 1.0
-            defense_stat = target_pokemon.current_stats()['Defense'] if attack.category == 'Physical' else target_pokemon.current_stats()['Sp. Def']
-            damage = ((22 * base_power * (attack_stat / defense_stat)) / 50 + 2) * burn * screen * type_eff * terrain_boost * weather_boost * critical * stab * rdm * berry * attack_boost * multiplier * item_mod["attack"] * talent_mod["attack"] * defense_item_mod["attack"]
-        
-        print(f"{bcolors.OKMAGENTA}Dégâts calculés : {damage} (base_power: {base_power}, attack_stat: {attack_stat}, defense_stat: {defense_stat}, burn: {burn}, screen: {screen}, weather_boost: {weather_boost}, terrain_boost: {terrain_boost}, critical: {critical}, stab: {stab}, rdm: {rdm}, type_eff: {type_eff}, berry: {berry}, boost: {attack_boost}, coef talent: {multiplier}, item_mod: {item_mod}, talent_mod: {talent_mod}, defense_item_mod: {defense_item_mod}){bcolors.RESET}")
-        return damage
-    
 ###### Actions ######
 
     def player_switch(self, team: int, index: int):
@@ -680,7 +609,7 @@ class Fight():
                 
                 self.active1.reset_stats_nd_status()  # Réinitialiser les stats et les effets de statut du Pokémon actif
                 self.active1 = self.team1[index]
-                self.active1.init_fight(self)  # Initialiser l'attribut fight
+                # self.active1.init_fight(self)  # Initialiser l'attribut fight
                 
                 # Appliquer le substitute de Shed Tail si en attente
                 if hasattr(self, 'pending_substitute_team1') and self.pending_substitute_team1 > 0:
@@ -704,7 +633,7 @@ class Fight():
                 
                 self.active2.reset_stats_nd_status()  # Réinitialiser les stats et les effets de statut du Pokémon actif
                 self.active2 = self.team2[index]
-                self.active2.init_fight(self)  # Initialiser l'attribut fight
+                # self.active2.init_fight(self)  # Initialiser l'attribut fight
 
                 # Appliquer le substitut de Shed Tail si en attente
                 if hasattr(self, 'pending_substitute_team2') and self.pending_substitute_team2 > 0:
@@ -999,47 +928,6 @@ class Fight():
         # Toutes les autres attaques de statut sont bloquées
         return True
 
-    def calculate_damage(self, attacker: pokemon, attack: Attack, defender: pokemon):
-        """
-        Calcule et applique les dégâts d'une attaque si elle n'est pas de type Status.
-        
-        :param attacker: Le Pokémon qui attaque
-        :param attack: L'attaque utilisée
-        :param defender: Le Pokémon qui défend
-        :param multiplier: Multiplicateur de dégâts (provenant des talents défensifs)
-        :param on_attack_mod: Modificateurs de talent pour l'attaque
-        """
-        
-        # Appliquer les modifications spéciales d'attaque (comme Tera Blast)
-        if hasattr(attack, 'apply_before_damage'):
-            attack.apply_before_damage(attacker, defender, self)
-
-        multiplier = trigger_talent(defender, "on_defense", attack, attacker, self)
-        on_attack_mod = trigger_talent(attacker, "on_attack", attack, self)
-        item_mod = trigger_item(attacker, "on_attack", attack, self)
-        defense_mod = trigger_item(defender, "on_defense", attack, self)
-        # Valeur par défaut si on_attack_mod est None
-        if on_attack_mod is None:
-            on_attack_mod = {"attack": 1.0, "power": 1.0, "accuracy": 1.0, "type": None}
-
-        if item_mod is None:
-            item_mod = {"attack": 1.0, "power": 1.0, "accuracy" : 1.0}
-
-        if defense_mod is None:
-            defense_mod = {"attack": 1.0, "power": 1.0, "accuracy": 1.0}
-        # S'assurer que multiplier est un nombre
-        if multiplier is None or not isinstance(multiplier, (int, float)):
-            multiplier = 1.0
-        
-        damage = None
-
-        if attack.category != "Status":
-            # Calculer les dégâts finaux
-            damage = self.attack_power(attacker, attack, defender, multiplier, on_attack_mod, item_mod, defense_mod)
-            damage = int(damage)
-            
-        return damage
-
     def handle_multi_hit_attack(self, attacker: pokemon, attack: Attack, defender: pokemon, talent_mod = None, item_mod = None, multiplier = None):
         """
         Gère les attaques multi-coups comme Triple Axel, Bullet Seed, etc.
@@ -1051,9 +939,11 @@ class Fight():
         :param multiplier: Multiplicateur de dégâts
         :return: Dégâts totaux infligés
         """
+        from damage_calc import damage_calc
+
         if not hasattr(attack, 'multi_hit') or not attack.multi_hit:
             # Ce n'est pas une attaque multi-coups, utiliser la méthode normale
-            return self.calculate_damage(attacker, attack, defender)
+            return damage_calc(attacker, attack, defender, self)[0]
         
         total_damage = 0
         hit_count = 0
@@ -1104,7 +994,7 @@ class Fight():
                 attack.base_power = original_base_power
             
             # Calculer les dégâts pour ce coup
-            damage = self.calculate_damage(attacker, attack, defender)
+            damage = damage_calc(attacker, attack, defender, self)[0]
             
             if damage and damage > 0:
                 print(f"Coup {hit} : ", end="")
@@ -1825,6 +1715,7 @@ class Fight():
             self.new_forced_switch_method(ai1, ai2)
 
         self.next_turn(ai1, ai2)  # Passer au tour suivant
+
 # Ensemble des fonctions pour gérer la puissance d'une attaque contre un autre pokémon.
 # Utilisées dans la méthode attack_power de la classe Fight.
 
@@ -1846,151 +1737,7 @@ def type_effectiveness(attack_type, target):
     for t in target_types:
         modifier *= utilities.type_chart[utilities.POKEMON_TYPES_ID[attack_type]][utilities.POKEMON_TYPES_ID[t]]
     return modifier
-
-#### Gerer le STAB ####
-def is_stab(pokemon : pokemon, attack : Attack):
-    """
-    Calcule le STAB (Same Type Attack Bonus) en tenant compte de la Téracristalisation.
-    """
-    return pokemon.is_tera_stab(attack.type)
-
-#### Regarder si c'est un coup critique ####
-import random
-
-def is_critical_hit(pokemon, attack : Attack, target):
-    """
-    Détermine si une attaque est un coup critique.
     
-    :param pokemon: Attaquant (instance de Pokemon)
-    :param attack: Instance d'une classe Attack
-    :param target: Défenseur (instance de Pokemon)
-    :return: True si coup critique, False sinon
-    """
-    
-    # 1. Cas d'un crit garanti (ex: Flower Trick)
-    if attack.guaranteed_critical:
-        return True
-
-    # 2. Cas où le talent de la cible bloque les coups critiques
-    if target.talent in {"Shell Armor", "Battle Armor"}:
-        return False
-
-    # 3. Calcul du niveau de taux critique (crit stage)
-    crit_stage = 1  # par défaut
-
-    # Bonus d'attaque : taux critique augmenté
-    if hasattr(attack, "critical_chance") and attack.critical_chance > 6.25:
-        crit_stage += 1
-
-    # Objet augmentant le taux de crit
-    if pokemon.item in {"Scope Lens", "Razor Claw"}:
-        crit_stage += 1
-
-    # Talent Super Luck
-    if pokemon.talent == "Super Luck":
-        crit_stage += 1
-
-    # Bonus personnalisé (ex: Laser Focus, effets custom)
-    if hasattr(pokemon, "power") and pokemon.power:
-        crit_stage += 2
-
-    # 4. Table officielle des chances critiques
-    CRIT_RATES = {
-        0: 0.0,
-        1: 0.0625,  # 1/16
-        2: 0.125,   # 1/8
-        3: 0.25,    # 1/4
-        4: 0.333,   # 1/3
-        5: 0.5,
-        6: 1.0
-    }
-
-    chance = CRIT_RATES.get(min(crit_stage, 6), 1.0)
-    return random.random() < chance
-
-#### Regarder si le terrain booste l'attaque ####
-def attack_terrain_boost(attack : Attack, fight : Fight):
-    """
-    Applique les modificateurs de puissance des attaques en fonction du terrain.
-
-    :param attack: Instance de la classe Attack.
-    :param fight: Instance de la classe Fight contenant toutes les informations sur le combat, y compris le terrain actuel.
-    :return: Modificateur de puissance des attaques en fonction du terrain.
-    """
-    match fight.field, attack.type:
-        case ("Grassy Terrain", "Grass"):
-            return 1.3
-        case ("Electric Terrain", "Electric"):
-            return 1.3
-        case ("Psychic Terrain", "Psychic"):
-            return 1.3
-        case ("Misty Terrain", "Dragon"):
-            return 0.5
-        
-    if fight.field == "Grassy Terrain" and "ground" in attack.flags:
-        return 0.5
-    else:
-        return 1.0
-    
-        
-#### Regarder si le Pokémon en face tient une baie qui le fait resister à l'attaque ####
-def berry_boost(pokemon, attack : Attack):
-    """
-    Placeholder pour l'effet de la baie, si applicable, si le pokémon tient une baie qui réduit les dégâts de l'attaque si celle-ci est super efficace.
-    :param pokemon: Instance de la classe Pokemon qui attaque.
-    :param attack: Instance de la classe Attack.
-    :return: Modificateur de puissance des attaques en fonction de la baie.
-    """
-
-    item = pokemon.item
-    if item is None:
-        return 1.0
-    berry = str.split(item, "_")
-    if len(berry) > 1 and berry[1] != "berry":
-        return 1.0
-    else:
-        return 1.0    # sera implémenté plus tard
-
-#### Regarder si la météo booste l'attaque ####
-def attack_weather_boost(attack : Attack, fight):
-    """
-    Applique les modificateurs de puissance des attaques en fonction de la météo.
-
-    :param attack: Instance de la classe Attack.
-    :param fight: Instance de la classe Fight contenant toutes les informations sur le combat, y compris la météo actuelle.
-    :return: Modificateur de puissance des attaques en fonction de la météo.
-    """
-    match fight.weather["current"], attack.type:
-        case ("Sunny", "Fire"):
-            return 1.5
-        case ("Rain", "Water"):
-            return 1.5
-        case ("Sunny", "Water"):
-            return 0.5
-        case ("Rain", "Fire"):
-            return 0.5
-        case _:
-            return 1.0  # Pas de boost si la météo ne correspond pas à l'attaque
-
-#### Regarder si le Pokémon est brûlé ####
-def is_burned(pokemon):
-    if pokemon.status != "burn":
-        return False
-    else:
-        return True
-    
-def burn_effect(pokemon : pokemon, attack : Attack):
-    """
-    Renvoie le multiplicateur de dégâts en fonction de l'attaque
-    
-    :param pokemon: Instance de la classe Pokemon qui attaque.
-    :param attack: Instance de la classe Attack.
-    :return: Multiplicateur de dégâts en fonction de l'attaque.
-    """
-    if attack.category == "Physical" and is_burned(pokemon):
-        return 0.5
-    else:
-        return 1.0
     
 #### Attaque de confusion ####
 def confusion_attack(pokemon : pokemon):
@@ -2002,26 +1749,6 @@ def confusion_attack(pokemon : pokemon):
     damage = int(((40 * (pokemon.current_stats()['Attack'] / pokemon.current_stats()['Defense'])) + 1))
     return damage
 
-def screen_effect(attack : Attack, fight : Fight, defender_team_id):
-    """
-    Applique l'effet de l'écran de protection actif pour l'équipe du défenseur.
-    
-    :param attack: Instance de la classe Attack.
-    :param fight: Instance de la classe Fight contenant les informations sur les écrans actifs.
-    :param defender_team_id: ID de l'équipe du défenseur (1 ou 2).
-    :return: Facteur de réduction des dégâts.
-    """ 
-    screens = fight.screen_team1 if defender_team_id == 1 else fight.screen_team2
-    
-    if 'light_screen' in screens and attack.category == "Special":
-        return 0.5
-    elif 'reflect' in screens and attack.category == "Physical":
-        return 0.5
-    elif 'aurora veil' in screens:
-        return 0.5
-    else:
-        return 1.0
-    
 def protect_update(pokemon : pokemon, attack : Attack):
     """
     Met à jour l'état de protection d'un Pokémon. Sert uniquement le tour après une protection pour annuler le protect si le pokémon attaque.

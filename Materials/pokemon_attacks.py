@@ -1,5 +1,3 @@
-import pokemon_datas as STATS
-import pokemon_talents as TALENTS
 import pokemon as PK
 from pokemon import apply_stat_changes
 import random
@@ -36,13 +34,8 @@ sound: Has no effect on Pokemon with the Ability Soundproof.
 
 '''
 
-import pokemon_datas as STATS
-import pokemon_talents as TALENTS
-import pokemon as PK
-import random
-
 class Attack:
-    def __init__(self, name, type_, category, power, accuracy, priority, pp, flags, target, multi_target=False, critical_chance=6.25, guaranteed_critical=False):
+    def __init__(self, name, type_, category, power, accuracy, priority, pp, flags, target, multi_target=False, critical_chance_up=False, guaranteed_critical=False):
         self.name = name
         self.type = type_
         self.category = category
@@ -53,7 +46,7 @@ class Attack:
         self.flags = flags or []
         self.target = target
         self.multi_target = multi_target
-        self.critical_chance = critical_chance  # Chance de coup critique, à définir dans les attaques concrètes
+        self.critical_chance_up = critical_chance_up  # Chance de coup critique, à définir dans les attaques concrètes
         self.guaranteed_critical = False  # Indique si l'attaque est un coup critique garanti
 
     def apply_effect(self, user : PK.pokemon, target : PK.pokemon, fight):
@@ -345,7 +338,7 @@ class StoneEdge(Attack):
             flags=["protect", "mirror"],
             target="Foe"
         )
-        self.critical_chance = 12.5  # Chance de coup critique
+        self.critical_chance_up = True  # Chance de coup critique
 
 class Nuzzle(Attack):
     def __init__(self):
@@ -1403,7 +1396,7 @@ class LeafBlade(Attack):
             flags=["contact", "protect", "mirror", "sharp"],
             target="Foe"
         )
-        self.critical_chance = 12.5  # Taux de critique élevé
+        self.critical_chance_up = True  # Leaf Blade a une chance accrue de coup critique
 
     def apply_effect(self, user, target, fight):
         # Pas d'effet secondaire pour Leaf Blade
@@ -3434,8 +3427,8 @@ def execute_future_sight(future_attack, fight):
     # Future Sight utilise les objets et talents seulement si l'utilisateur est encore sur le terrain
     if user_on_field:
         # Utiliser le système existant de trigger_talent et trigger_item
-        from pokemon_talents import trigger_talent
-        from pokemon_items import trigger_item
+        from .pokemon_talents import trigger_talent
+        from .pokemon_items import trigger_item
         
         talent_mod = trigger_talent(original_user, "on_attack", temp_attack, fight)
         item_mod = trigger_item(original_user, "on_attack", temp_attack, fight)

@@ -4,9 +4,24 @@ import random
 from colors_utils import Colors
 from utilities import *
 from import_pokemon_team_from_json import import_team_from_json
+from damage_calc import *
+from IA.pokemon_ia import RandomAI, PlayerAI
 
 teamAI1 = import_team_from_json(5)
 teamAI2 = import_team_from_json(6)
+
+# Initialiser les IAs :
+# Option 1: IA vs IA (comme avant)
+ia1 = RandomAI(1)
+ia2 = RandomAI(2)
+
+# Option 2: Joueur vs IA (pour l'apprentissage supervisé)
+# ia1 = PlayerAI(1, "Joueur Humain")  # Joueur humain
+# ia2 = RandomAI(2)  # IA adverse
+
+# Option 3: Joueur vs Joueur
+# ia1 = PlayerAI(1, "Joueur Humain 1")  # Joueur humain 1
+# ia2 = PlayerAI(2, "Joueur Humain 2")  # Joueur humain 2
 
 def print_fight(ia1, ia2):
     print(f"{Colors.BG_WHITE}{Colors.BOLD}{Colors.BLACK}Le combat oppose une {ia1.name} à une {ia2.name} !{Colors.RESET}{Colors.UNBOLD}{Colors.BG_DEFAULT}")
@@ -27,26 +42,20 @@ def battle_manager(team1: list[pokemon], team2: list[pokemon]):
     fight.tera_used_team1 = False
     fight.tera_used_team2 = False
 
-    # Initialiser les IAs - Exemple: Joueur vs IA
-    from IA.pokemon_ia import RandomAI, PlayerAI
-    
-    # Option 1: IA vs IA (comme avant)
-    # ia1 = RandomAI(1)
-    # ia2 = RandomAI(2)
-    
-    # Option 2: Joueur vs IA (pour l'apprentissage supervisé)
-    ia1 = PlayerAI(1, "Joueur Humain")  # Joueur humain
-    ia2 = RandomAI(2)  # IA adverse
-    
-    # Option 3: IA vs Joueur
-    # ia1 = RandomAI(1)  # IA
-    # ia2 = PlayerAI(2, "Joueur Humain")  # Joueur humain
-    
     print_fight(ia1, ia2)
 
     while True:
-        if fight.check_battle_end():
+        ended, winner = fight.check_battle_end()
+        if ended:
             print("Battle terminé!")
+            if winner == 1:
+                print(f"{Colors.GREEN}L'équipe 1 ({ia1.name}) a gagné !{Colors.RESET}")
+                ia1.wins += 1
+            elif winner == 2:
+                print(f"{Colors.RED}L'équipe 2 ({ia2.name}) a gagné !{Colors.RESET}")
+                ia2.wins += 1
+            ia1.total_battles += 1
+            ia2.total_battles += 1
             break
 
         fight.print_fight_status()
@@ -72,6 +81,18 @@ def battle_manager(team1: list[pokemon], team2: list[pokemon]):
         poke2_action = (ia2, act2)
 
         fight.new_resolve_turn(poke1_action, poke2_action)
-        
 
-battle_manager(teamAI1, teamAI2)
+def reset_team(team : list[pokemon]):
+    """ Réinitialise l'équipe de Pokémon pour un nouveau combat."""
+    for pokemon in team:
+        pokemon.pokemon_center()
+
+for i in range(100):
+    print(f"Début du combat {i+1}")
+    battle_manager(teamAI1, teamAI2)
+    print(f"Fin du combat {i+1}\n")
+    reset_team(teamAI1)
+    reset_team(teamAI2)
+
+print(f"IA1 ({ia1.name}) a gagné {ia1.wins} fois sur {ia1.total_battles} combats.")
+print(f"IA2 ({ia2.name}) a gagné {ia2.wins} fois sur {ia2.total_battles} combats.")

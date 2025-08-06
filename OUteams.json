@@ -230,15 +230,15 @@
             },
             "team5" : {
                 "1" : {
-                  "name":"Charizard",
-                  "item":"Heavy-Duty Boots",
-                  "moves": ["Flare Blitz", "Brave Bird", "Roost"],
-                  "ability":"Drought",
-                  "nature":"Modest",
-                  "tera_type":"Fire",
-                  "evs": {},
-                  "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
-                    },
+                    "name":"Arcanine",
+                    "item":"Assault Vest",
+                    "moves":["Flare Blitz", "Extreme Speed", "Crunch"],
+                    "ability":"Flash Fire",
+                    "nature":"Adamant",
+                    "tera_type":"Fire",
+                    "evs": {},
+                    "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
+                      },
                 "2" : {
                   "name":"Blastoise",
                   "item":"White Herb",
@@ -262,15 +262,15 @@
             },
             "team6": {
                   "1" : {
-                    "name":"Arcanine",
-                    "item":"Choice Band",
-                    "moves":["Flare Blitz", "Extreme Speed", "Crunch"],
-                    "ability":"Intimidate",
-                    "nature":"Adamant",
-                    "tera_type":"Fire",
-                    "evs": {},
-                    "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
-                      },
+                  "name":"Charizard",
+                  "item":"Heavy-Duty Boots",
+                  "moves": ["Flare Blitz", "Brave Bird", "Roost"],
+                  "ability":"Drought",
+                  "nature":"Modest",
+                  "tera_type":"Fire",
+                  "evs": {},
+                  "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
+                    },
                   "2" : {
                     "name":"Slowbro",
                     "item":"Leftovers",

@@ -110,3 +110,4 @@ def possible_attacks(pokemon):
                 possible.append(atk)
     
     return possible
+

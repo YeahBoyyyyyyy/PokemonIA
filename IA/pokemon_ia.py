@@ -11,6 +11,7 @@ class PokemonAI(ABC):
         self.name = name
         self.decisions_made = 0
         self.total_battles = 0
+        self.wins = 0
     
     @abstractmethod
     def choose_action(self, fight, available_actions):
@@ -365,3 +366,30 @@ class PlayerAI(PokemonAI):
                     
             except ValueError:
                 print("Veuillez entrer un nombre valide.")
+
+class HeuristicAI(PokemonAI):
+    def __init__(self, team_id, aggression_level=0.7):
+        super().__init__(team_id, "Heuristic AI")
+        self.aggression_level = aggression_level  # 0-1, influence attaque vs switch
+    
+    def choose_action(self, fight, available_actions):
+        # 1. Évaluer la situation actuelle
+        # 2. Calculer les scores pour chaque action
+        # 3. Choisir la meilleure action
+        return
+
+    def evaluate_attack_damage(self, my_attack, enemy_pokemon):
+        # Estimer les dégâts approximatifs
+        return
+    
+    def calculate_type_advantage(self, my_pokemon, enemy_pokemon):
+        # Calculer l'avantage/désavantage de type
+        return
+        
+    def assess_hp_danger(self, pokemon):
+        # Évaluer si HP en danger (critique/moyen/safe)
+        return
+        
+    def find_best_switch(self, available_switches, enemy_pokemon):
+        # Trouver le meilleur switch selon les matchups
+        return

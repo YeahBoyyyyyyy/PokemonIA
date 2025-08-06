@@ -1,9 +1,8 @@
 import random
 import utilities # Données de la table des types et des natures
-import sys
-sys.path.append("C:/Users/natha/OneDrive/Desktop/Travail/IA Combats pokémons/PokemonIA/Materials")
 from Materials.pokemon_items import trigger_item
 from Materials.pokemon_talents import trigger_talent
+from pp_manager import *
 from colors_utils import Colors as bcolors
 '''
 Véritable Intelligence Artificielle pour faire des combats pokémon : On va ici implémenenter toutes les particularités d'un combat pokémon,
@@ -21,7 +20,7 @@ class pokemon():
         self.types = poke['types']  # Types du Pokémon 
         self.item = None  # Objet tenu par le Pokémon (par exemple : Baie, etc.)
         self.nature = None  # Nature du Pokémon (par exemple : "Hardy", "Lonely", etc.)
-
+        self.item_saved = None  # Pour sauvegarder l'objet d'origine du Pokémon (utile pour resetup le pokemon)
         ## BASE STATS
         stats = poke['stats']
 
@@ -202,7 +201,7 @@ class pokemon():
                 return 1.5
             
             return 1.0
-
+        
     def actualize_stats(self):
         
         self.stats = {
@@ -255,6 +254,7 @@ class pokemon():
             "Speed": int(((2 * self.base_stats['Speed'] + self.ivs["Speed"] + self.evs['Speed'] // 4) * 0.5 + 5) * self.nature_modifier[4])
         }
 
+
     def current_stats(self):
         """
         Retourne les stats actuelles du Pokémon, en tenant compte des modificateurs.
@@ -289,21 +289,22 @@ class pokemon():
         self.hidden_modifier = {"Attack": 1, "Defense": 1, "Sp. Atk": 1, "Sp. Def": 1, "Speed": 1}
         
         if self.is_confused:
-            self.is_confused = False
-        self.sturdy_activated = False
-        self.flinched = False
-        self.protect = False
-        self.protect_turns = 0
-        self.charging = False
+            self.is_confused = False # Réinitialise l'état de confusion
+        self.sturdy_activated = False # Réinitialise l'activation de Sturdy
+        self.flinched = False # Réinitialise l'état de flinch
+        self.protect = False # Réinitialise l'état de protection
+        self.protect_turns = 0 # Réinitialise le nombre de tours de protection
+        self.charging = False # Réinitialise l'état de charge
+        self.still_confused = False  # Réinitialise la confusion pour le prochain tour
         self.charging_attack = None  # L'attaque en cours de charge
         self.must_recharge = False  # Indique si le Pokémon doit se recharger
-        self.power = False
-        self.first_attack = True
+        self.power = False # Réinitialise l'état de puissance
+        self.first_attack = True # Réinitialise l'état de premier tour sur le terrain
         self.locked_attack = None  # Réinitialise le verrouillage des objets Choice
-        self.encored_attack = None
-        self.encored_turns = 0
-        self.taunted_turns = 0
-        self.last_used_attack = None
+        self.encored_attack = None # Réinitialise l'attaque qui est encore 
+        self.encored_turns = 0 # Réinitialise le nombre de tours restants sous l'effet d'Encore
+        self.taunted_turns = 0 # Réinitialise le nombre de tours restants sous l'effet de Taunt
+        self.last_used_attack = None # Réinitialise la dernière attaque utilisée
         self.disabled_attacks = None  # Réinitialise les attaques désactivées
         
         # Nettoyer les effets de Roost lors du changement
@@ -313,10 +314,29 @@ class pokemon():
                 delattr(self, 'original_types')
             self.lost_flying_from_roost = False
         self.disabled_turns = 0  # Réinitialise le nombre de tours restants
-        self.leech_seeded_by = None
-        self.substitute_hp = 0
+        self.leech_seeded_by = None # Réinitialise l'effet de Leech Seed
+        self.substitute_hp = 0 # Réinitialise les PV du clone
+        self.must_switch_after_attack = False  # Réinitialise le changement forcé après attaque au cas ou pour éviter tous bugs
+        self.switch_reason = None  # Réinitialise la raison du changement forcé au cas où
+        if hasattr(self, 'magic_coat_active'):
+            self.magic_coat_active = False
+        if hasattr(self, 'heal_blocked'):
+            self.heal_blocked = False
         self.actualize_stats()
     
+    def pokemon_center(self):
+        """
+        Réinitialise tout comme le centre pokemon pour le prochain combat.
+        """
+        self.current_hp = self.max_hp
+        self.reset_stats_nd_status()
+        self.status = None  # Réinitialise le statut
+        self.sleep_counter = None  # Réinitialise le compteur de sommeil
+        self.toxic_counter = 1  # Réinitialise le compteur de poison grave
+        self.tera_activated = False  # Réinitialise l'état de Téracristallisation
+        self.restore_all_pp()  # Réinitialise les PP de toutes les attaques
+        self.item = self.item_saved  # Restaure l'objet d'origine
+
     ## Printing methods pour debugger
     def print_pokemon_status(self):
         print(f"Nom: {self.name}, HP: {self.current_hp}/{self.max_hp}, Types: {', '.join(self.types)}, Talent: {self.talent}, Nature: {self.nature}")
@@ -497,22 +517,6 @@ class pokemon():
             self.pp4 = max(0, self.pp4 - amount)
         
         return True
-    
-    def restore_pp(self, attack, amount):
-        """
-        Restaure des PP pour une attaque donnée.
-        
-        :param attack: L'attaque à restaurer
-        :param amount: Nombre de PP à restaurer
-        """
-        if attack == self.attack1:
-            self.pp1 = min(self.max_pp1, self.pp1 + amount)
-        elif attack == self.attack2:
-            self.pp2 = min(self.max_pp2, self.pp2 + amount)
-        elif attack == self.attack3:
-            self.pp3 = min(self.max_pp3, self.pp3 + amount)
-        elif attack == self.attack4:
-            self.pp4 = min(self.max_pp4, self.pp4 + amount)
     
     def has_usable_attack(self):
         """
