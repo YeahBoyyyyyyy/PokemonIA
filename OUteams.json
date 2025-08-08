@@ -626,7 +626,7 @@
                   "2" : {
                     "name":"Garchomp",
                     "item":"Rocky Helmet",
-                    "moves":["Earthquake", "Dragon Rush", "Fire Fang"],
+                    "moves":["Earthquake", "Outrage", "Fire Fang"],
                     "ability":"Rough Skin",
                     "nature":"Jolly",
                     "tera_type":"Ground",
