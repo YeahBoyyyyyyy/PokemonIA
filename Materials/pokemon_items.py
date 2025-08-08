@@ -169,7 +169,7 @@ class LifeOrb(Item):
     
     def after_attack(self, poke, fight, attacker=None, attack=None):
         if attacker == poke and attack.category != "Status":
-            if poke.current_hp > 0:
+            if poke.current_hp > 0 and poke.talent != "Magic Guard":
                 damage = int(poke.max_hp * 0.1)
                 print(f"{poke.name} subit {damage} PV de dégâts à cause de la Life Orb !")
                 poke.current_hp = max(poke.current_hp - damage, 0)
@@ -256,6 +256,13 @@ class SoulDew(Item):
             if attack.type == "Psychic" or attack.type == "Dragon":
                 return {"attack": 1.0, "power": 1.2, "accuracy": 1.0}    
         return ON_ATTACK_MOD_DICT
+    
+class LightClay(Item):
+    """
+    Light Clay prolonge la durée des écrans de 8 tours au lieu de 5.
+    Est géré dans pokemon_attacks.py car y'a pas trop de logique à mettre ici et la Light Clay 
+    a un effet très précis.
+    """
 
 item_registry = {
     "Leftovers": Leftovers(),
@@ -277,6 +284,7 @@ item_registry = {
     "Air Balloon": AirBalloon(),
     "White Herb": WhiteHerb(),
     "Soul Dew": SoulDew(),
+    "Light Clay": LightClay(),
 }
 
 def trigger_item(poke, event, *args):

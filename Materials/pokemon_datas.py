@@ -140,6 +140,21 @@ pokemon_data = {
         "weight": 65.0,
         "fully_evolved": True
     },
+    "Pikachu": {
+        "name": "Pikachu",
+        "types": ["Electric"],
+        "abilities": ["Static", "Lightning Rod"],
+        "stats": {
+            "HP": 35,
+            "Attack": 55,
+            "Defense": 40,
+            "Sp. Atk": 50,
+            "Sp. Def": 50,
+            "Speed": 90
+        },
+        "weight": 6.0,
+        "fully_evolved": False
+    },
     "Raichu": {
         "name": "Raichu",
         "types": ["Electric"],
@@ -378,36 +393,6 @@ pokemon_data = {
             "Speed": 70
         },
         "weight": 54.0,
-        "fully_evolved": True
-    },
-    "Alakazam": {
-        "name": "Alakazam",
-        "types": ["Psychic"],
-        "abilities": ["Synchronize", "Inner Focus", "Magic Guard"],
-        "stats": {
-            "HP": 55,
-            "Attack": 50,
-            "Defense": 45,
-            "Sp. Atk": 135,
-            "Sp. Def": 95,
-            "Speed": 120
-        },
-        "weight": 48.0,
-        "fully_evolved": True
-    },
-    "Machamp": {
-        "name": "Machamp",
-        "types": ["Fighting"],
-        "abilities": ["Guts", "No Guard", "Steadfast"],
-        "stats": {
-            "HP": 90,
-            "Attack": 130,
-            "Defense": 80,
-            "Sp. Atk": 65,
-            "Sp. Def": 85,
-            "Speed": 55
-        },
-        "weight": 130.0,
         "fully_evolved": True
     },
     "Victreebel": {
@@ -1326,6 +1311,37 @@ pokemon_data = {
         "weight": 90.0,
         "fully_evolved": True
     },
+    
+    "Cinderace": {
+        "name": "Cinderace",
+        "types": ["Fire"],
+        "abilities": ["Blaze", "Libero"],
+        "stats": {
+            "HP": 80,
+            "Attack": 116,
+            "Defense": 75,
+            "Sp. Atk": 65,
+            "Sp. Def": 75,
+            "Speed": 119
+        },
+        "weight": 33.0,
+        "fully_evolved": True
+    },
+    "Inteleon": {
+        "name": "Inteleon",
+        "types": ["Water"],
+        "abilities": ["Torrent", "Sniper"],
+        "stats": {
+            "HP": 70,
+            "Attack": 85,
+            "Defense": 65,
+            "Sp. Atk": 125,
+            "Sp. Def": 65,
+            "Speed": 120
+        },
+        "weight": 45.2,
+        "fully_evolved": True
+    },
     "Garchomp": {
         "name": "Garchomp",
         "types": ["Dragon", "Ground"],
@@ -1521,6 +1537,37 @@ pokemon_data = {
         "weight": 44.0,
         "fully_evolved": True
     },
+    
+    "Decidueye": {
+        "name": "Decidueye",
+        "types": ["Grass", "Ghost"],
+        "abilities": ["Overgrow", "Long Reach"],
+        "stats": {
+            "HP": 78,
+            "Attack": 107,
+            "Defense": 75,
+            "Sp. Atk": 100,
+            "Sp. Def": 100,
+            "Speed": 70
+        },
+        "weight": 36.0,
+        "fully_evolved": True
+    },
+    "Incineroar": {
+        "name": "Incineroar",
+        "types": ["Fire", "Dark"],
+        "abilities": ["Blaze", "Intimidate"],
+        "stats": {
+            "HP": 95,
+            "Attack": 115,
+            "Defense": 90,
+            "Sp. Atk": 80,
+            "Sp. Def": 90,
+            "Speed": 60
+        },
+        "weight": 83.0,
+        "fully_evolved": True
+    },
     "Gholdengo": {
         "name": "Gholdengo",
         "types": ["Steel", "Ghost"],
@@ -1654,6 +1701,681 @@ pokemon_data = {
             "Speed": 110
         },
         "weight": 60.0,
+        "fully_evolved": True
+    },
+    "Lucario": {
+        "name": "Lucario",
+        "types": ["Fighting", "Steel"],
+        "abilities": ["Steadfast", "Inner Focus", "Justified"],
+        "stats": {
+            "HP": 70,
+            "Attack": 110,
+            "Defense": 70,
+            "Sp. Atk": 115,
+            "Sp. Def": 70,
+            "Speed": 90
+        },
+        "weight": 54.0,
+        "fully_evolved": True
+    },
+    "Rotom-Wash": {
+        "name": "Rotom-Wash",
+        "types": ["Electric", "Water"],
+        "abilities": ["Levitate"],
+        "stats": {
+            "HP": 50,
+            "Attack": 65,
+            "Defense": 107,
+            "Sp. Atk": 105,
+            "Sp. Def": 107,
+            "Speed": 86
+        },
+        "weight": 0.3,
+        "fully_evolved": True
+    },
+    "Greninja": {
+        "name": "Greninja",
+        "types": ["Water", "Dark"],
+        "abilities": ["Torrent", "Protean"],
+        "stats": {
+            "HP": 72,
+            "Attack": 95,
+            "Defense": 67,
+            "Sp. Atk": 103,
+            "Sp. Def": 71,
+            "Speed": 122
+        },
+        "weight": 40.0,
+        "fully_evolved": True
+    },
+    "Chesnaught": {
+        "name": "Chesnaught",
+        "types": ["Grass", "Fighting"],
+        "abilities": ["Overgrow", "Bulletproof"],
+        "stats": {
+            "HP": 88,
+            "Attack": 107,
+            "Defense": 122,
+            "Sp. Atk": 74,
+            "Sp. Def": 75,
+            "Speed": 64
+        },
+        "weight": 90.0,
+        "fully_evolved": True
+    },
+    "Delphox": {
+        "name": "Delphox",
+        "types": ["Fire", "Psychic"],
+        "abilities": ["Blaze", "Magician"],
+        "stats": {
+            "HP": 75,
+            "Attack": 69,
+            "Defense": 72,
+            "Sp. Atk": 114,
+            "Sp. Def": 100,
+            "Speed": 104
+        },
+        "weight": 39.0,
+        "fully_evolved": True
+    },
+    "Talonflame": {
+        "name": "Talonflame",
+        "types": ["Fire", "Flying"],
+        "abilities": ["Flame Body", "Gale Wings"],
+        "stats": {
+            "HP": 78,
+            "Attack": 81,
+            "Defense": 71,
+            "Sp. Atk": 74,
+            "Sp. Def": 69,
+            "Speed": 126
+        },
+        "weight": 24.5,
+        "fully_evolved": True
+    },
+    "Dragapult": {
+        "name": "Dragapult",
+        "types": ["Dragon", "Ghost"],
+        "abilities": ["Clear Body", "Infiltrator"],
+        "stats": {
+            "HP": 88,
+            "Attack": 120,
+            "Defense": 75,
+            "Sp. Atk": 100,
+            "Sp. Def": 75,
+            "Speed": 142
+        },
+        "weight": 50.5,
+        "fully_evolved": True
+    },
+    "Toxapex": {
+        "name": "Toxapex",
+        "types": ["Water", "Poison"],
+        "abilities": ["Merciless", "Regenerator"],
+        "stats": {
+            "HP": 50,
+            "Attack": 63,
+            "Defense": 152,
+            "Sp. Atk": 53,
+            "Sp. Def": 142,
+            "Speed": 35
+        },
+        "weight": 14.5,
+        "fully_evolved": True
+    },
+    "Corviknight": {
+        "name": "Corviknight",
+        "types": ["Flying", "Steel"],
+        "abilities": ["Pressure", "Mirror Armor"],
+        "stats": {
+            "HP": 98,
+            "Attack": 87,
+            "Defense": 105,
+            "Sp. Atk": 53,
+            "Sp. Def": 85,
+            "Speed": 67
+        },
+        "weight": 75.0,
+        "fully_evolved": True
+    },
+    "Meowscarada": {
+        "name": "Meowscarada",
+        "types": ["Grass", "Dark"],
+        "abilities": ["Overgrow", "Protean"],
+        "stats": {
+            "HP": 76,
+            "Attack": 110,
+            "Defense": 70,
+            "Sp. Atk": 81,
+            "Sp. Def": 70,
+            "Speed": 123
+        },
+        "weight": 33.0,
+        "fully_evolved": True
+    },
+    "Skeledirge": {
+        "name": "Skeledirge",
+        "types": ["Fire", "Ghost"],
+        "abilities": ["Blaze", "Unaware"],
+        "stats": {
+            "HP": 104,
+            "Attack": 75,
+            "Defense": 100,
+            "Sp. Atk": 110,
+            "Sp. Def": 75,
+            "Speed": 66
+        },
+        "weight": 150.0,
+        "fully_evolved": True
+    },
+    "Quaquaval": {
+        "name": "Quaquaval",
+        "types": ["Water", "Fighting"],
+        "abilities": ["Torrent", "Moxie"],
+        "stats": {
+            "HP": 85,
+            "Attack": 120,
+            "Defense": 80,
+            "Sp. Atk": 85,
+            "Sp. Def": 75,
+            "Speed": 85
+        },
+        "weight": 70.0,
+        "fully_evolved": True
+    },
+    "Tyranitar": {
+        "name": "Tyranitar",
+        "types": ["Rock", "Dark"],
+        "abilities": ["Sand Stream", "Unnerve"],
+        "stats": {
+            "HP": 100,
+            "Attack": 134,
+            "Defense": 110,
+            "Sp. Atk": 95,
+            "Sp. Def": 100,
+            "Speed": 61
+        },
+        "weight": 202.0,
+        "fully_evolved": True
+    },
+    "Metagross": {
+        "name": "Metagross",
+        "types": ["Steel", "Psychic"],
+        "abilities": ["Clear Body", "Light Metal"],
+        "stats": {
+            "HP": 80,
+            "Attack": 135,
+            "Defense": 130,
+            "Sp. Atk": 95,
+            "Sp. Def": 90,
+            "Speed": 70
+        },
+        "weight": 550.0,
+        "fully_evolved": True
+    },
+    "Salamence": {
+        "name": "Salamence",
+        "types": ["Dragon", "Flying"],
+        "abilities": ["Intimidate", "Moxie"],
+        "stats": {
+            "HP": 95,
+            "Attack": 135,
+            "Defense": 80,
+            "Sp. Atk": 110,
+            "Sp. Def": 80,
+            "Speed": 100
+        },
+        "weight": 102.6,
+        "fully_evolved": True
+    },
+    "Hydreigon": {
+        "name": "Hydreigon",
+        "types": ["Dark", "Dragon"],
+        "abilities": ["Levitate"],
+        "stats": {
+            "HP": 92,
+            "Attack": 105,
+            "Defense": 90,
+            "Sp. Atk": 125,
+            "Sp. Def": 90,
+            "Speed": 98
+        },
+        "weight": 160.0,
+        "fully_evolved": True
+    },
+    "Volcarona": {
+        "name": "Volcarona",
+        "types": ["Bug", "Fire"],
+        "abilities": ["Flame Body", "Swarm"],
+        "stats": {
+            "HP": 85,
+            "Attack": 60,
+            "Defense": 65,
+            "Sp. Atk": 135,
+            "Sp. Def": 105,
+            "Speed": 100
+        },
+        "weight": 46.0,
+        "fully_evolved": True
+    },
+    "Excadrill": {
+        "name": "Excadrill",
+        "types": ["Ground", "Steel"],
+        "abilities": ["Sand Rush", "Mold Breaker"],
+        "stats": {
+            "HP": 110,
+            "Attack": 135,
+            "Defense": 60,
+            "Sp. Atk": 50,
+            "Sp. Def": 65,
+            "Speed": 88
+        },
+        "weight": 40.4,
+        "fully_evolved": True
+    },
+    "Gardevoir": {
+        "name": "Gardevoir",
+        "types": ["Psychic", "Fairy"],
+        "abilities": ["Synchronize", "Trace", "Telepathy"],
+        "stats": {
+            "HP": 68,
+            "Attack": 65,
+            "Defense": 65,
+            "Sp. Atk": 125,
+            "Sp. Def": 115,
+            "Speed": 80
+        },
+        "weight": 48.4,
+        "fully_evolved": True
+    },
+    "Gallade": {
+        "name": "Gallade",
+        "types": ["Psychic", "Fighting"],
+        "abilities": ["Steadfast", "Sharpness", "Justified"],
+        "stats": {
+            "HP": 68,
+            "Attack": 125,
+            "Defense": 65,
+            "Sp. Atk": 65,
+            "Sp. Def": 115,
+            "Speed": 80
+        },
+        "weight": 52.0,
+        "fully_evolved": True
+    },
+    "Kommo-o": {
+        "name": "Kommo-o",
+        "types": ["Dragon", "Fighting"],
+        "abilities": ["Bulletproof", "Soundproof"],
+        "stats": {
+            "HP": 75,
+            "Attack": 110,
+            "Defense": 125,
+            "Sp. Atk": 100,
+            "Sp. Def": 105,
+            "Speed": 85
+        },
+        "weight": 78.2,
+        "fully_evolved": True
+    },
+    "Mimikyu": {
+        "name": "Mimikyu",
+        "types": ["Ghost", "Fairy"],
+        "abilities": ["Disguise"],
+        "stats": {
+            "HP": 55,
+            "Attack": 90,
+            "Defense": 80,
+            "Sp. Atk": 50,
+            "Sp. Def": 105,
+            "Speed": 96
+        },
+        "weight": 0.7,
+        "fully_evolved": True
+    },
+    "Araquanid": {
+        "name": "Araquanid",
+        "types": ["Water", "Bug"],
+        "abilities": ["Water Bubble"],
+        "stats": {
+            "HP": 68,
+            "Attack": 70,
+            "Defense": 92,
+            "Sp. Atk": 50,
+            "Sp. Def": 132,
+            "Speed": 42
+        },
+        "weight": 82.0,
+        "fully_evolved": True
+    },
+    "Annihilape": {
+        "name": "Annihilape",
+        "types": ["Fighting", "Ghost"],
+        "abilities": ["Defiant"],
+        "stats": {
+            "HP": 110,
+            "Attack": 115,
+            "Defense": 70,
+            "Sp. Atk": 50,
+            "Sp. Def": 80,
+            "Speed": 90
+        },
+        "weight": 61.0,
+        "fully_evolved": True
+    },
+    "Krookodile": {
+        "name": "Krookodile",
+        "types": ["Ground", "Dark"],
+        "abilities": ["Intimidate", "Moxie"],
+        "stats": {
+            "HP": 95,
+            "Attack": 117,
+            "Defense": 80,
+            "Sp. Atk": 65,
+            "Sp. Def": 70,
+            "Speed": 92
+        },
+        "weight": 96.3,
+        "fully_evolved": True
+    },
+    "Lycanroc-Midday": {
+        "name": "Lycanroc-Midday",
+        "types": ["Rock"],
+        "abilities": ["Sand Rush", "Keen Eye"],
+        "stats": {
+            "HP": 75,
+            "Attack": 110,
+            "Defense": 65,
+            "Sp. Atk": 55,
+            "Sp. Def": 65,
+            "Speed": 112
+        },
+        "weight": 25.0,
+        "fully_evolved": True
+    },
+    "Magnezone": {
+        "name": "Magnezone",
+        "types": ["Electric", "Steel"],
+        "abilities": ["Magnet Pull", "Sturdy"],
+        "stats": {
+            "HP": 70,
+            "Attack": 70,
+            "Defense": 115,
+            "Sp. Atk": 130,
+            "Sp. Def": 90,
+            "Speed": 60
+        },
+        "weight": 60.0,
+        "fully_evolved": True
+    },
+    "Baxcalibur": {
+        "name": "Baxcalibur",
+        "types": ["Dragon"],
+        "abilities": ["Thermal Exchange", "Ice Body"],
+        "stats": {
+            "HP": 115,
+            "Attack": 145,
+            "Defense": 92,
+            "Sp. Atk": 75,
+            "Sp. Def": 86,
+            "Speed": 87
+        },
+        "weight": 210.0,
+        "fully_evolved": True
+    },
+    "Chandelure": {
+        "name": "Chandelure",
+        "types": ["Ghost", "Fire"],
+        "abilities": ["Flash Fire", "Infiltrator"],
+        "stats": {
+            "HP": 60,
+            "Attack": 55,
+            "Defense": 90,
+            "Sp. Atk": 145,
+            "Sp. Def": 90,
+            "Speed": 80
+        },
+        "weight": 34.0,
+        "fully_evolved": True
+    },
+    "Goodra": {
+        "name": "Goodra",
+        "types": ["Dragon"],
+        "abilities": ["Sap Sipper", "Hydration", "Gooey"],
+        "stats": {
+            "HP": 90,
+            "Attack": 100,
+            "Defense": 70,
+            "Sp. Atk": 110,
+            "Sp. Def": 150,
+            "Speed": 80
+        },
+        "weight": 150.5,
+        "fully_evolved": True
+    },
+    "Reuniclus": {
+        "name": "Reuniclus",
+        "types": ["Psychic"],
+        "abilities": ["Overcoat", "Magic Guard", "Regenerator"],
+        "stats": {
+            "HP": 110,
+            "Attack": 65,
+            "Defense": 75,
+            "Sp. Atk": 125,
+            "Sp. Def": 85,
+            "Speed": 30
+        },
+        "weight": 20.1,
+        "fully_evolved": True
+    },
+    "Bisharp": {
+        "name": "Bisharp",
+        "types": ["Dark", "Steel"],
+        "abilities": ["Defiant", "Pressure"],
+        "stats": {
+            "HP": 65,
+            "Attack": 125,
+            "Defense": 100,
+            "Sp. Atk": 60,
+            "Sp. Def": 70,
+            "Speed": 70
+        },
+        "weight": 70.0,
+        "fully_evolved": True
+    },
+    "Noivern": {
+        "name": "Noivern",
+        "types": ["Flying", "Dragon"],
+        "abilities": ["Frisk", "Infiltrator"],
+        "stats": {
+            "HP": 85,
+            "Attack": 70,
+            "Defense": 80,
+            "Sp. Atk": 97,
+            "Sp. Def": 80,
+            "Speed": 123
+        },
+        "weight": 85.0,
+        "fully_evolved": True
+    },
+    "Scizor": {
+        "name": "Scizor",
+        "types": ["Bug", "Steel"],
+        "abilities": ["Swarm", "Technician", "Light Metal"],
+        "stats": {
+            "HP": 70,
+            "Attack": 130,
+            "Defense": 100,
+            "Sp. Atk": 55,
+            "Sp. Def": 80,
+            "Speed": 65
+        },
+        "weight": 90.0,
+        "fully_evolved": True
+    },
+    "Kleavor": {
+        "name": "Kleavor",
+        "types": ["Bug", "Rock"],
+        "abilities": ["Sharpness", "Swarm", "Sheer Force"],
+        "stats": {
+            "HP": 70,
+            "Attack": 135,
+            "Defense": 95,
+            "Sp. Atk": 45,
+            "Sp. Def": 70,
+            "Speed": 85
+        },
+        "weight": 45.0,
+        "fully_evolved": True
+    },
+    "Conkeldurr": {
+        "name": "Conkeldurr",
+        "types": ["Fighting"],
+        "abilities": ["Guts", "Iron Fist", "Sheer Force"],
+        "stats": {
+            "HP": 105,
+            "Attack": 140,
+            "Defense": 95,
+            "Sp. Atk": 55,
+            "Sp. Def": 65,
+            "Speed": 45
+        },
+        "weight": 87.0,
+        "fully_evolved": True
+    },
+    "Grimmsnarl": {
+        "name": "Grimmsnarl",
+        "types": ["Dark", "Fairy"],
+        "abilities": ["Prankster", "Frisk"],
+        "stats": {
+            "HP": 95,
+            "Attack": 120,
+            "Defense": 65,
+            "Sp. Atk": 95,
+            "Sp. Def": 75,
+            "Speed": 60
+        },
+        "weight": 61.0,
+        "fully_evolved": True
+    },
+    "Haxorus": {
+        "name": "Haxorus",
+        "types": ["Dragon"],
+        "abilities": ["Rivalry", "Unnerve", "Mold Breaker"],
+        "stats": {
+            "HP": 76,
+            "Attack": 147,
+            "Defense": 90,
+            "Sp. Atk": 60,
+            "Sp. Def": 70,
+            "Speed": 97
+        },
+        "weight": 105.5,
+        "fully_evolved": True
+    },
+    "Toxtricity": { #sera la forme aigue par défaut et on ignore plus et minus car inutiles
+        "name": "Toxtricity",
+        "types": ["Electric", "Poison"],
+        "abilities": ["Punk Rock", "Technician"],
+        "stats": {
+            "HP": 75,
+            "Attack": 98,
+            "Defense": 70,
+            "Sp. Atk": 114,
+            "Sp. Def": 70,
+            "Speed": 75
+        },
+        "weight": 40.0,
+        "fully_evolved": True
+    },
+    "Brambleghast": {
+        "name": "Brambleghast",
+        "types": ["Grass", "Ghost"],
+        "abilities": ["Harvest", "Infiltrator"],
+        "stats": {
+            "HP": 55,
+            "Attack": 115,
+            "Defense": 70,
+            "Sp. Atk": 80,
+            "Sp. Def": 70,
+            "Speed": 90
+        },
+        "weight": 6.0,
+        "fully_evolved": True
+    },
+    "Ceruledge": {
+        "name": "Ceruledge",
+        "types": ["Fire", "Ghost"],
+        "abilities": ["Flash Fire", "Infiltrator"],
+        "stats": {
+            "HP": 75,
+            "Attack": 125,
+            "Defense": 80,
+            "Sp. Atk": 60,
+            "Sp. Def": 100,
+            "Speed": 85
+        },
+        "weight": 62.0,
+        "fully_evolved": True
+    },
+    "Armarouge": {
+        "name": "Armarouge",
+        "types": ["Fire", "Psychic"],
+        "abilities": ["Flash Fire", "Infiltrator"],
+        "stats": {
+            "HP": 85,
+            "Attack": 60,
+            "Defense": 100,
+            "Sp. Atk": 125,
+            "Sp. Def": 80,
+            "Speed": 75
+        },
+        "weight": 85.0,
+        "fully_evolved": True
+    },
+    "Reuniclus": {
+        "name": "Reuniclus",
+        "types": ["Psychic"],
+        "abilities": ["Overcoat", "Magic Guard", "Regenerator"],
+        "stats": {
+            "HP": 110,
+            "Attack": 65,
+            "Defense": 75,
+            "Sp. Atk": 125,
+            "Sp. Def": 85,
+            "Speed": 30
+        },
+        "weight": 20.1,
+        "fully_evolved": True
+    },
+    "Espathra": {
+        "name": "Espathra",
+        "types": ["Psychic"],
+        "abilities": ["Opportunist", "Speed Boost"],
+        "stats": {
+            "HP": 95,
+            "Attack": 60,
+            "Defense": 60,
+            "Sp. Atk": 101,
+            "Sp. Def": 60,
+            "Speed": 105
+        },
+        "weight": 50.0,
+        "fully_evolved": True
+    },
+    "Hariyama": {
+        "name": "Hariyama",
+        "types": ["Fighting"],
+        "abilities": ["Thick Fat", "Guts", "Sheer Force"],
+        "stats": {
+            "HP": 144,
+            "Attack": 120,
+            "Defense": 60,
+            "Sp. Atk": 40,
+            "Sp. Def": 60,
+            "Speed": 50
+        },
+        "weight": 253.8,
         "fully_evolved": True
     },
 }

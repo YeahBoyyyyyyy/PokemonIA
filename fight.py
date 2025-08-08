@@ -252,13 +252,17 @@ class Fight():
         
         if weather == "Sandstorm":
             immune_types = {"Rock", "Steel", "Ground"}
+            immune_talents = {"Sand Veil", "Overcoat", "Magic Guard"}
             for pokemon in active_pokemon:
-                if not any(t in immune_types for t in pokemon.types):
+                if not any(t in immune_types for t in pokemon.types) or pokemon.talent in immune_talents:
                     damage = int(pokemon.max_hp * 0.0625)
                     self.damage_method(pokemon, damage, True)
         elif weather == "Snow":
             for pokemon in active_pokemon:
-                if "Ice" not in pokemon.types:
+                if pokemon.talent == "Ice Body" and not getattr(pokemon, 'heal_blocked', False):
+                    heal_amount = int(pokemon.max_hp * 0.0625)
+                    self.damage_method(pokemon, -heal_amount, True)
+                elif "Ice" not in pokemon.types or pokemon.talent == "Magic Guard":
                     damage = int(pokemon.max_hp * 0.0625)
                     self.damage_method(pokemon, damage, True)
         elif weather == "Rain":
@@ -316,7 +320,7 @@ class Fight():
 ###### Méthodes pour gérer les effets de terrain #######
     def set_field(self, effect):
         self.field = effect
-        self.field_turn_left = 5  # Classiquement les effets de terrain durent 5 tours, on ignore la Light Clay pour l'instant
+        self.field_turn_left = 5  
     
     def remove_field_effect(self):
         self.field = None  # Supprimer l'effet de terrain
@@ -348,13 +352,13 @@ class Fight():
                     print(f"{pokemon.name} ne peut pas bénéficier du terrain herbeux à cause de Heal Block !")
 
 ###### Méthodes pour gérer les screens et la gravité #######
-    def add_screen(self, effect, team_id):
+    def add_screen(self, effect, team_id, turn_duration=5):
         if team_id == 1:
             self.screen_team1.append(effect)
-            self.screen_turn_left_team1[effect] = 5  # Classiquement les effets de terrain durent 5 tours, on ignore la Light Clay pour l'instant
+            self.screen_turn_left_team1[effect] = turn_duration 
         elif team_id == 2:
             self.screen_team2.append(effect)
-            self.screen_turn_left_team2[effect] = 5
+            self.screen_turn_left_team2[effect] = turn_duration
 
     def remove_screen(self, effect, team_id):
         if team_id == 1 and effect in self.screen_team1:
@@ -1341,9 +1345,12 @@ class Fight():
                 return False
 
         if attacker.flinched:
-            print(f"{attacker.name} est flinched et ne peut pas attaquer !")
-            attacker.flinched = False
-            return False
+            if attacker.talent == "Inner Focus":
+                print(f"Inner Focus de {attacker.name} l'empêche d'être flinch !")
+            else:
+                print(f"{attacker.name} est flinch et ne peut pas attaquer !")
+                attacker.flinched = False
+                return False
         
         return True
 

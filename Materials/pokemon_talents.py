@@ -340,7 +340,7 @@ class SandVeil(Talent):
     """Talent qui augmente l'évasion de 20% pendant une tempête de sable."""
     def modify_stat(self, poke, fight=None):
         if fight and fight.weather.get("current") == "Sandstorm":
-            poke.evasion = poke.evasion_with_no_modifier * 1.25
+            poke.evasion = poke.evasion * 1.25
             return "activated"
         return None
 
@@ -551,6 +551,10 @@ class WonderSkin(Talent):
         if incoming_attack.category == "Status" and incoming_attack.target != "User" and attacker_poke != poke and random.random() < 0.5:
             print(f"{poke.name} fait échouer l'attaque de statut adverse grâce à Peau Miracle")
 
+class InnerFocus(Talent):
+    """Talent qui empêche le pokémon d'être flinch (étourdi) par une attaque. 
+    Géré dans fight.check_status_before_attack() juste le nom nous interesse."""
+
 def trigger_talent(poke, event_name, *args):
     """
     Déclenche l'effet du talent en fonction de l'événement.
@@ -621,5 +625,6 @@ talent_registry = {
     "Prankster": Prankster(),
     "Snow Warning": SnowWarning(),
     "Levitate": Levitate(),
-    "Wonder Skin": WonderSkin()
+    "Wonder Skin": WonderSkin(),
+    "Inner Focus": InnerFocus(),
 }

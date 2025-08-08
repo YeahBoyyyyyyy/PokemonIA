@@ -2,7 +2,7 @@ import fight
 from pokemon import pokemon
 import sys
 sys.path.append("C:/Users/natha/OneDrive/Desktop/Travail/IA Combats pokémons/PokemonIA/Materials")
-from Materials.pokemon_datas import pokemon_data
+from Materials.pokedex_9G_complete import pokemon_data_gen9
 from Materials.pokemon_attacks import attack_registry
 sys.path.append("C:/Users/natha/OneDrive/Desktop/Travail/IA Combats pokémons/PokemonIA")
 import json
@@ -36,7 +36,7 @@ def import_pokemon_from_json(carac : dict):
     :param carac: Dictionnaire contenant les caractéristiques du Pokémon
     :return: Instance de la classe pokemon avec les caractéristiques importées
     """
-    raw_poke = pokemon_data[carac["name"]]
+    raw_poke = pokemon_data_gen9[carac["name"]]
     poke = pokemon(raw_poke)
     poke.talent = carac["ability"]
     poke.item = carac["item"]

@@ -680,9 +680,12 @@ class Reflect(Attack):
     
     def apply_effect(self, user, target, fight):
         if not "reflect" in fight.screen:
-            fight.screen.append("reflect")
-            fight.screen_turn_left["reflect"] = 5
-            print(f"{user.name} utilise Reflect ! Les dégâts physiques sont réduits de moitié pour 5 tours.")
+            if user.item == "Light Clay":
+                duration = 8
+            else:
+                duration = 5
+            fight.add_screen("reflect", fight.get_team_id(user), duration)
+            print(f"{user.name} utilise Reflect ! Les dégâts physiques sont réduits de moitié pour {duration} tours.")
         else:
             print("L'attaque échoue")
 
@@ -705,7 +708,11 @@ class LightScreen(Attack):
         screens = fight.screen_team1 if user_team_id == 1 else fight.screen_team2
         
         if "light_screen" not in screens:
-            fight.add_screen("light_screen", user_team_id)
+            if user.item == "Light Clay":
+                duration = 8
+            else:
+                duration = 5
+            fight.add_screen("light_screen", user_team_id, duration)
             print(f"{user.name} utilise Light Screen ! Les dégâts spéciaux sont réduits de moitié pour son équipe pendant 5 tours.")
         else:
             print("L'attaque échoue.")
@@ -726,9 +733,12 @@ class AuroraVeil(Attack):
     
     def apply_effect(self, user, target, fight):
         if not "auroraveil" in fight.screen and fight.weather["current"] == "Snow":
-            fight.screen.append("auroraveil")
-            fight.screen_turn_left["auroraveil"] = 5
-            print(f"{user.name} utilise Aurora Veil ! Les dégâts physiques et spéciaux sont réduits de moitié pour 5 tours.")
+            if user.item == "Light Clay":
+                duration = 8
+            else:
+                duration = 5
+            fight.add_screen("auroraveil", fight.get_team_id(user), duration)
+            print(f"{user.name} utilise Aurora Veil ! Les dégâts physiques et spéciaux sont réduits de moitié pour {duration} tours.")
         else:
             print("L'attaque échoue.")
 
@@ -904,13 +914,31 @@ class DragonPulse(Attack):
             power=85,
             accuracy=100,
             priority=0,
-            pp=10,
+            pp=16,
             flags=["protect", "mirror"],
             target="Foe"
         )
 
     def apply_effect(self, user, target, fight):
         # Pas d'effet secondaire pour Dragon Pulse
+        pass
+
+class DragonClaw(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Dragon Claw",
+            type_="Dragon",
+            category="Physical",
+            power=80,
+            accuracy=100,
+            priority=0,
+            pp=24,
+            flags=["contact", "protect", "mirror"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        # Pas d'effet secondaire pour Dragon Claw
         pass
 
 class ElectroShot(Attack):
@@ -3355,6 +3383,29 @@ class VoltSwitch(Attack):
         user.switch_reason = "Volt Switch"
         print(f"{user.name} doit revenir après avoir utilisé Volt Switch !")
 
+class MeteorMash(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Meteor Mash",
+            type_="Steel",
+            category="Physical",
+            power=90,
+            accuracy=90,
+            priority=0,
+            pp=10,
+            flags=["contact", "protect", "mirror"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        A 20% de chance d'augmenter l'Attaque de l'utilisateur d'un niveau.
+        """
+        if random.random() < 0.2:
+            stat_changes = {"Attack": 1}
+            success = apply_stat_changes(user, stat_changes, "self", fight)
+            if success:
+                print(f"L'Attaque de {user.name} augmente grâce à Meteor Mash !")
 
 def process_future_sight_attacks(fight):
     """
@@ -3479,6 +3530,7 @@ attack_registry = {
     "Crunch": Crunch(),
     "Dark Pulse": DarkPulse(),
     "Defog": Defog(),
+    "Dragon Claw": DragonClaw(),
     "Draco Meteor": DracoMeteor(),
     "Dragon Dance": DragonDance(),
     "Dragon Pulse": DragonPulse(),
@@ -3523,6 +3575,7 @@ attack_registry = {
     "Magic Coat": MagicCoat(),
     "Make It Rain": MakeItRain(),
     "Malignant Chain": MalignantChain(),
+    "Meteor Mash": MeteorMash(),
     "Moonblast": Moonblast(),
     "Mortal Spin": MortalSpin(),
     "Nasty Plot": NastyPlot(),
