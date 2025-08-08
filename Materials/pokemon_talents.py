@@ -77,6 +77,28 @@ class WaterAbsorb(Talent):
             print(f"{poke.name} absorbe l'eau et récupère {healed} PV !")
             return 0  # annule les dégâts
 
+class WindRider(Talent):
+    """ Si le Pokémon est touché par une capacité de Vent (ou si le Vent Arrière est actif de son coté),
+      il ne subit aucun dégât et son attaque augmente d'1 cran."""
+    
+    def on_entry(self, poke, fight):
+        team_id = fight.get_team_id(poke)
+        tailwind_side = fight.tailwind_team1 if team_id == 1 else fight.tailwind_team2
+        if tailwind_side > 0:
+            from pokemon import apply_stat_changes
+            stat_changes = {"Attack" : 1}
+            success = apply_stat_changes(poke, stat_changes, "self", fight)
+            if success:
+                print(f"L'attaque de {poke.name} augmente grâce à Wind Rider !")
+    def on_defense(self, poke, incoming_attack, attacker_poke=None, fight=None):
+        if "wind" in incoming_attack.flags:
+            from pokemon import apply_stat_changes
+            stat_changes = {"Attack" : 1}
+            success = apply_stat_changes(poke, stat_changes, "self", fight)
+            if success:
+                print(f"L'attaque de {poke.name} augmente grâce à Wind Rider !")
+            return 0  # annule les dégâts
+
 class Chlorophyll(Talent):
     """ Talent qui double la vitesse du Pokémon sous le soleil."""
     def modify_stat(self, poke, fight=None):
@@ -179,6 +201,15 @@ class FlashFire(Talent):
             from pokemon import apply_stat_changes
             apply_stat_changes(poke, {"Sp. Atk": 1}, "self", fight)
             print(f"{poke.name} absorbe le feu et augmente son Attaque Spéciale !")
+            return 0  # annule les dégâts
+
+class SapSipper(Talent):
+    """ Talent qui absorbe les attaques de type Feu et augmente l'Attaque Spéciale."""
+    def on_defense(self, poke, incoming_attack, attacker_poke=None, fight=None):
+        if incoming_attack.type == "Grass":
+            from pokemon import apply_stat_changes
+            apply_stat_changes(poke, {"Attack": 1}, "self", fight)
+            print(f"{poke.name} absorbe les attaques de type Plante et augmente son Attaque !")
             return 0  # annule les dégâts
 
 class ThickFat(Talent):
@@ -555,6 +586,117 @@ class InnerFocus(Talent):
     """Talent qui empêche le pokémon d'être flinch (étourdi) par une attaque. 
     Géré dans fight.check_status_before_attack() juste le nom nous interesse."""
 
+class IceFace(Talent):
+    """Talent qui permet au Pokémon de résister à la première attaque physique qu'il subit et le transforme en bekeglacon tete degel.
+    On suppose que personne ne sera assez bête pour utiliser Ice Face sur un autre pokémon que Eiscue."""
+    def on_defense(self, poke, incoming_attack, attacker_poke=None, fight=None):
+        if incoming_attack.category == "Physical" and poke.ice_face_active and poke.name == "Eiscue-Ice-Face":
+            from utilities import transform_pokemon
+            # Activer l'effet Ice Face
+            poke.ice_face_active = False
+            print(f"{poke.name} utilise Ice Face pour résister à l'attaque physique !")
+            transform_pokemon(poke, "Eiscue-No-Ice-Face")
+            return 0
+
+class SheerForce(Talent):
+    """Talent qui augmente la puissance des attaques avec un effet secondaire de 30% mais annule l'effet secondaire."""
+    def on_attack(self, poke, attack, fight=None):
+        mod_dict = ON_ATTACK_MOD_DICT.copy()
+        if "secondary_effect" in attack.flags:
+            mod_dict["power"] = 1.3
+            print(f"{poke.name} utilise Sheer Force pour augmenter la puissance de {attack.name} !")
+        return mod_dict
+
+class Contrary(Talent):
+    """Talent qui inverse tous les chagements de stats subits par le Pokémon."""
+    def on_stat_change(self, poke, stat_changes, source, fight=None):
+        for stat, change in stat_changes.items():
+            stat_changes[stat] = -change
+        return stat_changes
+
+class Protean(Talent):
+    """Talent qui change le type du Pokémon en celui de la première attaque qu'il lance."""
+    def on_attack(self, poke, attack, fight=None):
+        poke.types = [attack.type] # Pas besoin de sauvegarder les anciens types, cela est déjà fait dans pokemon.py à l'__init__
+        poke.protean_active = True  # Indique que Protean a été activé
+        print(f"{poke.name} change son type en {attack.type} grâce à Protean !")
+        return ON_ATTACK_MOD_DICT  # Pas de modification des dégâts par défaut
+
+class Libero(Talent):
+    """Talent qui change le type du Pokémon en celui de la première attaque qu'il lance, similaire à Protean."""
+    def on_attack(self, poke, attack, fight=None):
+        poke.types = [attack.type]  # Change le type du Pokémon
+        poke.libero_active = True  # Indique que Libero a été activé
+        print(f"{poke.name} change son type en {attack.type} grâce à Libero !")
+        return ON_ATTACK_MOD_DICT  # Pas de modification des dégâts par défaut
+
+class Technician(Talent):
+    """Talent qui augmente la puissance des attaques de 60 de puissance ou moins de 50%."""
+    def on_attack(self, poke, attack, fight=None):
+        if attack.power <= 60:
+            mod_dict = ON_ATTACK_MOD_DICT.copy()
+            mod_dict["power"] = 1.5
+            print(f"{poke.name} utilise Technician pour augmenter la puissance de {attack.name} !")
+            return mod_dict
+        return ON_ATTACK_MOD_DICT  # Pas de modification si l'attaque est trop puissante
+
+class Infiltrator(Talent):
+    """Les attaques de ce Pokémon ignorent les clones et les Protection, Mur Lumière,
+    Rune Protect, Brume et Voile Aurore de l'adversaire."""
+
+class Steadfast(Talent):
+    """Augmente la vitesse de 1 niveau quand le Pokémon est flinch par une attaque."""
+    def on_attack(self, poke, attack, fight):
+        if poke.flinched:
+            from pokemon import apply_stat_changes
+            stat_changes = {"Speed": 1}
+            success = apply_stat_changes(poke, stat_changes, "self", fight)
+            if success:
+                print(f"La vitesse de {poke.name} augmente de 1 niveau à cause du flinch!")
+
+class LiquidOoze(Talent):
+    """Ce Pokémon blesse ceux qui lui drainent des PVs pour se soigner proportionnellement à ce qu'ils auraient dû récupérer."""
+
+class MagicGuard(Talent):
+    """Ce Pokémon ne peut subir des dégâts que par des attaques directes. 
+    L'utilisation de Clonage, de Malédiction, de Cognobidon, de Balance, le recul de Lutte, 
+    et les dégâts de confusion sont considérés comme des dégâts directs. Ce Pokémon n'est pas affecté 
+    par les dégâts de Picots, Pics Toxik, et Piège de Roc lorsqu'il arrive sur le terrain. 
+    Il est également immunisé aux dégâts du climat, des capacités piégeant les Pokémon sur le terrain 
+    comme Vortex Magma, et des contrecoups des capacités ou de l'Orbe Vie."""
+
+class Guts(Talent):
+    """Si ce Pokémon a un problème de statut, son attaque est multipliée 
+    par 1,5 (augmentée de 50%). Il ignore la réduction de l'Attaque causée par la brûlure."""
+    
+    def on_attack(self, poke, attack, fight=None):
+        if poke.status:
+            mod_dict = ON_ATTACK_MOD_DICT.copy()
+            mod_dict["attack"] = 1.5
+            print(f"{poke.name} augmente son attaque grâce à Guts !")
+            return mod_dict
+        return ON_ATTACK_MOD_DICT  # Pas de modification si pas de problème de statut
+
+class ThermalExchange(Talent):
+    """Lorsque le Pokémon est touché par une capacité de type Feu, son attaque augmente d'1 cran. Il ne peut pas être brûlé."""
+    def on_defense(self, poke, incoming_attack, attacker_poke=None, fight=None):
+        if incoming_attack.type == "Fire":
+            from pokemon import apply_stat_changes
+            apply_stat_changes(poke, {"Attack": 1}, "opponent")
+            print(f"L'attaque de {poke.name} augmente grâce à Thermal Exchange !")
+
+class Analytic(Talent):
+    """Si ce Pokémon agit le dernier pendant un tour, la puissance de son attaque est multipliée par 1,3 (augmentée de 30%)."""
+    def on_attack(self, poke, attack, fight=None):
+        team_id = fight.get_team_id(poke)
+        opponent = fight.active2 if team_id == 1 else fight.active1
+        if opponent.has_attacker_or_switched:
+            mod_dict = ON_ATTACK_MOD_DICT.copy()
+            mod_dict["power"] = 1.3
+            print(f"La puissance de {attack.name} est augmentée grâce à Analytic !")
+            return mod_dict
+        return ON_ATTACK_MOD_DICT
+        
 def trigger_talent(poke, event_name, *args):
     """
     Déclenche l'effet du talent en fonction de l'événement.
@@ -627,4 +769,16 @@ talent_registry = {
     "Levitate": Levitate(),
     "Wonder Skin": WonderSkin(),
     "Inner Focus": InnerFocus(),
+    "Ice Face": IceFace(),
+    "Sheer Force": SheerForce(),
+    "Contrary": Contrary(),
+    "Libero": Libero(),
+    "Protean": Protean(),
+    "Technician": Technician(),
+    "Infiltrator": Infiltrator(),
+    "Wind Rider": WindRider(),
+    "Guts": Guts(),
+    "Sap Sipper": SapSipper(),
+    "Thermal Exchange": ThermalExchange(),
+    "Analytic": Analytic(),
 }

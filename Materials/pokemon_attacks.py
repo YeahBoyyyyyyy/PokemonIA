@@ -27,10 +27,11 @@ pulse: Power is multiplied by 1.5 when used by a Pokemon with the Ability Mega L
 punch: Power is multiplied by 1.2 when used by a Pokemon with the Ability Iron Fist.
 recharge: If this move is successful, the user must recharge on the following turn and cannot make a move.
 reflectable: Bounced back to the original user by Magic Coat or the Ability Magic Bounce.
+secondary_effect: Has a secondary effect, usefull for Sheer Force.
 sharp: Power is multiplied by 1.5 when used by a Pokemon with the Ability Sharpness.
 snatch: Can be stolen from the original user and instead used by another Pokemon using Snatch.
 sound: Has no effect on Pokemon with the Ability Soundproof.
-
+wind: Does not affect pokemon with the talent Wind Rider
 
 '''
 
@@ -95,7 +96,7 @@ class AquaJet(Attack):
             power=40,
             accuracy=100,
             priority=1,
-            pp=20,
+            pp=32,
             flags=["contact", "protect", "mirror"],
             target="Foe"
         )
@@ -109,13 +110,13 @@ class Flamethrower(Attack):
             power=90,
             accuracy=100,
             priority=0,
-            pp=15,
-            flags=["protect", "mirror"],
+            pp=24,
+            flags=["protect", "mirror", "secondary_effect"],
             target="Foe"
         )
 
     def apply_effect(self, user, target, fight):
-        if random.randint(1, 100) <= 10:
+        if random.randint(1, 100) <= 10 and target.talent != "Thermal Exchange":
             print(f"{target} est brulé !")
             target.apply_status("burn")
 
@@ -128,7 +129,7 @@ class HydroPump(Attack):
             power=110,
             accuracy=80,
             priority=0,
-            pp=5,
+            pp=8,
             flags=["protect", "mirror"],
             target="Foe"
         )
@@ -142,7 +143,7 @@ class Protect(Attack):
             power=0,
             accuracy=100,
             priority=4,
-            pp=10,
+            pp=16,
             flags=["protection"],
             target="User"
         )
@@ -165,8 +166,8 @@ class MalignantChain(Attack):
             power=100,
             accuracy=100,
             priority=0,
-            pp=10,
-            flags=["contact", "protect", "mirror"],
+            pp=16,
+            flags=["contact", "protect", "mirror", "secondary_effect"],
             target="Foe"
         )
 
@@ -184,8 +185,8 @@ class RockSlide(Attack):
             power=75,
             accuracy=90,
             priority=0,
-            pp=10,
-            flags=["protect", "mirror"],
+            pp=16,
+            flags=["protect", "mirror", "secondary_effect"],
             target="Foe",
             multi_target=True
         )
@@ -203,7 +204,7 @@ class SurgingStrike(Attack):
             power=25,
             accuracy=100,
             priority=0,
-            pp=5,
+            pp=8,
             flags=["contact", "protect" "mirror"],
             target="Foe"
         )
@@ -217,7 +218,7 @@ class LeechSeed(Attack):
             power=0,
             accuracy=90,
             priority=0,
-            pp=10,
+            pp=16,
             flags=["protect"],
             target="Foe"
         )
@@ -239,12 +240,49 @@ class FlowerTrick(Attack):
             power=70,
             accuracy=100,
             priority=0,
-            pp=10,
+            pp=16,
             flags=["protect", "mirror"],
             target="Foe",
             
         )
         self.guaranteed_critical = True  # Coup critique garanti
+
+class TorchSong(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Torch Song",
+            type_="Fire",
+            category="Special",
+            power=80,
+            accuracy=100,
+            priority=0,
+            pp=16,
+            flags=["protect", "mirror"]
+        )
+    def apply_effect(self, user, target, fight):
+        stat_changes = {"Sp. Atk": 1}
+        success = apply_stat_changes(user, stat_changes, "self", fight)
+        if success:
+            print(f"L'Attaque Spéciale de {user.name} augmente grâce à Torch Song !")
+        
+class AquaStep(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Aqua Step",
+            type_="Water",
+            category="Physical",
+            power=80,
+            accuracy=100,
+            priority=0,
+            pp=16,
+            flags=["contact", "protect", "mirror"]
+        )
+    
+    def apply_effect(self, user, target, fight):
+        stat_changes = {"Speed": 1}
+        success = apply_stat_changes(user, stat_changes, "self", fight)
+        if success:
+            print(f"La Vitesse de {user.name} augmente grâce à Aqua Step !")
 
 class RainDance(Attack):
     def __init__(self):
@@ -255,7 +293,7 @@ class RainDance(Attack):
             power=0,
             accuracy=True,
             priority=0,
-            pp=10,
+            pp=16,
             flags=[],
             target="User"
         )
@@ -273,7 +311,7 @@ class Sandstorm(Attack):
             power=0,
             accuracy=True,
             priority=0,
-            pp=10,
+            pp=16,
             flags=[],
             target="User"
         )
@@ -291,7 +329,7 @@ class SunnyDay(Attack):
             power=0,
             accuracy=True,
             priority=0,
-            pp=10,
+            pp=16,
             flags=[],
             target="User"
         )
@@ -300,6 +338,29 @@ class SunnyDay(Attack):
         if fight.weather["current"] != "Sunny":
             fight.set_weather("Sunny", duration=5)
             print(f"{user.name} invoque le soleil !")
+
+class SlackOff(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Slack Off",
+            type_="Normal",
+            category="Status",
+            power=0,
+            accuracy=True,
+            priority=0,
+            pp=16,
+            flags=["heal"],
+            target="User"
+        )
+
+    def apply_effect(self, user, target, fight):
+        # Vérifier si l'utilisateur est sous l'effet de Heal Block
+        if getattr(user, 'heal_blocked', False):
+            print(f"{user.name} ne peut pas utiliser {self.name} car il est sous l'effet de Heal Block !")
+            return
+        heal_amount = user.max_hp // 2
+        user.current_hp = min(user.max_hp, user.current_hp + heal_amount)
+        print(f"{user.name} récupère {heal_amount} PV grâce à Slack Off.")
 
 class Recover(Attack):
     def __init__(self):
@@ -310,7 +371,7 @@ class Recover(Attack):
             power=0,
             accuracy=True,
             priority=0,
-            pp=10,
+            pp=16,
             flags=["heal"],
             target="User"
         )
@@ -325,6 +386,37 @@ class Recover(Attack):
         user.current_hp = min(user.max_hp, user.current_hp + heal_amount)
         print(f"{user.name} récupère {heal_amount} PV grâce à Recover.")
 
+class Synthesis(Attack):
+    """Synthesis permet au Pokémon de récupérer plus ou moins de PV en fonction de la météo."""
+    def __init__(self):
+        super().__init__(
+            name="Synthesis",
+            type_="Grass",
+            category="Status",
+            power=0,
+            accuracy=True,
+            priority=0,
+            pp=16,
+            flags=["heal"],
+            target="User"
+        )
+
+    def apply_effect(self, user, target, fight):
+        # Vérifier si l'utilisateur est sous l'effet de Heal Block
+        if getattr(user, 'heal_blocked', False):
+            print(f"{user.name} ne peut pas utiliser {self.name} car il est sous l'effet de Heal Block !")
+            return
+        
+        if fight.weather["current"] == "Sunny":
+            heal_amount = user.max_hp * 2 // 3
+        elif fight.weather["current"] == "Rain" or fight.weather["current"] == "Sandstorm" or fight.weather["current"] == "Hail":
+            heal_amount = user.max_hp // 4
+        else:
+            heal_amount = user.max_hp // 2
+        
+        user.current_hp = min(user.max_hp, user.current_hp + heal_amount)
+        print(f"{user.name} récupère {heal_amount} PV grâce à Synthesis.")
+
 class StoneEdge(Attack):
     def __init__(self):
         super().__init__(
@@ -334,7 +426,7 @@ class StoneEdge(Attack):
             power=100,
             accuracy=80,
             priority=0,
-            pp=5,
+            pp=8,
             flags=["protect", "mirror"],
             target="Foe"
         )
@@ -346,11 +438,11 @@ class Nuzzle(Attack):
             name="Nuzzle",
             type_="Electric",
             category="Physical",
-            power=20,
+            power=32,
             accuracy=100,
             priority=0,
-            pp=20,
-            flags=["contact", "protect", "mirror"],
+            pp=32,
+            flags=["contact", "protect", "mirror", "secondary_effect"],
             target="Foe"
         )
 
@@ -368,8 +460,8 @@ class FakeOut(Attack):
             power=40,
             accuracy=100,
             priority=3,
-            pp=10,
-            flags=["contact", "protect", "mirror"],
+            pp=16,
+            flags=["contact", "protect", "mirror", "secondary_effect"],
             target="Foe"
         )
 
@@ -393,8 +485,8 @@ class Thunderbolt(Attack):
             power=90,
             accuracy=100,
             priority=0,
-            pp=15,
-            flags=["protect", "mirror"],
+            pp=24,
+            flags=["protect", "mirror", "secondary_effect"],
             target="Foe"
         )
 
@@ -413,16 +505,14 @@ class Spore(Attack):
             power=0,
             accuracy=100,
             priority=0,
-            pp=15,
+            pp=24,
             flags=["protect"],
             target="Foe"
         )
 
     def apply_effect(self, user, target, fight):
-        # Utiliser les types effectifs pour la défense (incluant Tera)
-        effective_types = target.get_effective_types_for_defense()
         
-        if "Grass" in effective_types:
+        if "Grass" in target.types:
             print(f"{target.name} est de type Plante : Spore échoue.")
             return
         if target.status is None:
@@ -438,7 +528,7 @@ class WeatherBall(Attack):
             power=50,
             accuracy=100,
             priority=0,
-            pp=10,
+            pp=16,
             flags=["protect", "mirror"],
             target="Foe"
         )
@@ -469,7 +559,7 @@ class KnockOff(Attack):
             power=65,
             accuracy=100,
             priority=0,
-            pp=20,
+            pp=32,
             flags=["contact", "protect", "mirror"],
             target="Foe"
         )
@@ -493,7 +583,7 @@ class UTurn(Attack):
             power=70,
             accuracy=100,
             priority=0,
-            pp=20,
+            pp=32,
             flags=["contact", "protect", "mirror"],
             target="Foe"
         )
@@ -539,7 +629,7 @@ class FlipTurn(Attack):
             power=60,
             accuracy=100,
             priority=0,
-            pp=20,
+            pp=32,
             flags=["contact", "protect", "mirror"],
             target="Foe"
         )
@@ -586,13 +676,13 @@ class WillOWisp(Attack):
             power=0,
             accuracy=85,
             priority=0,
-            pp=15,
+            pp=24,
             flags=["protect"],
             target="Foe"
         )
 
     def apply_effect(self, user, target, fight):
-        if target.status is None and "Fire" not in target.types:
+        if target.status is None and "Fire" not in target.types and target.talent != "Thermal Exchange":
             target.apply_status("burn")
             print(f"{target.name} est brûlé !")
 
@@ -605,16 +695,14 @@ class Toxic(Attack):
             power=0,
             accuracy=90,
             priority=0,
-            pp=10,
+            pp=16,
             flags=["protect"],
             target="Foe"
         )
 
     def apply_effect(self, user, target, fight):
-        # Utiliser les types effectifs pour la défense (incluant Tera)
-        effective_types = target.get_effective_types_for_defense()
-        
-        if target.status is None and "Poison" not in effective_types and "Steel" not in effective_types:
+
+        if target.status is None and "Poison" not in target.types and "Steel" not in target.types:
             target.apply_status("toxic")
             print(f"{target.name} est empoisonné !")
 
@@ -627,8 +715,8 @@ class IceBeam(Attack):
             power=90,
             accuracy=100,
             priority=0,
-            pp=10,
-            flags=["protect", "mirror"],
+            pp=16,
+            flags=["protect", "mirror", "secondary_effect"],
             target="Foe"
         )
 
@@ -647,8 +735,8 @@ class SuckerPunch(Attack):
             power=70,
             accuracy=100,
             priority=1,
-            pp=5,
-            flags=["contact", "protect", "mirror"],
+            pp=8,
+            flags=["contact", "protect", "mirror", "punch"],
             target="Foe"
         )
 
@@ -673,7 +761,7 @@ class Reflect(Attack):
             power=0,
             accuracy=100,
             priority=0,
-            pp=20,
+            pp=32,
             flags=[],
             target="User"
         )
@@ -698,7 +786,7 @@ class LightScreen(Attack):
             power=0,
             accuracy=True,
             priority=0,
-            pp=20,
+            pp=32,
             flags=[],
             target="User"
         )
@@ -726,7 +814,7 @@ class AuroraVeil(Attack):
             power=0,
             accuracy=True,
             priority=0,
-            pp=20,
+            pp=32,
             flags=[],
             target="User"
         )
@@ -751,7 +839,7 @@ class SwordsDance(Attack):
             power=0,
             accuracy=True,
             priority=0,
-            pp=20,
+            pp=32,
             flags=[],
             target="User"
         )
@@ -771,7 +859,7 @@ class NastyPlot(Attack):
             power=0,
             accuracy=True,
             priority=0,
-            pp=20,
+            pp=32,
             flags=[],
             target="User"
         )
@@ -791,7 +879,7 @@ class CalmMind(Attack):
             power=0,
             accuracy=True,
             priority=0,
-            pp=20,
+            pp=32,
             flags=[],
             target="User"
         )
@@ -811,7 +899,7 @@ class QuiverDance(Attack):
             power=0,
             accuracy=True,
             priority=0,
-            pp=20,
+            pp=32,
             flags=[],
             target="User"
         )
@@ -831,7 +919,7 @@ class BulkUp(Attack):
             power=0,
             accuracy=True,
             priority=0,
-            pp=20,
+            pp=32,
             flags=[],
             target="User"
         )
@@ -851,7 +939,7 @@ class IronDefense(Attack):
             power=0,
             accuracy=True,
             priority=0,
-            pp=15,
+            pp=24,
             flags=["protect", "mirror"],
             target="User"
         )
@@ -875,7 +963,7 @@ class CloseCombat(Attack):
             power=120,
             accuracy=100,
             priority=0,
-            pp=5,
+            pp=8,
             flags=["contact", "protect", "mirror"],
             target="Foe"
         )
@@ -893,8 +981,8 @@ class Psychic(Attack):
             power=90,
             accuracy=100,
             priority=0,
-            pp=10,
-            flags=["protect", "mirror"],
+            pp=16,
+            flags=["protect", "mirror", "secondary_effect"],
             target="Foe"
         )
 
@@ -941,6 +1029,25 @@ class DragonClaw(Attack):
         # Pas d'effet secondaire pour Dragon Claw
         pass
 
+class ShadowClaw(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Shadow Claw",
+            type_="Ghost",
+            category="Physical",
+            power=70,
+            accuracy=100,
+            priority=0,
+            pp=24,
+            flags=["contact", "protect", "mirror"],
+            target="Foe"
+        )
+        self.critical_chance_up = True  # Leaf Blade a une chance accrue de coup critique
+
+    def apply_effect(self, user, target, fight):
+        # Pas d'effet secondaire pour Dragon Claw
+        pass
+
 class ElectroShot(Attack):
     def __init__(self):
         super().__init__(
@@ -950,7 +1057,7 @@ class ElectroShot(Attack):
             power=130,
             accuracy=100,
             priority=0,
-            pp=10,
+            pp=16,
             flags=["protect", "mirror", "charge"],
             target="Foe"
         )
@@ -989,7 +1096,7 @@ class BehemothBlade(Attack):
             power=100,
             accuracy=100,
             priority=0,
-            pp=5,
+            pp=8,
             flags=["contact", "protect", "mirror"],
             target="Foe"
         )
@@ -1010,7 +1117,7 @@ class BraveBird(Attack):
             power=120,
             accuracy=100,
             priority=0,
-            pp=15,
+            pp=24,
             flags=["contact", "protect", "mirror"],
             target="Foe"
         )
@@ -1033,7 +1140,7 @@ class DrainingKiss(Attack):
             power=50,
             accuracy=100,
             priority=0,
-            pp=10,
+            pp=16,
             flags=["contact", "protect", "mirror", "heal"],
             target="Foe"
         )
@@ -1046,8 +1153,14 @@ class DrainingKiss(Attack):
             healing = int(damage_dealt * 0.75)
             if user.current_hp < user.max_hp:
                 actual_healing = min(healing, user.max_hp - user.current_hp)
-                user.current_hp += actual_healing
-                print(f"{user.name} récupère {actual_healing} PV grâce à Draining Kiss !")
+                if user.item == "Big Root":
+                    actual_healing = int(actual_healing * 1.3)
+                if target.talent == "Liquid Ooze":
+                    user.current_hp -= actual_healing
+                    print(f"{target.name} inflige {actual_healing} PV de dégâts à {user.name} avec Liquid Ooze !")
+                else:
+                    user.current_hp += actual_healing
+                    print(f"{user.name} récupère {actual_healing} PV grâce à Draining Kiss !")
 
 class LeafStorm(Attack):
     def __init__(self):
@@ -1058,7 +1171,7 @@ class LeafStorm(Attack):
             power=130,
             accuracy=90,
             priority=0,
-            pp=5,
+            pp=8,
             flags=["protect", "mirror"],
             target="Foe"
         )
@@ -1081,8 +1194,8 @@ class PlayRough(Attack):
             power=90,
             accuracy=90,
             priority=0,
-            pp=10,
-            flags=["contact", "protect", "mirror"],
+            pp=16,
+            flags=["contact", "protect", "mirror", "secondary_effect"],
             target="Foe"
         )
     
@@ -1105,7 +1218,7 @@ class ShellSmash(Attack):
             power=0,
             accuracy=True,
             priority=0,
-            pp=15,
+            pp=24,
             flags=[],
             target="User"
         )
@@ -1135,7 +1248,7 @@ class ShiftGear(Attack):
             power=0,
             accuracy=True,
             priority=0,
-            pp=10,
+            pp=16,
             flags=[],
             target="User"
         )
@@ -1158,7 +1271,7 @@ class TrickRoom(Attack):
             power=0,
             accuracy=True,
             priority=-7,  # Priorité très basse
-            pp=5,
+            pp=8,
             flags=[],
             target="All"
         )
@@ -1179,7 +1292,7 @@ class WaveCrash(Attack):
             power=120,
             accuracy=100,
             priority=0,
-            pp=10,
+            pp=16,
             flags=["contact", "protect", "mirror"],
             target="Foe"
         )
@@ -1199,10 +1312,10 @@ class GrassKnot(Attack):
             name="Grass Knot",
             type_="Grass",
             category="Special",
-            power=20,  # Puissance de base minimale
+            power=32,  # Puissance de base minimale
             accuracy=100,
             priority=0,
-            pp=20,
+            pp=32,
             flags=["contact", "protect", "mirror"],
             target="Foe"
         )
@@ -1239,7 +1352,7 @@ class SolarBeam(Attack):
             power=120,
             accuracy=100,
             priority=0,
-            pp=10,
+            pp=16,
             flags=["protect", "mirror", "charge"],
             target="Foe"
         )
@@ -1271,7 +1384,7 @@ class HyperBeam(Attack):
             power=150,
             accuracy=90,
             priority=0,
-            pp=5,
+            pp=8,
             flags=["protect", "mirror", "recharge"],
             target="Foe"
         )
@@ -1290,7 +1403,7 @@ class Encore(Attack):
             power=0,
             accuracy=True,
             priority=0,
-            pp=5,
+            pp=8,
             flags=["protect", "mirror"],  # Peut être reflété par Magic Coat
             target="Foe"
         )
@@ -1335,7 +1448,7 @@ class Substitute(Attack):
             power=0,
             accuracy=True,
             priority=0,
-            pp=10,
+            pp=16,
             flags=[],
             target="User"
         )
@@ -1360,8 +1473,8 @@ class Snarl(Attack):
             power=55,
             accuracy=95,
             priority=0,
-            pp=15,
-            flags=["protect", "mirror"],
+            pp=24,
+            flags=["protect", "mirror", "secondary_effect"],
             target="Foe"
         )
 
@@ -1380,7 +1493,7 @@ class Roost(Attack):
             power=0,
             accuracy=True,
             priority=0,
-            pp=10,
+            pp=16,
             flags=["heal"],
             target="User"
         )
@@ -1420,7 +1533,7 @@ class LeafBlade(Attack):
             power=90,
             accuracy=100,
             priority=0,
-            pp=15,
+            pp=24,
             flags=["contact", "protect", "mirror", "sharp"],
             target="Foe"
         )
@@ -1439,7 +1552,7 @@ class WoodHammer(Attack):
             power=120,
             accuracy=100,
             priority=0,
-            pp=15,
+            pp=24,
             flags=["contact", "protect", "mirror"],
             target="Foe"
         )
@@ -1460,7 +1573,7 @@ class ThunderWave(Attack):
             power=0,
             accuracy=90,
             priority=0,
-            pp=20,
+            pp=32,
             flags=["protect", "reflectable"],
             target="Foe"
         )
@@ -1482,7 +1595,7 @@ class Taunt(Attack):
             power=0,
             accuracy=True,
             priority=0,
-            pp=20,
+            pp=32,
             flags=["protect"],
             target="Foe"
         )
@@ -1501,7 +1614,7 @@ class Earthquake(Attack):
             power=100,
             accuracy=100,
             priority=0,
-            pp=10,
+            pp=16,
             flags=["protect", "mirror", "ground"],
             target="All"
         )
@@ -1520,7 +1633,7 @@ class PerishSong(Attack):
             power=0,
             accuracy=True,
             priority=0,
-            pp=5,
+            pp=8,
             flags=["sound"],
             target="Foe"
         )
@@ -1537,7 +1650,7 @@ class Trick(Attack):
             power=0,
             accuracy=True,
             priority=0,
-            pp=10,
+            pp=16,
             flags=["protect", "mirror"],
             target="Foe"
         )
@@ -1558,8 +1671,8 @@ class Hurricane(Attack):
             power=110,
             accuracy=70,
             priority=0,
-            pp=10,
-            flags=["protect", "mirror"],
+            pp=16,
+            flags=["protect", "mirror", "secondary_effect", "wind"],
             target="Foe"
         )
 
@@ -1583,8 +1696,8 @@ class Thunder(Attack):
             power=110,
             accuracy=70,
             priority=0,
-            pp=10,
-            flags=["protect", "mirror"],
+            pp=16,
+            flags=["protect", "mirror", "secondary_effect"],
             target="Foe"
         )
 
@@ -1610,8 +1723,8 @@ class Blizzard(Attack):
             power=110,
             accuracy=70,
             priority=0,
-            pp=5,
-            flags=["protect", "mirror"],
+            pp=8,
+            flags=["protect", "mirror", "secondary_effect", "wind"],
             target="All Foes"
         )
 
@@ -1635,7 +1748,7 @@ class AerialAce(Attack):
             power=60,
             accuracy=100,  # Ne rate jamais
             priority=0,
-            pp=20,
+            pp=32,
             flags=["contact", "protect", "mirror"],
             target="Foe"
         )
@@ -1653,13 +1766,13 @@ class Scald(Attack):
             power=80,
             accuracy=100,
             priority=0,
-            pp=15,
-            flags=["protect", "mirror"],
+            pp=24,
+            flags=["protect", "mirror", "secondary_effect"],
             target="Foe"
         )
 
     def apply_effect(self, user, target, fight):
-        if random.random() < 0.3:
+        if random.random() < 0.3 and target.talent != "Thermal Exchange":
             target.apply_status("burn")
             print(f"{target.name} est brûlé !")
         
@@ -1672,8 +1785,8 @@ class DynamicPunch(Attack):
             power=100,
             accuracy=50,  # Très faible précision
             priority=0,
-            pp=5,
-            flags=["contact", "protect", "mirror", "punch"],
+            pp=8,
+            flags=["contact", "protect", "mirror", "punch", "secondary_effect"],
             target="Foe"
         )
 
@@ -1691,7 +1804,7 @@ class TeraBlast(Attack):
             power=80,
             accuracy=100,
             priority=0,
-            pp=5,
+            pp=8,
             flags=["protect", "mirror"],
             target="Foe"
         )
@@ -1771,7 +1884,7 @@ class ShedTail(Attack):
             power=0,
             accuracy=True,
             priority=0,
-            pp=10,
+            pp=16,
             flags=["protect", "mirror"],
             target="User"
         )
@@ -1832,7 +1945,7 @@ class Spikes(Attack):
             power=0,
             accuracy=True,
             priority=0,
-            pp=20,
+            pp=32,
             flags=["protect", "reflectable"],
             target="Foe"
         )
@@ -1862,7 +1975,7 @@ class StealthRock(Attack):
             power=0,
             accuracy=True,
             priority=0,
-            pp=20,
+            pp=32,
             flags=["protect", "reflectable"],
             target="Foe"
         )
@@ -1891,7 +2004,7 @@ class ToxicSpikes(Attack):
             power=0,
             accuracy=True,
             priority=0,
-            pp=20,
+            pp=32,
             flags=["protect", "reflectable"],
             target="Foe"
         )
@@ -1922,7 +2035,7 @@ class StickyWeb(Attack):
             power=0,
             accuracy=True,
             priority=0,
-            pp=20,
+            pp=32,
             flags=["protect", "reflectable"],
             target="Foe"
         )
@@ -1995,7 +2108,7 @@ class Defog(Attack):
             power=0,
             accuracy=True,
             priority=0,
-            pp=15,
+            pp=24,
             flags=[],
             target="Single"
         )
@@ -2032,8 +2145,8 @@ class MortalSpin(Attack):
             power=70,
             accuracy=100,
             priority=0,
-            pp=10,
-            flags=["protect", "mirror", "contact"],
+            pp=16,
+            flags=["protect", "mirror", "contact", "secondary_effect"],
             target="Foe"
         )
 
@@ -2069,7 +2182,7 @@ class MagicCoat(Attack):
             power=0,
             accuracy=True,
             priority=4,
-            pp=15,
+            pp=24,
             flags=["protect"],
             target="User"
         )
@@ -2092,7 +2205,7 @@ class PsychicNoise(Attack):
             power=75,
             accuracy=100,
             priority=0,
-            pp=10,
+            pp=16,
             flags=["protect", "mirror", "sound"],  # Ajout du flag "sound"
             target="Foe"  # Une seule cible, pas "All Foes"
         )
@@ -2119,7 +2232,7 @@ class HealBell(Attack):
             power=0,
             accuracy=True,
             priority=0,
-            pp=5,
+            pp=8,
             flags=["heal", "sound"],  # Attaque de soin sonore
             target="All Allies"
         )
@@ -2157,7 +2270,7 @@ class PartingShot(Attack):
             power=0,
             accuracy=True,
             priority=0,
-            pp=20,
+            pp=32,
             flags=["protect", "mirror"],
             target="Foe"
         )
@@ -2191,7 +2304,7 @@ class HeavySlam(Attack):
             power=0,  # La puissance est déterminée par le poids
             accuracy=100,
             priority=0,
-            pp=10,
+            pp=16,
             flags=["contact", "protect", "mirror"],
             target="Foe"
         )
@@ -2229,8 +2342,8 @@ class Crunch(Attack):
             power=80,
             accuracy=100,
             priority=0,
-            pp=15,
-            flags=["contact", "protect", "mirror"],
+            pp=24,
+            flags=["contact", "protect", "mirror", "bite", "secondary_effect"],
             target="Foe"
         )
 
@@ -2251,7 +2364,7 @@ class FlareBlitz(Attack):
             power=120,
             accuracy=100,
             priority=0,
-            pp=15,
+            pp=24,
             flags=["contact", "protect", "mirror"],
             target="Foe"
         )
@@ -2265,6 +2378,29 @@ class FlareBlitz(Attack):
             fight.damage_method(user, recoil_damage)
             print(f"{user.name} subit {recoil_damage} PV de dégâts de recul après avoir utilisé Flare Blitz.")
 
+class WildCharge(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Wild Charge",
+            type_="Electric",
+            category="Physical",
+            power=90,
+            accuracy=100,
+            priority=0,
+            pp=24,
+            flags=["contact", "protect", "mirror"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight, damage_dealt=0):
+        """
+        L'utilisateur subit des dégâts de recul à hauteur de 1/4 des dégâts infligés.
+        """
+        if damage_dealt > 0:
+            recoil_damage = damage_dealt // 4
+            fight.damage_method(user, recoil_damage)
+            print(f"{user.name} subit {recoil_damage} PV de dégâts de recul après avoir utilisé Wild Charge.")
+
 class EarthPower(Attack):
     def __init__(self):
         super().__init__(
@@ -2274,8 +2410,8 @@ class EarthPower(Attack):
             power=90,
             accuracy=100,
             priority=0,
-            pp=10,
-            flags=["protect", "mirror"],
+            pp=16,
+            flags=["protect", "mirror", "secondary_effect"],
             target="Foe"
         )
 
@@ -2296,7 +2432,7 @@ class PowerGem(Attack):
             power=80,
             accuracy=100,
             priority=0,
-            pp=20,
+            pp=32,
             flags=["protect", "mirror"],
             target="Foe"
         )
@@ -2316,7 +2452,7 @@ class KowtowCleave(Attack):
             power=85,
             accuracy=True,
             priority=0,
-            pp=10,
+            pp=16,
             flags=["contact", "protect", "mirror"],
             target="Foe"
         )
@@ -2336,8 +2472,8 @@ class SludgeBomb(Attack):
             power=90,
             accuracy=100,
             priority=0,
-            pp=10,
-            flags=["protect", "mirror"],
+            pp=16,
+            flags=["protect", "mirror", "secondary_effect"],
             target="Foe"
         )
     
@@ -2358,7 +2494,7 @@ class BugBuzz(Attack):
             power=80,
             accuracy=100,
             priority=0,
-            pp=10,
+            pp=16,
             flags=["protect", "mirror"],
             target="Foe"
         )
@@ -2380,8 +2516,8 @@ class DarkPulse(Attack):
             power=80,
             accuracy=100,
             priority=0,
-            pp=15,
-            flags=["protect", "mirror"],
+            pp=24,
+            flags=["protect", "mirror", "secondary_effect"],
             target="Foe"
         )
 
@@ -2402,7 +2538,7 @@ class FocusBlast(Attack):
             power=120,
             accuracy=70,
             priority=0,
-            pp=5,
+            pp=8,
             flags=["protect", "mirror"],
             target="Foe"
         )
@@ -2424,8 +2560,8 @@ class IceBeam(Attack):
             power=90,
             accuracy=100,
             priority=0,
-            pp=10,
-            flags=["protect", "mirror"],
+            pp=16,
+            flags=["protect", "mirror", "secondary_effect"],
             target="Foe"
         )
 
@@ -2446,7 +2582,7 @@ class Roar(Attack):
             power=0,
             accuracy=True,
             priority=0,
-            pp=20,
+            pp=32,
             flags=["protect", "mirror"],
             target="All Foes"
         )
@@ -2472,7 +2608,7 @@ class BodyPress(Attack):
             power=80,
             accuracy=100,
             priority=0,
-            pp=10,
+            pp=16,
             flags=["contact", "protect", "mirror"],
             target="Foe"
         )
@@ -2492,7 +2628,7 @@ class DragonDance(Attack):
             power=0,
             accuracy=True,
             priority=0,
-            pp=20,
+            pp=32,
             flags=["protect", "mirror"],
             target="User"
         )
@@ -2516,7 +2652,7 @@ class ExtremeSpeed(Attack):
             power=80,
             accuracy=100,
             priority=2,  # Priorité élevée
-            pp=5,
+            pp=8,
             flags=["contact", "protect", "mirror"],
             target="Foe"
         )
@@ -2534,8 +2670,8 @@ class Moonblast(Attack):
             power=95,
             accuracy=100,
             priority=0,
-            pp=10,
-            flags=["protect", "mirror"],
+            pp=16,
+            flags=["protect", "mirror", "secondary_effect"],
             target="Foe"
         )
 
@@ -2556,8 +2692,8 @@ class ShadowBall(Attack):
             power=80,
             accuracy=100,
             priority=0,
-            pp=15,
-            flags=["protect", "mirror"],
+            pp=24,
+            flags=["protect", "mirror", "secondary_effect"],
             target="Foe"
         )
 
@@ -2598,8 +2734,8 @@ class IronHead(Attack):
             power=80,
             accuracy=100,
             priority=0,
-            pp=15,
-            flags=["contact", "protect", "mirror"],
+            pp=24,
+            flags=["contact", "protect", "mirror", "secondary_effect"],
             target="Foe"
         )
 
@@ -2620,7 +2756,7 @@ class Surf(Attack):
             power=90,
             accuracy=100,
             priority=0,
-            pp=15,
+            pp=24,
             flags=["protect", "mirror"],
             target="All Foes"
         )
@@ -2640,7 +2776,7 @@ class Hex(Attack):
             power=65,
             accuracy=100,
             priority=0,
-            pp=10,
+            pp=16,
             flags=["protect", "mirror"],
             target="Foe"
         )
@@ -2683,7 +2819,7 @@ class LowKick(Attack):
             power=0,  # La puissance est déterminée par le poids
             accuracy=100,
             priority=0,
-            pp=20,
+            pp=32,
             flags=["contact", "protect", "mirror"],
             target="Foe"
         )
@@ -2721,7 +2857,7 @@ class ChillyReception(Attack):
             power=0,
             accuracy=True,
             priority=0,
-            pp=10,
+            pp=16,
             flags=["mirror"],
             target="User"
         )
@@ -2765,7 +2901,7 @@ class Tailwind(Attack):
             power=0,
             accuracy=True,
             priority=0,
-            pp=10,
+            pp=16,
             flags=[],
             target="User"
         )
@@ -2786,10 +2922,10 @@ class TripleAxel(Attack):
             name="Triple Axel",
             type_="Ice",
             category="Physical",
-            power=20,  # Puissance de base par coup
+            power=32,  # Puissance de base par coup
             accuracy=90,
             priority=0,
-            pp=10,
+            pp=16,
             flags=["contact", "protect", "mirror"],
             target="Foe"
         )
@@ -2851,7 +2987,7 @@ class RockBlast(Attack):
             power=25,
             accuracy=90,
             priority=0,
-            pp=10,
+            pp=16,
             flags=["protect", "mirror"],
             target="Foe"
         )
@@ -2912,10 +3048,10 @@ class PopulationBomb(Attack):
             name="Population Bomb",
             type_="Normal",
             category="Physical",
-            power=20,
+            power=32,
             accuracy=100,
             priority=0,
-            pp=10,
+            pp=16,
             flags=["protect", "mirror"],
             target="Foe"
         )
@@ -2932,7 +3068,7 @@ class TidyUp(Attack):
             power=0,
             accuracy=100,
             priority=0,
-            pp=10,
+            pp=16,
             flags=[""],
             target="User"
         )
@@ -2972,7 +3108,7 @@ class FutureSight(Attack):
             power=120,
             accuracy=100,
             priority=0,
-            pp=10,
+            pp=16,
             flags=["protect", "mirror"],
             target="Foe"
         )
@@ -3017,7 +3153,7 @@ class PsychoBoost(Attack):
             power=140,
             accuracy=90,
             priority=0,
-            pp=5,
+            pp=8,
             flags=["contact"],
             target="Foe"
         )
@@ -3038,7 +3174,7 @@ class Superpower(Attack):
             power=120,
             accuracy=100,
             priority=0,
-            pp=5,
+            pp=8,
             flags=["contact"],
             target="Foe"
         )
@@ -3059,7 +3195,7 @@ class MakeItRain(Attack):
             power=120,
             accuracy=100,
             priority=0,
-            pp=5,
+            pp=8,
             flags=[],
             target="All Foes"
         )
@@ -3080,7 +3216,7 @@ class IceSpinner(Attack):
             power=80,
             accuracy=100,
             priority=0,
-            pp=15,
+            pp=24,
             flags=["contact"],
             target="Foe"
         )
@@ -3101,8 +3237,8 @@ class FieryDance(Attack):
             power=80,
             accuracy=100,
             priority=0,
-            pp=10,
-            flags=[],
+            pp=16,
+            flags=["protect", "mirror", "secondary_effect"],
             target="Foe"
         )
         
@@ -3123,8 +3259,8 @@ class SludgeWave(Attack):
             power=95,
             accuracy=100,
             priority=0,
-            pp=10,
-            flags=[],
+            pp=16,
+            flags=["secondary_effect", "protect", "mirror"],
             target="All"
         )
         
@@ -3144,8 +3280,8 @@ class CeaselessEdge(Attack):
             power=65,
             accuracy=90,
             priority=0,
-            pp=15,
-            flags=["contact", "sharp"],
+            pp=24,
+            flags=["contact", "sharp", "secondary_effect", "protect", "mirror"],
             target="Foe"
         )
         
@@ -3170,8 +3306,8 @@ class RazorShell(Attack):
             power=75,
             accuracy=95,
             priority=0,
-            pp=10,
-            flags=["contact", "sharp"],
+            pp=16,
+            flags=["contact", "sharp", "secondary_effect", "protect", "mirror"],
             target="Foe"
         )
         
@@ -3192,8 +3328,8 @@ class GunkShot(Attack):
             power=120,
             accuracy=80,
             priority=0,
-            pp=5,
-            flags=["contact", "protect", "mirror"],
+            pp=8,
+            flags=["contact", "protect", "mirror", "secondary_effect"],
             target="Foe"
         )
         
@@ -3240,7 +3376,7 @@ class FoulPlay(Attack):
             power=95,
             accuracy=100,
             priority=0,
-            pp=15,
+            pp=24,
             flags=["contact", "protect", "mirror"],
             target="Foe"
         )
@@ -3261,8 +3397,8 @@ class IceFang(Attack):
             power=65,
             accuracy=95,
             priority=0,
-            pp=15,
-            flags=["contact", "bite", "protect", "mirror"],
+            pp=24,
+            flags=["contact", "bite", "protect", "mirror", "secondary_effect"],
             target="Foe"
         )
 
@@ -3287,8 +3423,8 @@ class Liquidation(Attack):
             power=85,
             accuracy=100,
             priority=0,
-            pp=10,
-            flags=["contact", "protect", "mirror"],
+            pp=16,
+            flags=["contact", "protect", "mirror", "secondary_effect"],
             target="Foe"
         )
 
@@ -3309,7 +3445,7 @@ class Overheat(Attack):
             power=130,
             accuracy=90,
             priority=0,
-            pp=5,
+            pp=8,
             flags=["protect", "mirror"],
             target="Foe"
         )
@@ -3332,7 +3468,7 @@ class DracoMeteor(Attack):
             power=130,
             accuracy=90,
             priority=0,
-            pp=5,
+            pp=8,
             flags=["protect", "mirror"],
             target="Foe"
         )
@@ -3355,7 +3491,7 @@ class VoltSwitch(Attack):
             power=70,
             accuracy=100,
             priority=0,
-            pp=20,
+            pp=32,
             flags=["protect", "mirror"],
             target="Foe"
         )
@@ -3392,8 +3528,8 @@ class MeteorMash(Attack):
             power=90,
             accuracy=90,
             priority=0,
-            pp=10,
-            flags=["contact", "protect", "mirror"],
+            pp=16,
+            flags=["contact", "protect", "mirror", "secondary_effect"],
             target="Foe"
         )
 
@@ -3406,6 +3542,673 @@ class MeteorMash(Attack):
             success = apply_stat_changes(user, stat_changes, "self", fight)
             if success:
                 print(f"L'Attaque de {user.name} augmente grâce à Meteor Mash !")
+
+class MegaHorn(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Mega Horn",
+            type_="Bug",
+            category="Physical",
+            power=120,
+            accuracy=85,
+            priority=0,
+            pp=16,
+            flags=["contact", "protect", "mirror"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        Pas d'effet secondaire pour Mega Horn.
+        """
+        pass
+
+class HammerArm(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Hammer Arm",
+            type_="Fighting",
+            category="Physical",
+            power=100,
+            accuracy=90,
+            priority=0,
+            pp=16,
+            flags=["contact", "protect", "mirror", "secondary_effect"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        Réduit la Vitesse de l'utilisateur d'un niveau.
+        """
+        stat_changes = {"Speed": -1}
+        success = apply_stat_changes(user, stat_changes, "self", fight)
+        if success:
+                print(f"La Vitesse de {user.name} diminue après avoir utilisé Hammer Arm !")
+
+class PhantomForce(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Phantom Force",
+            type_="Ghost",
+            category="Physical",
+            power=90,
+            accuracy=100,
+            priority=0,
+            pp=16,
+            flags=["protect", "mirror"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        Phantom Force permet à l'utilisateur de disparaître pendant un tour et d'attaquer au tour suivant et brise toutes les protections.
+        """
+        # Premier tour : se charge
+        if not user.charging or user.charging_attack != self:
+            user.charging = True
+            user.charging_attack = self
+            user.phantom_force_active = True
+            print(f"{user.name} disparaît avec Phantom Force ! Il attaquera au prochain tour.")
+            return "charging"
+        else:
+            # Au deuxième tour : attaque et brise protect
+            user.charging = False
+            user.charging_attack = None
+            target.protect = False
+            return "attack"  # Indique que l'attaque est exécutée
+
+class DragonDarts(Attack):
+    """Frappe deux fois. Si le premier coup brise le clone de la cible, elle subit des dégâts du deuxième coup.
+    Dans les combats doubles, cette attaque tente de toucher le Pokémon ciblé et son allié une fois chacun. 
+    Si la capacité ne peux pas toucher une cible par immunité, protection, semi-invulnérabilité, une capacité, ou la précision,
+    il tente de frapper l'autre Pokémon deux fois à la place. Si cette attaque est redirigée, il frappe cette cible deux fois.
+    """
+    # On ignore pour l'instant la règle du combat Duo.
+    def __init__(self):
+        super().__init__(
+            name="Dragon Darts",
+            type_="Dragon",
+            category="Physical",
+            power=50,
+            accuracy=100,
+            priority=0,
+            pp=16,
+            flags=["contact", "protect", "mirror"],
+            target="Foe"
+        )
+        self.multi_hit = True
+        self.hits = 2
+
+class GrassyGlide(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Grassy Glide",
+            type_="Grass",
+            category="Physical",
+            power=55,
+            accuracy=100,
+            priority=1 if self.fight.terrain == "Grassy Terrain" else 0,  # Priorité élevée si sur terrain herbeux
+            pp=32,
+            flags=["contact", "protect", "mirror"],
+            target="Foe"
+        )
+
+class HighJumpKick(Attack):
+    def __init__(self):
+        super().__init__(
+            name="High Jump Kick",
+            type_="Fighting",
+            category="Physical",
+            power=130,
+            accuracy=90,
+            priority=0,
+            pp=8,
+            flags=["contact", "protect", "mirror", "secondary_effect"],
+            target="Foe"
+        )
+    
+class SupercellSlam(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Supercell Slam",
+            type_="Electric",
+            category="Physical",
+            power=100,
+            accuracy=95,
+            priority=0,
+            pp=24,
+            flags=["contact", "protect", "mirror"],
+            target="Foe",
+        )
+
+class BulletPunch(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Bullet Punch",
+            type_="Steel",
+            category="Physical",
+            power=40,
+            accuracy=100,
+            priority=1,  # Priorité élevée
+            pp=32,
+            flags=["contact", "protect", "mirror"],
+            target="Foe"
+        )
+
+class PsychoCut(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Psycho Cut",
+            type_="Psychic",
+            category="Physical",
+            power=70,
+            accuracy=100,
+            priority=0,
+            pp=32,
+            flags=["contact", "protect", "mirror", "sharp"],
+            target="Foe"
+        )
+        self.critical_chance_up = True
+
+class FirePunch(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Fire Punch",
+            type_="Fire",
+            category="Physical",
+            power=75,
+            accuracy=100,
+            priority=0,
+            pp=24,
+            flags=["contact", "protect", "mirror", "secondary_effect", "punch"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        A 10% de chance de brûler la cible.
+        """
+        if random.random() < 0.1 and target.talent != "Thermal Exchange":
+            target.apply_status("burn")
+            print(f"{target.name} est brûlé par Fire Punch !")
+
+class IcePunch(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Ice Punch",
+            type_="Ice",
+            category="Physical",
+            power=75,
+            accuracy=100,
+            priority=0,
+            pp=24,
+            flags=["contact", "protect", "mirror", "secondary_effect", "punch"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        A 10% de chance de geler la cible.
+        """
+        if random.random() < 0.1:
+            target.apply_status("frozen")
+            print(f"{target.name} est gelé par Ice Punch !")
+
+class XScissor(Attack):
+    def __init__(self):
+        super().__init__(
+            name="X-Scissor",
+            type_="Bug",
+            category="Physical",
+            power=80,
+            accuracy=100,
+            priority=0,
+            pp=24,
+            flags=["contact", "protect", "mirror", "sharp"],
+            target="Foe"
+        )
+
+class PoisonJab(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Poison Jab",
+            type_="Poison",
+            category="Physical",
+            power=80,
+            accuracy=100,
+            priority=0,
+            pp=32,
+            flags=["contact", "protect", "mirror", "secondary_effect"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        A 30% de chance d'empoisonner la cible.
+        """
+        if random.random() < 0.3:
+            target.apply_status("poisoned")
+            print(f"{target.name} est empoisonné par Poison Jab !")
+
+class Overdrive(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Overdrive",
+            type_="Electric",
+            category="Special",
+            power=80,
+            accuracy=100,
+            priority=0,
+            pp=16,
+            flags=["protect", "mirror", "sound"],
+            target="All Foes"
+        )
+
+class Aeroblast(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Aeroblast",
+            type_="Flying",
+            category="Special",
+            power=100,
+            accuracy=95,
+            priority=0,
+            pp=8,
+            flags=["protect", "mirror", "wind"],
+            target="Foe",
+            critical_chance_up=True
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        Aeroblast a un taux de coup critique élevé.
+        """
+        pass
+
+class AirCutter(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Air Cutter",
+            type_="Flying",
+            category="Special",
+            power=60,
+            accuracy=95,
+            priority=0,
+            pp=25,
+            flags=["protect", "mirror", "sharp", "wind"],
+            target="All Foes",
+            critical_chance_up=True
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        Air Cutter a un taux de coup critique élevé et touche tous les ennemis.
+        """
+        pass
+
+class BleakwindStorm(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Bleakwind Storm",
+            type_="Flying",
+            category="Special",
+            power=100,
+            accuracy=80,
+            priority=0,
+            pp=16,
+            flags=["protect", "mirror", "secondary_effect", "wind"],
+            target="All Foes"
+        )
+
+    def get_effective_accuracy(self, user, target, fight):
+        """Ne peut pas rater sous la pluie."""
+        if fight and fight.weather.get("current") == "Rain":
+            return True  # Précision garantie sous la pluie
+        return self.accuracy 
+
+    def apply_effect(self, user, target, fight):
+        """
+        30% de chance de réduire la Vitesse de la cible d'un niveau.
+        """
+        if random.random() < 0.3:
+            stat_changes = {"Speed": -1}
+            success = apply_stat_changes(target, stat_changes, "opponent", fight)
+            if success:
+                print(f"La Vitesse de {target.name} diminue à cause de Bleakwind Storm !")
+
+class HeatWave(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Heat Wave",
+            type_="Fire",
+            category="Special",
+            power=95,
+            accuracy=90,
+            priority=0,
+            pp=16,
+            flags=["protect", "mirror", "secondary_effect", "wind"],
+            target="All Foes"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        10% de chance de brûler la cible.
+        """
+        if random.random() < 0.1 and target.talent != "Thermal Exchange":
+            if target.status is None:
+                target.status = "burn"
+                print(f"{target.name} est brûlé par Heat Wave !")
+
+class IcyWind(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Icy Wind",
+            type_="Ice",
+            category="Special",
+            power=55,
+            accuracy=95,
+            priority=0,
+            pp=24,
+            flags=["protect", "mirror", "secondary_effect", "wind"],
+            target="All Foes"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        Réduit toujours la Vitesse de la cible d'un niveau.
+        """
+        stat_changes = {"Speed": -1}
+        success = apply_stat_changes(target, stat_changes, "opponent", fight)
+        if success:
+            print(f"La Vitesse de {target.name} diminue à cause d'Icy Wind !")
+
+class SandsearStorm(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Sandsear Storm",
+            type_="Ground",
+            category="Special",
+            power=100,
+            accuracy=80,
+            priority=0,
+            pp=16,
+            flags=["protect", "mirror", "secondary_effect", "wind"],
+            target="All Foes"
+        )
+
+    def get_effective_accuracy(self, user, target, fight):
+        """Ne peut pas rater sous la pluie."""
+        if fight and fight.weather.get("current") == "Rain":
+            return True  # Précision garantie sous la pluie
+        return self.accuracy 
+    
+    def apply_effect(self, user, target, fight):
+        """
+        20% de chance de brûler la cible.
+        """
+        if random.random() < 0.2 and target.talent != "Thermal Exchange":
+            if target.status is None:
+                target.status = "burn"
+                print(f"{target.name} est brûlé par Sandsear Storm !")
+
+class SpringtideStorm(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Springtide Storm",
+            type_="Fairy",
+            category="Special",
+            power=100,
+            accuracy=80,
+            priority=0,
+            pp=8,
+            flags=["protect", "mirror", "secondary_effect", "wind"],
+            target="All Foes"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        30% de chance de réduire l'Attaque de la cible d'un niveau.
+        """
+        if random.random() < 0.3:
+            stat_changes = {"Attack": -1}
+            success = apply_stat_changes(target, stat_changes, "opponent", fight)
+            if success:
+                print(f"L'Attaque de {target.name} diminue à cause de Springtide Storm !")
+
+class WildboltStorm(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Wildbolt Storm",
+            type_="Electric",
+            category="Special",
+            power=100,
+            accuracy=80,
+            priority=0,
+            pp=16,
+            flags=["protect", "mirror", "secondary_effect", "wind"],
+            target="All Foes"
+        )
+
+    def get_effective_accuracy(self, user, target, fight):
+        """Ne peut pas rater sous la pluie."""
+        if fight and fight.weather.get("current") == "Rain":
+            return True  # Précision garantie sous la pluie
+        return self.accuracy 
+    
+    def apply_effect(self, user, target, fight):
+        """
+        20% de chance de paralyser la cible.
+        """
+        if random.random() < 0.2:
+            if target.status is None:
+                target.status = "paralyzed"
+                print(f"{target.name} est paralysé par Wildbolt Storm !")
+
+class BoomBurst(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Boom Burst",
+            type_="Normal",
+            category="Special",
+            power=140,
+            accuracy=100,
+            priority=0,
+            pp=16,
+            flags=["protect", "mirror", "sound"],
+            target="All Foes"
+        )
+
+class StrengthSap(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Strength Sap",
+            type_="Grass",
+            category="Status",
+            power=0,
+            accuracy=100,
+            priority=0,
+            pp=16,
+            flags=["protect", "mirror", "contact"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """
+        Réduit l'Attaque de la cible d'1 cran.
+        L'utilisateur récupère un nombre de PVs égaux à la valeur d'Attaque de la cible calculée avant l'utilisation de cette capacité.
+        Si l'utilisateur tient une Grosse Racine, les PVs récupérés sont multipliés par 1,3 , arrondis à la moitié inférieure.
+        Échoue si la statistique d'Attaque de la cible est réduite à fond (-6).
+        """
+        if target.stats_modifier[0] <= -6:
+            print(f"{target.name} ne peut pas être affaibli davantage !")
+            return
+        else:
+            
+
+            # Appliquer les dégâts à la cible
+            apply_stat_changes(target, {"Attack": -1}, "opponent", fight)
+
+            if user.current_hp < user.max_hp:
+                healing = target.current_stats()['Attack']
+                actual_healing = min(healing, user.max_hp - user.current_hp)
+                if user.item and user.item.name == "Big Root":
+                    actual_healing = int(actual_healing * 1.3)
+                if target.talent == "Liquid Ooze":
+                    user.current_hp -= actual_healing
+                    print(f"{target.name} inflige {actual_healing} PV de dégâts à {user.name} avec Liquid Ooze !")
+                else:
+                    user.current_hp += actual_healing
+                    print(f"{user.name} restaure {actual_healing} PV avec Strength Sap !")
+
+class BitterBlade(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Bitter Blade",
+            type_="Fire",
+            category="Physical",
+            power=50,
+            accuracy=100,
+            priority=0,
+            pp=16,
+            flags=["contact", "protect", "mirror", "heal"],
+            target="Foe"
+        )
+    
+    def apply_effect(self, user, target, fight, damage_dealt=0):
+        """
+        L'utilisateur récupère 50% des dégâts infligés.
+        """
+        if damage_dealt > 0:
+            healing = int(damage_dealt * 0.5)
+            if user.current_hp < user.max_hp:
+                actual_healing = min(healing, user.max_hp - user.current_hp)
+                if user.item == "Big Root":
+                    actual_healing = int(actual_healing * 1.3)
+                if target.talent == "Liquid Ooze":
+                    user.current_hp -= actual_healing
+                    print(f"{target.name} inflige {actual_healing} PV de dégâts à {user.name} avec Liquid Ooze !")
+                else:
+                    user.current_hp += actual_healing
+                    print(f"{user.name} récupère {actual_healing} PV grâce à Draining Kiss !")
+
+class EnergyBall(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Energy Ball",
+            type_="Grass",
+            category="Special",
+            power=90,
+            accuracy=100,
+            priority=0,
+            pp=16,
+            flags=["protect", "mirror", "secondary_effect"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        if random.randint(1, 100) <= 10:
+            from pokemon import apply_stat_changes
+            apply_stat_changes(target, {"Sp. Def": -1}, "opponent", fight)
+
+class BodySlam(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Body Slam",
+            type_="Normal",
+            category="Physical",
+            power=85,
+            accuracy=100,
+            priority=0,
+            pp=16,
+            flags=["protect", "mirror", "secondary_effect"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        if random.randint(1,100) <= 30:
+            target.apply_status("paralyzed")
+
+class Rest(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Rest",
+            type_="Normal",
+            category="Status",
+            power=0,
+            accuracy=True,
+            priority=0,
+            pp=8,
+            flags=["heal"],
+            target="User"
+        )
+
+    def apply_effect(self, user, target, fight):
+        # Vérifier si l'utilisateur est sous l'effet de Heal Block
+        if getattr(user, 'heal_blocked', False):
+            print(f"{user.name} ne peut pas utiliser {self.name} car il est sous l'effet de Heal Block !")
+            return
+        
+        current_hp = user.current_hp
+        heal_amount = user.max_hp
+        user.current_hp = min(user.max_hp, user.current_hp + heal_amount)
+        print(f"{user.name} récupère {user.max_hp - current_hp} PV grâce à Rest.")
+
+class SleepTalk(Attack):
+    """Une des capacités connues du lanceur est choisie au hasard pour être utilisée. Échoue si le lanceur n'est pas endormi.
+    Géré dans fight.py ligne 664 et dans check_status_before_attack()"""
+    def __init__(self):
+        super().__init__(
+            name="Sleep Talk",
+            type_="Normal",
+            category="Status",
+            power=0,
+            accuracy=True,
+            priority=0,
+            pp=16,
+            flags=[],
+            target="User"
+        )
+    
+    def apply_effect(self, user, target, fight):
+        if user.status != "sleep":
+            print(f"L'attaque échoue !")
+
+class GlaiveRush(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Glaive Rush",
+            type_="Dragon",
+            category="Physical",
+            power=120,
+            accuracy=100,
+            priority=0,
+            pp=8,
+            flags=["contact", "mirror", "protect"],
+            target="Foe"
+        )
+    
+    def apply_effect(self, user, target, fight):
+        user.glaive_rush = True
+
+class FlashCannon(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Flash Cannon",
+            type_="Steel",
+            category="Special",
+            power=80,
+            accuracy=100,
+            priority=0,
+            pp=16,
+            flags=["protect", "mirror", "secondary_effect"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        if random.randint(1, 100) <= 10:
+            from pokemon import apply_stat_changes
+            apply_stat_changes(target, {"Sp. Def": -1}, "opponent", fight)
 
 def process_future_sight_attacks(fight):
     """
@@ -3514,12 +4317,20 @@ def execute_future_sight(future_attack, fight):
 
 attack_registry = {
     "Aerial Ace": AerialAce(),
+    "Aeroblast": Aeroblast(),
+    "Air Cutter": AirCutter(),
     "Aqua Jet": AquaJet(),
+    "Aqua Step": AquaStep(),
     "Aurora Veil": AuroraVeil(),
     "Behemoth Blade": BehemothBlade(),
+    "Bitted Blade": BitterBlade(),
+    "Bleakwind Storm": BleakwindStorm(),
     "Body Press": BodyPress(),
+    "Body Slam": BodySlam(),
+    "Boom Burst": BoomBurst(),
     "Bug Buzz": BugBuzz(),
     "Bulk Up": BulkUp(),
+    "Bullet Punch": BulletPunch(),
     "Bullet Seed": BulletSeed(),
     "Blizzard": Blizzard(),
     "Brave Bird": BraveBird(),
@@ -3533,6 +4344,7 @@ attack_registry = {
     "Dragon Claw": DragonClaw(),
     "Draco Meteor": DracoMeteor(),
     "Dragon Dance": DragonDance(),
+    "Dragon Darts": DragonDarts(),
     "Dragon Pulse": DragonPulse(),
     "Draining Kiss": DrainingKiss(),
     "Dynamic Punch": DynamicPunch(),
@@ -3540,9 +4352,11 @@ attack_registry = {
     "Earth Power": EarthPower(),
     "Electro Shot": ElectroShot(),
     "Encore": Encore(),
+    "Energy Ball": EnergyBall(),
     "Extreme Speed": ExtremeSpeed(),
     "Fake Out": FakeOut(),
     "Fiery Dance": FieryDance(),
+    "Fire Punch": FirePunch(),
     "Flamethrower": Flamethrower(),
     "Flare Blitz": FlareBlitz(),
     "Flip Turn": FlipTurn(),
@@ -3550,19 +4364,26 @@ attack_registry = {
     "Focus Blast": FocusBlast(),
     "Foul Play": FoulPlay(),
     "Future Sight": FutureSight(),
+    "Glaive Rush": GlaiveRush(),
     "Grass Knot": GrassKnot(),
+    "Grassy Glide": GrassyGlide(),
     "Gunk Shot": GunkShot(),
+    "Hammer Arm": HammerArm(),
     "Heal Bell": HealBell(),
+    "Heat Wave": HeatWave(),
     "Heavy Slam": HeavySlam(),
     "Hex": Hex(),
+    "High Jump Kick": HighJumpKick(),
     "Hurricane": Hurricane(),
     "Hydro Pump": HydroPump(),
     "Hyper Beam": HyperBeam(),
     "Ice Beam": IceBeam(),
     "Ice Fang": IceFang(),
+    "Ice Punch": IcePunch(),
     "Ice Shard": IceShard(),
     "Ice Spinner": IceSpinner(),
     "Icicle Spear": IcicleSpear(),
+    "Icy Wind": IcyWind(),
     "Iron Defense": IronDefense(),
     "Iron Head": IronHead(),
     "Knock Off": KnockOff(),
@@ -3575,19 +4396,24 @@ attack_registry = {
     "Magic Coat": MagicCoat(),
     "Make It Rain": MakeItRain(),
     "Malignant Chain": MalignantChain(),
+    "Mega Horn": MegaHorn(),
     "Meteor Mash": MeteorMash(),
     "Moonblast": Moonblast(),
     "Mortal Spin": MortalSpin(),
     "Nasty Plot": NastyPlot(),
     "Nuzzle": Nuzzle(),
+    "Overdrive": Overdrive(),
     "Overheat": Overheat(),
     "Parting Shot": PartingShot(),
+    "Phantom Force": PhantomForce(),
     "Play Rough": PlayRough(),
+    "Poison Jab": PoisonJab(),
     "Population Bomb": PopulationBomb(),
     "Power Gem": PowerGem(),
     "Protect": Protect(),
-    "Psycho Boost": PsychoBoost(),
     "Psychic": Psychic(),
+    "Psycho Boost": PsychoBoost(),
+    "Psycho Cut": PsychoCut(),
     "Psychic Noise": PsychicNoise(),
     "Quiver Dance": QuiverDance(),
     "Rain Dance": RainDance(),
@@ -3595,22 +4421,28 @@ attack_registry = {
     "Razor Shell": RazorShell(),
     "Recover": Recover(),
     "Reflect": Reflect(),
+    "Rest": Rest(),
     "Roar": Roar(),
     "Rock Slide": RockSlide(),
     "Rock Blast": RockBlast(),
     "Roost": Roost(),
     "Sandstorm": Sandstorm(),
+    "Sandsear Storm": SandsearStorm(),
     "Scald": Scald(),
     "Shadow Ball": ShadowBall(),
+    "Shadow Claw": ShadowClaw(),
     "Shed Tail": ShedTail(),
     "Shell Smash": ShellSmash(),
     "Shift Gear": ShiftGear(),
+    "Slack Off": SlackOff(),
+    "Sleep Talk": SleepTalk(),
     "Sludge Bomb": SludgeBomb(),
     "Sludge Wave": SludgeWave(),
     "Solar Beam": SolarBeam(),
     "Snarl": Snarl(),
     "Spikes": Spikes(),
     "Spore": Spore(),
+    "Springtide Storm": SpringtideStorm(),
     "Stealth Rock": StealthRock(),
     "Sticky Web": StickyWeb(),
     "Stone Edge": StoneEdge(),
@@ -3618,15 +4450,18 @@ attack_registry = {
     "Substitute": Substitute(),
     "Sucker Punch": SuckerPunch(),
     "Sunny Day": SunnyDay(),
+    "Supercell Slam": SupercellSlam(),
     "Superpower": Superpower(),
     "Surf": Surf(),
     "Swords Dance": SwordsDance(),
+    "Synthesis": Synthesis(),
     "Tailwind": Tailwind(),
     "Taunt": Taunt(),
     "Tera Blast": TeraBlast(),
     "Thunder": Thunder(),
     "Thunder Wave": ThunderWave(),
     "Tidy Up": TidyUp(),
+    "Torch Song": TorchSong(),
     "Toxic": Toxic(),
     "Toxic Spikes": ToxicSpikes(),
     "Trick": Trick(),
@@ -3636,8 +4471,9 @@ attack_registry = {
     "Vacuum Wave": VacuumWave(),
     "Volt Switch": VoltSwitch(),
     "Wave Crash": WaveCrash(),
+    "Wild Charge": WildCharge(),
+    "Wildbolt Storm": WildboltStorm(),
     "Will-O-Wisp": WillOWisp(),
-    "Wood Hammer": WoodHammer()
-
-
+    "Wood Hammer": WoodHammer(),
+    "X-Scissor": XScissor(),
 }

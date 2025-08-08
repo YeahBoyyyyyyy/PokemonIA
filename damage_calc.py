@@ -61,7 +61,7 @@ def attack_carac(fight, user_pokemon : pokemon, attack : Attack, target_pokemon 
     berry = berry_boost(target_pokemon, attack)  # Placeholder pour l'effet de la baie, si applicable
     burn = burn_effect(user_pokemon, attack)  # Si le Pokémon est brûlé, les dégâts sont réduits de moitié
     defender_team_id = fight.get_team_id(target_pokemon)
-    screen = screen_effect(attack, fight, defender_team_id)  # Effet de l'écran de protection actif pour l'équipe du défenseur
+    screen = screen_effect(user_pokemon, attack, fight, defender_team_id)  # Effet de l'écran de protection actif pour l'équipe du défenseur
     if atk_ab_mod["type"] != None:
         type_eff = type_effectiveness(atk_ab_mod["type"], target_pokemon)
         attack_copy = attack.copy()
@@ -70,6 +70,11 @@ def attack_carac(fight, user_pokemon : pokemon, attack : Attack, target_pokemon 
     else:
         type_eff = type_effectiveness(attack.type, target_pokemon)  # Calcul de l'efficacité du type
         stab = is_stab(user_pokemon, attack)
+
+    if target_pokemon.glaive_rush:
+        glaive_rush = 2.0
+    else: 
+        glaive_rush = 1.0
 
     multiplier = def_ab_mod * atk_ab_mod["attack"] * def_item_mod["attack"] * atk_item_mod["attack"]  # Modificateur de dégâts basé sur les talents et les objets
 
@@ -99,13 +104,13 @@ def attack_carac(fight, user_pokemon : pokemon, attack : Attack, target_pokemon 
                 attack_stat = int(user_pokemon.calculate_stat(user_pokemon.base_stats['Sp. Atk'], user_pokemon.ivs['Sp. Atk'], user_pokemon.evs['Sp. Atk'], user_pokemon.nature_modifier[2], 0) * user_pokemon.hidden_modifier["Sp. Atk"])
             else:
                 attack_stat = user_current_stats['Sp. Atk']
-        damage = ((22 * base_power * (attack_stat / defense_stat)) / 50 + 2) * burn * screen * type_eff * terrain_boost * weather_boost * critical * stab * berry * attack_boost * multiplier
+        damage = ((22 * base_power * (attack_stat / defense_stat)) / 50 + 2) * burn * screen * type_eff * terrain_boost * weather_boost * critical * stab * berry * attack_boost * multiplier * glaive_rush
         # A changer car les crits ne prennent pas en compte les modificateurs de stats
     else:
         critical = 1.0
         defense_stat = target_current_stats['Defense'] if attack.category == 'Physical' else target_current_stats['Sp. Def']
         attack_stat = user_current_stats['Attack'] if attack.category == 'Physical' else user_current_stats['Sp. Atk']
-        damage = ((22 * base_power * (attack_stat / defense_stat)) / 50 + 2) * burn * screen * type_eff * terrain_boost * weather_boost * critical * stab * berry * attack_boost * multiplier
+        damage = ((22 * base_power * (attack_stat / defense_stat)) / 50 + 2) * burn * screen * type_eff * terrain_boost * weather_boost * critical * stab * berry * attack_boost * multiplier * glaive_rush
 
     possible_damages = [damage * r for r in rdm]
 
@@ -129,11 +134,7 @@ def type_effectiveness(attack_type, target):
     :param target: Pokémon cible (instance, pas liste de types)
     :return: Multiplicateur d'efficacité
     """
-    # Utiliser les types effectifs pour la défense (Tera ou originaux)
-    if hasattr(target, 'get_effective_types_for_defense'):
-        target_types = target.get_effective_types_for_defense()
-    else:
-        target_types = target.types
+    target_types = target.types
         
     modifier = 1.0
     for t in target_types:
@@ -280,7 +281,7 @@ def burn_effect(pokemon : pokemon, attack : Attack):
     :param attack: Instance de la classe Attack.
     :return: Multiplicateur de dégâts en fonction de l'attaque.
     """
-    if attack.category == "Physical" and is_burned(pokemon):
+    if attack.category == "Physical" and is_burned(pokemon) and pokemon.talent != "Guts":
         return 0.5
     else:
         return 1.0
@@ -295,7 +296,7 @@ def confusion_attack(pokemon : pokemon):
     damage = int(((40 * (pokemon.current_stats()['Attack'] / pokemon.current_stats()['Defense'])) + 1))
     return damage
 
-def screen_effect(attack : Attack, fight : Fight, defender_team_id):
+def screen_effect(attacker : pokemon, attack : Attack, fight : Fight, defender_team_id):
     """
     Applique l'effet de l'écran de protection actif pour l'équipe du défenseur.
     
@@ -305,7 +306,8 @@ def screen_effect(attack : Attack, fight : Fight, defender_team_id):
     :return: Facteur de réduction des dégâts.
     """ 
     screens = fight.screen_team1 if defender_team_id == 1 else fight.screen_team2
-    
+    if attacker.talent == "Infiltrator":
+        return 1.0
     if 'light_screen' in screens and attack.category == "Special":
         return 0.5
     elif 'reflect' in screens and attack.category == "Physical":

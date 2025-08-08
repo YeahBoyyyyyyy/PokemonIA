@@ -520,9 +520,16 @@ class Fight():
                 pokemon.current_hp = max(0, pokemon.current_hp - drained)
                 seeder = pokemon.leech_seeded_by
                 if seeder.current_hp > 0:
-                    seeder.current_hp = min(seeder.max_hp, seeder.current_hp + drained)
-                print(f"{pokemon.name} perd {drained} PV à cause de Graine ! {seeder.name} les récupère.")
-            
+                    if seeder.item == "Big Root":
+                        actual_healing = int(drained * 1.3)
+                    if pokemon.talent == "Liquid Ooze":
+                        seeder.current_hp -= actual_healing
+                        print(f"{pokemon.name} inflige {actual_healing} PV de dégâts à {seeder.name} avec Liquid Ooze !")
+                    else:
+                        seeder.current_hp += actual_healing
+                        print(f"{pokemon.name} perd {drained} PV à cause de Graine ! {seeder.name} les récupère.")
+                        seeder.current_hp = min(seeder.max_hp, seeder.current_hp + drained)
+                
         
         # Vérifier les Pokémon K.O. avant les effets de fin de tour car les Leftovers ne peuvent pas resurrecter un Pokémon K.O.
         if self.active1.current_hp <= 0:
@@ -582,6 +589,8 @@ class Fight():
                     print(f"L'effet d'Encore sur {p.name} se dissipe !")
                     p.encored_attack = None
             
+            p.has_attacked_or_switched = False
+
             # Restaurer le type Vol perdu par Roost à la fin du tour
             if hasattr(p, 'lost_flying_from_roost') and p.lost_flying_from_roost:
                 if hasattr(p, 'original_types'):
@@ -620,10 +629,13 @@ class Fight():
                     self.active1.substitute_hp = self.pending_substitute_team1
                     print(f"{self.active1.name} hérite du clone avec {self.pending_substitute_team1} PV !")
                     self.pending_substitute_team1 = 0  # Reset
-                
+
+                self.active1.has_attacked_or_switched = True
+
                 trigger_item(self.active1, "on_entry", self)
                 trigger_talent(self.active1, "on_entry", self)
                 self.on_entry_hazards(self.active1)
+                
 
         elif team == 2:
             if self.team2[index].current_hp > 0:
@@ -645,6 +657,8 @@ class Fight():
                     print(f"{self.active2.name} hérite du clone avec {self.pending_substitute_team2} PV !")
                     self.pending_substitute_team2 = 0  # Reset
                 
+                self.active2.has_attacked_or_switched = True
+
                 trigger_item(self.active2, "on_entry", self)
                 trigger_talent(self.active2, "on_entry", self)
                 self.on_entry_hazards(self.active2)       
@@ -653,6 +667,16 @@ class Fight():
         """
         Gère l'action "Attaquer" d'un Pokémon sur un autre, en prenant en compte les effets de statut, multi-tours et priorités.
         """
+        if attack.name == "Sleep Talk":
+            available_attacks = [attacker.attack1, attacker.attack2, attacker.attack3, attacker.attack4]
+            sorted_available_attack = []
+            for atk in available_attacks:
+                if not (atk.name == "Sleep Talk" or "charge" in atk.flags):
+                    sorted_available_attack.append(atk)
+            attack = random.choice(sorted_available_attack)
+
+        if attack.name != "Glaive Rush" and hasattr(attacker, "glaive_rush"):
+            attacker.glaive_rush = False
 
         if defender.current_hp <= 0:
             print(f"{defender.name} est K.O. et ne peut pas être attaqué !")
@@ -744,6 +768,8 @@ class Fight():
         # Vérification Précision avec modificateurs
         if not self.calculate_hit_chance(attacker, defender, attack, talent_mod_dict, on_item_mod):
             print(f"{attacker.name} rate son attaque !")
+            if attack.name in ["High Jump Kick", "Supercell Slam"]:
+                attacker.current_hp //= 2
             return
 
         print(f"{attacker.name} utilise {attack.name} !")
@@ -786,6 +812,8 @@ class Fight():
             if multiplier == 0:
                 print(f"{defender.name} n'est pas affecté grâce à son talent !")
                 return 
+            # Déclencher les objets on_defense pour le défenseur (ex: Covert Cloak)
+            trigger_item(defender, "on_defense", attack, self)
         else:
             multiplier = 1.0  # Pas de modificateur défensif si l'attaque ne cible pas l'adversaire
         if multiplier == 0:
@@ -821,32 +849,13 @@ class Fight():
             attacker.protect_turns = 0  # Réinitialiser les tours de protection à chaque tour
 
         attacker.first_attack = False  # Réinitialiser le premier tour d'attaque
+        attacker.has_attacked_or_switched = True
 
         # Nettoyer les attributs temporaires pour éviter les doubles activations de talents
         if hasattr(attacker, '_rough_skin_triggered'):
             delattr(attacker, '_rough_skin_triggered')
         if hasattr(defender, '_toxic_debris_triggered'):
             delattr(defender, '_toxic_debris_triggered')
-
-    """
-    def handle_ko_replacement(self, ko_pokemon):
-        Gère le remplacement immédiat d'un Pokémon K.O.
-        if ko_pokemon == self.active1:
-            team_id = 1
-            team = self.team1
-        elif ko_pokemon == self.active2:
-            team_id = 2
-            team = self.team2
-        else:
-            return  # Pokémon pas actif, pas besoin de remplacement
-        
-        
-        if self.is_team_defeated(team):
-            self.check_battle_end()
-            return
-        else:
-            self.handle_switch(team_id, forced=True)
-    """
 
     def apply_secondary_effects(self, attacker, defender, attack, damage_dealt=0):
         """
@@ -867,6 +876,18 @@ class Fight():
             # Vérifier si l'attaque est bloquée par le substitut
             if self.is_blocked_by_substitute(attack, target):
                 print(f"{target.name} a un clone qui bloque {attack.name} !")
+                return
+            
+            # Vérifier si les effets secondaires sont bloqués par Covert Cloak
+            # Le Covert Cloak ne bloque que les effets qui ciblent le porteur de la cape
+            if (attack.target == "Foe" and 
+                "secondary_effect" in attack.flags and 
+                target == defender and  # L'effet cible bien le défenseur
+                hasattr(target, 'covert_cloak_protection') and 
+                target.covert_cloak_protection):
+                print(f"Les effets secondaires de {attack.name} sont bloqués par le Covert Cloak de {target.name} !")
+                # Réinitialiser la protection
+                target.covert_cloak_protection = False
                 return
             
             # Appliquer l'effet secondaire
@@ -1026,7 +1047,8 @@ class Fight():
         # Afficher et appliquer les dégâts
         print(f"{bcolors.DARK_RED}{defender.name} subit {damage} points de dégâts.{bcolors.RESET}")
         # Vérifier si l'attaque ignore les substituts
-        bypass_substitute = "authentic" in attack.flags
+        if "authentic" in attack.flags or attacker.talent == "Infiltrator":
+            bypass_substitute = True
         self.damage_method(defender, damage, bypass_substitute)
         
         # Effet Rocky Helmet : si le défenseur porte Rocky Helmet et l'attaque est de contact
@@ -1259,6 +1281,9 @@ class Fight():
         if effective_accuracy == True:
             return True
         
+        if defender.glaive_rush:
+            return True
+
         # Calcul normal de précision
         base_accuracy = effective_accuracy / 100.0 * talent_mod["accuracy"] * item_mod["accuracy"]
         final_accuracy = base_accuracy * attacker.accuracy / defender.evasion
@@ -1294,7 +1319,7 @@ class Fight():
             self.damage_method(pokemon, dmg)
             pokemon.toxic_counter += 1
 
-    def check_status_before_attack(self, attacker: pokemon) -> bool:
+    def check_status_before_attack(self, attacker: pokemon, attack: Attack) -> bool:
         """
         Vérifie si le Pokémon peut agir selon son statut.
         Retourne True s'il peut attaquer, False sinon.
@@ -1306,13 +1331,15 @@ class Fight():
                     attacker.remove_status()
                     return True
                 case 2:
-                    if random.random() < 0.75:
+                    if random.random() < 0.5:
                         print(f"{attacker.name} se réveille !")
                         attacker.remove_status()
                         return True
                     else:
                         print(f"{attacker.name} tape sa meilleur sieste.")
                         attacker.sleep_counter += 1
+                        if attack.name != "Sleep Talk":
+                            return True
                         return False
                 case 1:
                     if random.random() < 0.5:
@@ -1322,10 +1349,14 @@ class Fight():
                     else:
                         print(f"{attacker.name} dort encore.")
                         attacker.sleep_counter += 1
+                        if attack.name != "Sleep Talk":
+                            return True
                         return False
                 case 0:
                     print(f"{attacker.name} dort profondément.")
                     attacker.sleep_counter += 1
+                    if attack.name != "Sleep Talk":
+                        return True
                     return False
                 case _:
                     raise ValueError(f"Invalid sleep counter value: {attacker.sleep_counter}")
@@ -1649,7 +1680,7 @@ class Fight():
             protect_update(second, second_attack)
 
             # Première attaque
-            if self.check_status_before_attack(first):
+            if self.check_status_before_attack(first, first_attack):
                 self.player_attack(first, first_attack, second, second_attack)
             
             for p in [self.active1, self.active2]:
@@ -1669,7 +1700,7 @@ class Fight():
             
             # Seconde attaque si vivant et pas remplacé
             if second.current_hp > 0:
-                if self.check_status_before_attack(second):
+                if self.check_status_before_attack(second, second_attack):
                     self.player_attack(second, second_attack, first, first_attack)
                 
                 for p in [self.active1, self.active2]:
@@ -1707,7 +1738,7 @@ class Fight():
             new_in_pokemon = self.active1 if switcher == pokemon1 else self.active2
 
             # Vérifier si l'attaquant peut attaquer
-            if self.check_status_before_attack(attacker):
+            if self.check_status_before_attack(attacker, attack_id):
                 self.player_attack(attacker, attack_id, new_in_pokemon)
 
                 # Vérifier les K.O. après l'attaque
@@ -1734,17 +1765,12 @@ def type_effectiveness(attack_type, target):
     :param target: Pokémon cible (instance, pas liste de types)
     :return: Multiplicateur d'efficacité
     """
-    # Utiliser les types effectifs pour la défense (Tera ou originaux)
-    if hasattr(target, 'get_effective_types_for_defense'):
-        target_types = target.get_effective_types_for_defense()
-    else:
-        target_types = target.types
+    target_types = target.types
         
     modifier = 1.0
     for t in target_types:
         modifier *= utilities.type_chart[utilities.POKEMON_TYPES_ID[attack_type]][utilities.POKEMON_TYPES_ID[t]]
     return modifier
-    
     
 #### Attaque de confusion ####
 def confusion_attack(pokemon : pokemon):

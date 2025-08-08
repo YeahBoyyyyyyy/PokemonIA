@@ -21,6 +21,9 @@ class pokemon():
         self.item = None  # Objet tenu par le Pokémon (par exemple : Baie, etc.)
         self.nature = None  # Nature du Pokémon (par exemple : "Hardy", "Lonely", etc.)
         self.item_saved = None  # Pour sauvegarder l'objet d'origine du Pokémon (utile pour resetup le pokemon)
+
+        self.original_types = self.types.copy()  # Sauvegarder les types originaux
+
         ## BASE STATS
         stats = poke['stats']
 
@@ -47,10 +50,6 @@ class pokemon():
 
         self.max_hp =  int((2 * self.base_stats['HP'] + self.ivs["HP"] + self.evs['HP'] / 4) * 0.5 + 60)   # Points de vie maximum
         self.current_hp = self.max_hp  # Points de vie actuels
-
-        # Cache pour les calculs de stats
-        self._stats_cache = {}
-        self._stats_dirty = True  # Flag pour savoir si le cache doit être recalculé
 
         self.nature_modifier = utilities.nature_chart[self.nature] if self.nature else [1, 1, 1, 1, 1]
         self._calculate_initial_stats()
@@ -88,7 +87,6 @@ class pokemon():
         self.must_recharge = False  # Indique si le Pokémon doit récupérer après une attaque de recharge (comme Hyper Beam)
         self.sleep_counter = None  # Nombre de tours de sommeil du Pokémon endormi
         self.toxic_counter = 1  # Compteur pour le poison grave (Toxic) - commence à 1
-        self.protect_turns = 0  # Nombre de tours de protection restants si le Pokémon utilise "Protect" ou "Detect"
         self.still_confused = False  # Indique si le Pokémon est toujours confus au prochain tour
         self.locked_attack = None  # Pour gérer Choice Band/Specs/Scarf (stocke l'objet Attack)
         self.fully_evolved = poke['fully_evolved'] if 'fully_evolved' in poke else False  # Indique si le Pokémon est entièrement évolué
@@ -147,7 +145,6 @@ class pokemon():
             
         self.tera_type = tera_type
         self.tera_activated = True
-        self.original_types = self.types.copy()  # Sauvegarder les types originaux
         
         # Le type Stellar garde tous les types et ajoute des bonus spéciaux
         if tera_type != "Stellar":
@@ -155,14 +152,6 @@ class pokemon():
         
         print(f"{self.name} téracristallise en type {tera_type} !")
         return True
-
-    def get_effective_types_for_defense(self):
-        """
-        Retourne les types effectifs pour le calcul de l'efficacité des attaques reçues.
-        """
-        if self.tera_activated and self.tera_type != "Stellar":
-            return [self.tera_type]
-        return self.types
 
     def is_tera_stab(self, attack_type):
         """
@@ -306,6 +295,7 @@ class pokemon():
         self.taunted_turns = 0 # Réinitialise le nombre de tours restants sous l'effet de Taunt
         self.last_used_attack = None # Réinitialise la dernière attaque utilisée
         self.disabled_attacks = None  # Réinitialise les attaques désactivées
+        self.has_attacked_or_switched = None
         
         # Nettoyer les effets de Roost lors du changement
         if hasattr(self, 'lost_flying_from_roost') and self.lost_flying_from_roost:
@@ -322,6 +312,14 @@ class pokemon():
             self.magic_coat_active = False
         if hasattr(self, 'heal_blocked'):
             self.heal_blocked = False
+        if hasattr(self, "protean_active"):
+            self.types = self.original_types.copy()  # Restaurer les types originaux
+            self.protean_active = False
+        if hasattr(self, "libero_active"):
+            self.types = self.original_types.copy()  # Restaurer les types originaux
+            self.libero_active = False
+        if hasattr(self, "glaive_rush"):
+            self.glaive_rush = False
         self.actualize_stats()
     
     def pokemon_center(self):
@@ -663,3 +661,10 @@ def apply_stat_changes(target_poke, stat_changes, source="unknown", fight=None):
         target_poke.actualize_stats()
     
     return changes_applied
+
+def initialize_pokemon(poke):
+    """
+    Initialise Pokémon pour lui donner les attributs qu'il faut, par ex: Morpéko, Békaglaçon,etc
+    """
+    if poke.name == "Eiscue":
+        poke.ice_face_active = True  # Indique si le visage de glace est actif

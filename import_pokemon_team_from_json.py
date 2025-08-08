@@ -36,8 +36,7 @@ def import_pokemon_from_json(carac : dict):
     :param carac: Dictionnaire contenant les caractéristiques du Pokémon
     :return: Instance de la classe pokemon avec les caractéristiques importées
     """
-    raw_poke = pokemon_data_gen9[carac["name"]]
-    poke = pokemon(raw_poke)
+    poke = import_pokemon_from_pokedex(carac["name"])
     poke.talent = carac["ability"]
     poke.item = carac["item"]
     for i,move in zip(range(4), carac["moves"]):
@@ -50,4 +49,15 @@ def import_pokemon_from_json(carac : dict):
             poke.evs[stat] = carac["evs"][stat]
         poke.ivs[stat] = carac["ivs"][stat]
     poke.recalculate_all_stats()  # Recalculer les stats avec les EVs et nature
+    return poke
+
+def import_pokemon_from_pokedex(pokemon_name):
+    """
+    Importe un Pokémon à partir de son nom en utilisant le Pokédex Gen 9.
+    
+    :param pokemon_name: Nom du Pokémon à importer
+    :return: Une instance de la classe pokemon avec les caractéristiques du Pokémon (type, stats, poids et c'est tout)
+    """
+    raw_poke = pokemon_data_gen9[pokemon_name]
+    poke = pokemon(raw_poke)
     return poke

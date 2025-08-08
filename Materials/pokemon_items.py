@@ -74,6 +74,7 @@ class SitrusBerry(Item):
                 heal = int(poke.max_hp * 0.25)
                 print(f"{poke.name} consomme une Baie Sitrus et récupère {heal} PV !")
                 poke.current_hp = min(poke.current_hp + heal, poke.max_hp)
+                poke.item_saved = poke.item  # Sauvegarde l'objet pour le prochain combat
                 poke.item = None
             else:
                 print(f"{poke.name} ne peut pas utiliser sa Baie Sitrus à cause de Heal Block !")
@@ -102,6 +103,7 @@ class BoosterEnergy(Item):
                 poke.hidden_modifier[stat_max] *= 1.5
             else:
                 poke.hidden_modifier[stat_max] *= 1.3
+        poke.item_saved = poke.item  # Sauvegarde l'objet pour le prochain combat
         poke.item = None
 
 class ChestoBerry(Item):
@@ -109,11 +111,13 @@ class ChestoBerry(Item):
         if poke.status == "sleep":
             print(f"{poke.name} se réveille grâce à sa Baie Chesto !")
             poke.status = None
+            poke.item_saved = poke.item  # Sauvegarde l'objet pour le prochain combat
             poke.item = None
     def before_attack(self, poke, attack, fight=None):
         if poke.status == "sleep":
             print(f"{poke.name} utilise sa Baie Chesto pour se réveiller avant l'attaque !")
             poke.status = None
+            poke.item_saved = poke.item  # Sauvegarde l'objet pour le prochain combat
             poke.item = None
 
 class AssaultVest(Item):
@@ -160,6 +164,95 @@ class BlackGlasses(Item):
             print(f"Les Black Glasses de {poke.name} renforcent la puissance de son attaque !")
         return {"attack":1.0,"power": 1.2, "accuracy": 1.0}
     
+class MysticWater(Item):
+    """
+    Mystic Water augmente la puissance des attaques de type Eau de 20%.
+    """
+    def on_attack(self, poke, attack, fight=None):
+        if attack.type == "Water":
+            print(f"{poke.name} utilise sa Mystic Water pour renforcer son attaque Eau !")
+        return {"attack": 1.0, "power": 1.2, "accuracy": 1.0}
+    
+class SharpBeak(Item):
+    """
+    Sharp Beak augmente la puissance des attaques de type Vol de 20%.
+    """
+    def on_attack(self, poke, attack, fight=None):
+        if attack.type == "Flying":
+            print(f"{poke.name} utilise son Sharp Beak pour renforcer son attaque Vol !")
+        return {"attack": 1.0, "power": 1.2, "accuracy": 1.0}
+    
+class BlackSludge(Item):
+    """
+    Black Sludge soigne 1/16 des PV des pokemons de type Poison à la fin du tour, mais inflige 1/8 des PV aux Pokémon qui ne sont pas de type Poison.
+    """
+    def on_turn_end(self, poke, fight=None):
+        if poke.type1 == "Poison" or poke.type2 == "Poison":
+            heal = int(poke.max_hp * 0.0625)
+            print(f"{poke.name} récupère {heal} PV grâce à sa Black Sludge.")
+            poke.current_hp = min(poke.current_hp + heal, poke.max_hp)
+        else:
+            damage = int(poke.max_hp * 0.125)
+            print(f"{poke.name} subit {damage} PV de dégâts à cause de la Black Sludge !")
+            poke.current_hp = max(poke.current_hp - damage, 0)
+
+class ClearAmulet(Item):
+    """
+    Empêche les talents ou attaques adverses de baisser les statistiques du porteur.
+    """
+    def on_stat_change(self, poke, stat_changes, source, fight=None):
+        if source == "opponent":
+            # Bloque les baisses de stats provenant de l'adversaire
+            for stat in stat_changes:
+                if stat_changes[stat] < 0:
+                    print(f"{poke.name} utilise sa Clear Amulet pour empêcher la baisse de {stat} !")
+                    stat_changes[stat] = 0
+        return stat_changes
+
+class ThroatSpray(Item):
+    """
+    Throat Spray augmente la Sp. Atk du Pokémon de 1 niveau si il utilise une attaque sonore.
+    """
+    def on_attack(self, poke, attack, fight=None):
+        if "sound" in attack.flags:
+            print(f"{poke.name} utilise sa Throat Spray et augmente sa Sp. Atk !")
+            poke.stats["Sp. Atk"] += 1
+            poke.item_saved = poke.item  # Sauvegarde l'objet pour le prochain combat
+            poke.item = None  # Consomme l'objet après utilisation
+        return ON_ATTACK_MOD_DICT
+
+class CovertCloak(Item):
+    """
+    Covert Cloak protège le Pokémon des effets secondaires des attaques adverses.
+    Ne bloque que les effets secondaires qui ciblent le porteur de la cape.
+    """
+    
+    # Attaques qui boostent l'utilisateur et ne doivent pas être bloquées
+    USER_BOOST_ATTACKS = {
+        "Fiery Dance", "Meteor Mash", "Charge Beam", "Silver Wind", 
+        "Ancient Power", "Steel Wing", "Close Combat", "Leaf Storm",
+        "Draco Meteor", "Overheat", "Psycho Boost", "Fleur Cannon"
+    }
+    
+    def on_defense(self, poke, attack, fight=None):
+        """
+        Cette méthode est appelée quand le Pokémon portant la Covert Cloak est ciblé par une attaque.
+        Elle marque si les effets secondaires doivent être bloqués.
+        """
+        if ("secondary_effect" in attack.flags and 
+            attack.name not in self.USER_BOOST_ATTACKS):
+            # Marquer que ce Pokémon doit être protégé des effets secondaires
+            poke.covert_cloak_protection = True
+            print(f"{poke.name} utilise son Covert Cloak pour se protéger des effets secondaires de {attack.name} !")
+        return None
+    
+    def on_turn_end(self, poke, fight=None):
+        """
+        Réinitialise la protection à la fin de chaque tour pour s'assurer qu'elle ne reste pas active.
+        """
+        if hasattr(poke, 'covert_cloak_protection'):
+            poke.covert_cloak_protection = False
+
 class LifeOrb(Item):
     """
     Life Orb augmente la puissance des attaques de 30%, mais inflige 10% de dégâts au Pokémon après chaque attaque.
@@ -169,7 +262,7 @@ class LifeOrb(Item):
     
     def after_attack(self, poke, fight, attacker=None, attack=None):
         if attacker == poke and attack.category != "Status":
-            if poke.current_hp > 0 and poke.talent != "Magic Guard":
+            if poke.current_hp > 0 and not poke.talent in ["Magic Guard", "Sheer Force"]:
                 damage = int(poke.max_hp * 0.1)
                 print(f"{poke.name} subit {damage} PV de dégâts à cause de la Life Orb !")
                 poke.current_hp = max(poke.current_hp - damage, 0)
@@ -182,6 +275,15 @@ class ToxicOrb(Item):
         if poke.status is None:
             print(f"{poke.name} est empoisonné gravement par sa Toxic Orb !")
             poke.apply_status("badly_poisoned")
+
+class FlameOrb(Item):
+    """
+    Brûle le porteur à la fin du tour.
+    """
+    def on_turn_end(self, poke, fight=None):
+        if poke.status is None:
+            print(f"{poke.name} est brûlé par sa Flame Orb !")
+            poke.apply_status("burn")
 
 class WideLens(Item):
     """
@@ -226,6 +328,7 @@ class AirBalloon(Item):
         """
         print(f"L'Air Balloon de {poke.name} éclate !")
         poke.air_balloon_active = False
+        poke.item_saved = poke.item  # Sauvegarde l'objet pour le prochain combat
         poke.item = None
 
 class WhiteHerb(Item):
@@ -243,6 +346,7 @@ class WhiteHerb(Item):
                 if stat_changes[stat] < 0:
                     stat_changes[stat] = 0
             # Consomme l'objet une seule fois
+            poke.item_saved = poke.item  # Sauvegarde l'objet pour le prochain combat
             poke.item = None
         
         return stat_changes
@@ -264,6 +368,28 @@ class LightClay(Item):
     a un effet très précis.
     """
 
+class WeaknessPolicy(Item):
+    """
+    Weakness Policy augmente l'attaque et la défense du Pokémon de 1 stage si celui-ci subit des dégâts d'une attaque super efficace.
+    """
+    def on_defense(self, poke, attack, fight=None):
+        from damage_calc import type_effectiveness
+        if type_effectiveness(attack, poke) > 1:
+            from pokemon import apply_stat_changes
+            print(f" L'attaque Spéciale et l'Attaque de {poke.name} augmentent beaucoup !")
+            stat_changes = {"Sp. Atk": 2, "Attack": 2}
+            success = apply_stat_changes(poke, stat_changes, "self", fight)
+            poke.item_saved = poke.item  # Sauvegarde l'objet pour le prochain combat
+            poke.item = None  # Consomme l'objet après utilisation
+            
+        return None
+
+class BigRoot(Item):
+    """
+    Big Root augmente la guérison des attaques de soin de 30%.
+    Cette classe est utilisée pour les attaques de soin comme Synthesis, Leech Seed, etc
+    """
+    
 item_registry = {
     "Leftovers": Leftovers(),
     "Sitrus Berry": SitrusBerry(),
@@ -278,13 +404,22 @@ item_registry = {
     "Heavy-Duty Boots": HeavyDutyBoots(),
     "Focus Sash": FocusSash(),
     "Black Glasses": BlackGlasses(),
+    "Mystic Water": MysticWater(),
+    "Sharp Beak": SharpBeak(),
+    "Black Sludge": BlackSludge(),
+    "Throat Spray": ThroatSpray(),
+    "Clear Amulet": ClearAmulet(),
+    "Covert Cloak": CovertCloak(),
     "Life Orb": LifeOrb(),
     "Toxic Orb": ToxicOrb(),
+    "Flame Orb": FlameOrb(),
     "Wide Lens": WideLens(),
     "Air Balloon": AirBalloon(),
     "White Herb": WhiteHerb(),
     "Soul Dew": SoulDew(),
     "Light Clay": LightClay(),
+    "Weakness Policy": WeaknessPolicy(),
+    "Big Root": BigRoot(),
 }
 
 def trigger_item(poke, event, *args):

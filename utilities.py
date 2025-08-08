@@ -111,3 +111,17 @@ def possible_attacks(pokemon):
     
     return possible
 
+def transform_pokemon(pokemon, new_pokemon_name: str):
+    """
+    Transforme un Pokémon en un autre Pokémon pour les pokémons qui changent de forme
+    comme Békaglaçon, Morpeko, etc.
+    """
+    from import_pokemon_team_from_json import import_pokemon_from_pokedex
+    # Importer les données du nouveau Pokémon
+    new_pokemon_data = import_pokemon_from_pokedex(new_pokemon_name)
+    attributes_that_musnt_be_replaced = ["stats", "stats_with_no_modifier", "max_hp", "base_stats"]
+    for attr in pokemon.attributes():
+        if attr not in attributes_that_musnt_be_replaced:
+            # Remplacer l'attribut par celui du nouveau Pokémon
+            setattr(new_pokemon_data, attr, getattr(pokemon, attr))
+    return new_pokemon_data

@@ -348,7 +348,7 @@
                   "3" : {
                     "name":"Samurott",
                     "item":"Focus Sash",
-                    "moves":["Surf", "Ice Beam", "Megahorn"],
+                    "moves":["Razor Shell", "Ice Beam", "Megahorn"],
                     "ability":"Torrent",
                     "nature":"Modest",
                     "tera_type":"Water",
@@ -402,7 +402,7 @@
                   "2" : {
                     "name":"Incineroar",
                     "item":"Assault Vest",
-                    "moves":["Flare Blitz", "Darkest Lariat", "U-turn"],
+                    "moves":["Flare Blitz", "Knock Off", "U-turn"],
                     "ability":"Intimidate",
                     "nature":"Adamant",
                     "tera_type":"Dark",
@@ -691,7 +691,7 @@
                     "name":"Magnezone",
                     "item":"Choice Specs",
                     "moves":["Thunderbolt", "Flash Cannon", "Tera Blast"],
-                    "ability":"Magnet Pull",
+                    "ability":"Analytic",
                     "nature":"Modest",
                     "tera_type":"Fire",
                     "evs": {},
