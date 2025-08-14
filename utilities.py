@@ -9,7 +9,89 @@ TERRAIN = ["Grassy Terrain", "Electric Terrain", "Psychic Terrain", "Misty Terra
 
 WEATHER = ["Sunny", "Rainy", "Snow", "Sandstorm", "None"]
 
+# Talents ignorés par Mold Breaker (liste interne en anglais correspondant aux talents présents dans le code)
+MOLD_BREAKER_IGNORED_ABILITIES = {
+    "Water Absorb",
+    "Clear Body",
+    "Contrary",
+    "Dry Skin",
+    "Flash Fire",
+    "Thick Fat",
+    "Sturdy",
+    "Light Metal",
+    "Magic Bounce",
+    "Multiscale",
+    "Sand Veil",
+    "Snow Cloak",
+    "Levitate",
+    "Ice Scales"
+    "Inner Focus",
+    "Wonder Skin",
+    "Sap Sipper",
+    "Ice Face",
+}
 
+NON_DIRECT_PHYSICAL_ATTACK = {
+    "Pay Day",             
+    "Poison Sting",          
+    "Twineedle",           
+    "Pin Missile",          
+    "Razor Leaf",
+    "Rock Throw",
+    "Earthquake",
+    "Fissure",
+    "Self-Destruct",
+    "Egg Bomb",
+    "Bone Club",
+    "Spike Cannon",
+    "Barrage",
+    "Sky Attack",
+    "Explosion",
+    "Bonemerang",
+    "Rock Slide",
+    "Bone Rush",
+    "Present",
+    "Sacred Fire",
+    "Magnitude",
+    "Hidden Power",
+    "Rock Tomb",
+    "Sand Tomb",
+    "Bullet Seed",
+    "Icicle Spear",
+    "Rock Blast",
+    "Natural Gift",
+    "Feint",
+    "Metal Burst",
+    "Fling",
+    "Seed Bomb",
+    "Ice Shard",
+    "Psycho Cut",
+    "Head Smash",
+    "Gunk Shot",
+    "Magnet Bomb",
+    "Stone Edge",
+    "Attack Order",
+    "Smack Down",
+    "Bulldoze",
+    "Freeze Shock",
+    "Ice Crash",
+    "Precipice Blades",
+    "Bolt Strike",
+    "Pyro Ball",
+    "Grav Apple",
+    "Aura Wheel",
+    "Drum Beating",
+    "Dragon Darts",
+    "Salt Cure",
+}
+
+DIRECT_SPECIAL_ATTACKS = {
+    "Petal Dance",
+    "Grass Knot",
+    "Draining Kiss",
+    "Electro Drift"
+}
+BORNS_SIMPLE_TEAM_OF_3 = [5, 26]
 
 type_chart = [
     # Normal  Fight  Fly  Pois  Grou  Rock  Bug   Ghos  Stee  Fire  Wate  Gras  Elec  Psyc  Ice   Drag  Dark  Fair
@@ -125,3 +207,28 @@ def transform_pokemon(pokemon, new_pokemon_name: str):
             # Remplacer l'attribut par celui du nouveau Pokémon
             setattr(new_pokemon_data, attr, getattr(pokemon, attr))
     return new_pokemon_data
+
+def evaluate_pokemon_type_efficiency(poke1, poke2):
+    """
+    Evalue l'efficacité des types du pokemon1 face à ceux du pokemon2.
+
+    :param poke1: Le premier Pokémon à évaluer.
+    :param poke2: Pokemon sur lequel on évalue l'efficacité des types de poke1.
+    :return: Un coefficient compris entre x(1/2)**9 et x(2)**9, valeurs possibles (1/2)**n et (2)**n ou n appartient à [0, 9].
+    """
+    efficiency = 1.0
+    for type2 in poke2.original_types:
+        for type1 in poke1.original_types:
+            efficiency *= type_chart[POKEMON_TYPES_ID[type1]][POKEMON_TYPES_ID[type2]]
+
+    if poke2.tera_activated:
+        for type1 in poke1.original_types: 
+            efficiency *= type_chart[POKEMON_TYPES_ID[type1]][POKEMON_TYPES_ID[poke2.types[0]]]
+
+    if poke1.tera_activated:
+        for type2 in poke2.original_types:
+            efficiency *= type_chart[POKEMON_TYPES_ID[poke1.types[0]]][POKEMON_TYPES_ID[type2]]
+
+    return efficiency     
+
+        

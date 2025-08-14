@@ -26,7 +26,11 @@ def damage_calc(attacker, attack, defender, fight):
    
     if on_defense_item_multiplier is None:
         on_defense_item_multiplier = {"attack": 1.0, "power": 1.0, "accuracy": 1.0}
-  
+
+    if attacker.talent == "Mold Breaker":
+            if defender.talent == "Fur Coat":
+                on_attack_ability_multiplier["attack"] = 2.0 # contre-balance de x2 de fur coat
+
     # S'assurer que multiplier est un nombre
     if on_defense_ability_multiplier is None or not isinstance(on_defense_ability_multiplier, (int, float)):
         on_defense_ability_multiplier = 1.0
@@ -49,7 +53,10 @@ def attack_carac(fight, user_pokemon : pokemon, attack : Attack, target_pokemon 
     """
 
     attack_boost = attack.boosted_attack(user_pokemon, target_pokemon, fight) if hasattr(attack, 'boosted_attack') else 1.0
-    
+
+    if not isinstance(attack_boost, (int, float)):
+        attack_boost = 1.0
+
     # Vérifier si l'attaque a une méthode get_power pour calculer la puissance dynamiquement
     if hasattr(attack, 'get_power'):
         base_power = attack.get_power(user_pokemon, target_pokemon, fight) * atk_ab_mod["power"] * atk_item_mod["power"]
@@ -68,10 +75,14 @@ def attack_carac(fight, user_pokemon : pokemon, attack : Attack, target_pokemon 
         attack_copy.type = atk_ab_mod["type"]  # Changer le type de l'attaque si un talent modifie le type
         stab = is_stab(user_pokemon, attack_copy)  # Vérifier si l'attaque est STAB
     else:
-        type_eff = type_effectiveness(attack.type, target_pokemon)  # Calcul de l'efficacité du type
-        stab = is_stab(user_pokemon, attack)
+        if attack.name == "Struggle":
+            type_eff = 1.0  # Struggle est de type Normal, pas besoin de calculer l'efficacité touche même les types spectre et jamais de stab
+            stab = 1.0
+        else:
+            type_eff = type_effectiveness(attack.type, target_pokemon)  # Calcul de l'efficacité du type
+            stab = is_stab(user_pokemon, attack)
 
-    if target_pokemon.glaive_rush:
+    if hasattr(target_pokemon, 'glaive_rush') and target_pokemon.glaive_rush:
         glaive_rush = 2.0
     else: 
         glaive_rush = 1.0

@@ -2,6 +2,8 @@
 fichier regroupant tous les talents de poke et créant un dictionnaire regroupant tous leurs effets.
 '''
 import random
+from utilities import MOLD_BREAKER_IGNORED_ABILITIES, NON_DIRECT_PHYSICAL_ATTACK, DIRECT_SPECIAL_ATTACKS
+
 
 ON_ATTACK_MOD_DICT = {
     "attack": 1.0,
@@ -67,11 +69,25 @@ class Prankster(Talent):
         else:
             pass
     
+class Fluffy(Talent):
+    """Talent qui divise par 2 les dégâts des capacités directes mais double les dégâts des attaque de type feu"""
+    def on_defense(self, poke, incoming_attack, attacker_poke=None, fight=None):
+        total_changes = 1.0
+        if (incoming_attack.category == "Physical" and not incoming_attack.name in NON_DIRECT_PHYSICAL_ATTACK) or (incoming_attack.category == "Special" and incoming_attack.name in DIRECT_SPECIAL_ATTACKS):
+            total_changes *= 0.5
+        if incoming_attack.type == "Fire":
+            total_changes *= 2.0
+        return total_changes
+
+class FurCoat(Talent):
+    """Talent qui double la défense du pokémon."""
+    def modify_stat(self, poke, fight=None):
+        poke.hidden_modifier["Defense"] *= 2
 
 class WaterAbsorb(Talent):
     """ Talent qui absorbe les attaques de type Eau et soigne le Pokémon."""
     def on_defense(self, poke, incoming_attack, attacker_poke=None, fight = None):
-        if incoming_attack.get("type") == "Water":
+        if incoming_attack.type == "Water":
             healed = int(poke.max_hp * 0.25)
             poke.current_hp = min(poke.current_hp + healed, poke.max_hp)
             print(f"{poke.name} absorbe l'eau et récupère {healed} PV !")
@@ -250,12 +266,12 @@ class Sturdy(Talent):
 
 class LightMetal(Talent):
     """ Talent qui réduit le poids du Pokémon de moitié."""
-    def modify_stat(self, poke, fight=None):
+    def on_defense(self, poke, fight=None):
         # Réduit le poids de moitié (utilisé pour les attaques basées sur le poids)
         if not hasattr(poke, 'original_weight'):
             poke.original_weight = getattr(poke, 'weight', 100)  # Poids par défaut si non défini
         poke.weight = poke.original_weight / 2
-        return None
+        return 1.0
 
 class PoisonPuppeteer(Talent):
     """ Talent qui rend confus la cible si celle-ci est empoisonnée."""
@@ -271,7 +287,7 @@ class CursedBody(Talent):
     """ Talent qui a 30% de chance de désactiver l'attaque qui touche le Pokémon."""
     def on_defense(self, poke, incoming_attack, attacker_poke=None, fight=None):
         attacker = fight.active1 if poke == fight.active2 else fight.active2
-        if random() < 0.3:  # 30% de chance de désactiver l'attaque
+        if random.random() < 0.3:  # 30% de chance de désactiver l'attaque
             attacker.disabled_attack = incoming_attack
             print(f"{attacker.name} est entravé et ne peut plus utiliser {incoming_attack.name} !")
 
@@ -343,8 +359,8 @@ class RoughSkin(Talent):
     def on_defense(self, poke, incoming_attack, attacker_poke=None, fight=None):
         # Rough Skin ne devrait se déclencher qu'une fois par attaque de contact
         # On utilise un attribut temporaire pour éviter le double déclenchement
-        if (incoming_attack and "contact" in incoming_attack.flags and 
-            attacker_poke and attacker_poke.current_hp > 0):
+        if ((incoming_attack.category == "Physical" and not incoming_attack.name in NON_DIRECT_PHYSICAL_ATTACK) or (incoming_attack.category == "Special" and incoming_attack.name in DIRECT_SPECIAL_ATTACKS)) and \
+            attacker_poke and attacker_poke.current_hp > 0:
             # Vérifier si ce n'est pas déjà traité (éviter double activation)
             if not hasattr(attacker_poke, '_rough_skin_triggered'):
                 attacker_poke._rough_skin_triggered = True
@@ -359,6 +375,14 @@ class CompoundEyes(Talent):
         mod_dict = ON_ATTACK_MOD_DICT.copy()
         mod_dict["accuracy"] = 1.3
         return mod_dict
+
+class IceScales(Talent):
+    """Talent qui réduit les dégâts des attaques spéciales de 50%."""
+    def on_defense(self, poke, incoming_attack, attacker_poke=None, fight=None):
+        if incoming_attack and incoming_attack.category == "Special":
+            print(f"{poke.name} utilise Ice Scales pour réduire les dégâts !")
+            return 0.5  # Réduit les dégâts spéciaux de 50%
+        return 1.0  # Pas de modification des dégâts
 
 class VictoryStar(Talent):
     """Talent qui augmente la précision de l'équipe de 10%."""
@@ -386,7 +410,7 @@ class SnowCloak(Talent):
 class Static(Talent):
     """Talent qui paralyse l'adversaire si une attaque de contact le touche."""
     def on_defense(self, poke, incoming_attack, attacker_poke=None, fight=None):
-        if incoming_attack and "contact" in incoming_attack.flags:
+        if (incoming_attack.category == "Physical" and not incoming_attack.name in NON_DIRECT_PHYSICAL_ATTACK) or (incoming_attack.category == "Special" and incoming_attack.name in DIRECT_SPECIAL_ATTACKS):
             if random.random() < 0.3:  # 30% de chance de paralyser
                 attacker_poke.status = "paralysis"
                 print(f"{attacker_poke.name} est paralysé par {poke.name}'s Static !")
@@ -394,7 +418,7 @@ class Static(Talent):
 class FlameBody(Talent):
     """Talent qui brûle l'adversaire si une attaque de contact le touche."""
     def on_defense(self, poke, incoming_attack, attacker_poke=None, fight=None):
-        if incoming_attack and "contact" in incoming_attack.flags:
+        if (incoming_attack.category == "Physical" and not incoming_attack.name in NON_DIRECT_PHYSICAL_ATTACK) or (incoming_attack.category == "Special" and incoming_attack.name in DIRECT_SPECIAL_ATTACKS):
             if random.random() < 0.3:  # 30% de chance de brûler
                 attacker_poke.status = "burn"
                 print(f"{attacker_poke.name} est brûlé par {poke.name}'s Flame Body !")
@@ -633,7 +657,7 @@ class Libero(Talent):
 class Technician(Talent):
     """Talent qui augmente la puissance des attaques de 60 de puissance ou moins de 50%."""
     def on_attack(self, poke, attack, fight=None):
-        if attack.power <= 60:
+        if attack.base_power <= 60:
             mod_dict = ON_ATTACK_MOD_DICT.copy()
             mod_dict["power"] = 1.5
             print(f"{poke.name} utilise Technician pour augmenter la puissance de {attack.name} !")
@@ -643,6 +667,34 @@ class Technician(Talent):
 class Infiltrator(Talent):
     """Les attaques de ce Pokémon ignorent les clones et les Protection, Mur Lumière,
     Rune Protect, Brume et Voile Aurore de l'adversaire."""
+
+class MoldBreaker(Talent):
+    """Ignore les talents défensifs adverses lors de l'attaque (implémentation minimale: flag)."""
+    def on_entry(self, poke, fight):
+        poke.mold_breaker_active = True
+        return "activated"
+    def on_exit(self, poke, fight):
+        if hasattr(poke, 'mold_breaker_active'):
+            poke.mold_breaker_active = False
+
+class SandStream(Talent):
+    """Déclenche la Tempête de Sable à l'entrée sur le terrain (5 tours)."""
+    def on_entry(self, poke, fight):
+        if fight.weather["current"] != "Sandstorm":
+            fight.set_weather("Sandstorm", duration=5)
+            print(f"{poke.name} invoque une tempête de sable !")
+        return "activated"
+
+class Moxie(Talent):
+    """Augmente l'Attaque d'un niveau après avoir mis K.O un adversaire."""
+    def on_attack(self, poke, attack, fight=None):
+        # Le boost est géré juste après un KO dans fight via un flag sur l'attaquant.
+        return ON_ATTACK_MOD_DICT
+    def on_entry(self, poke, fight):
+        poke.moxie_pending = False
+    def on_exit(self, poke, fight):
+        if hasattr(poke, 'moxie_pending'):
+            poke.moxie_pending = False
 
 class Steadfast(Talent):
     """Augmente la vitesse de 1 niveau quand le Pokémon est flinch par une attaque."""
@@ -664,6 +716,9 @@ class MagicGuard(Talent):
     par les dégâts de Picots, Pics Toxik, et Piège de Roc lorsqu'il arrive sur le terrain. 
     Il est également immunisé aux dégâts du climat, des capacités piégeant les Pokémon sur le terrain 
     comme Vortex Magma, et des contrecoups des capacités ou de l'Orbe Vie."""
+
+class GaleWings(Talent):
+    """Les attaques de type Flying de l'utilisateur gagne 1 de priorité"""
 
 class Guts(Talent):
     """Si ce Pokémon a un problème de statut, son attaque est multipliée 
@@ -690,7 +745,7 @@ class Analytic(Talent):
     def on_attack(self, poke, attack, fight=None):
         team_id = fight.get_team_id(poke)
         opponent = fight.active2 if team_id == 1 else fight.active1
-        if opponent.has_attacker_or_switched:
+        if opponent.has_attacked_or_switched:
             mod_dict = ON_ATTACK_MOD_DICT.copy()
             mod_dict["power"] = 1.3
             print(f"La puissance de {attack.name} est augmentée grâce à Analytic !")
@@ -706,6 +761,14 @@ def trigger_talent(poke, event_name, *args):
     :param args: Arguments supplémentaires à mettre dans cet ordre"""
     talent = talent_registry.get(poke.talent)
     if talent and hasattr(talent, event_name):
+            # Gestion Mold Breaker : si l'événement est défensif et que l'attaquant possède Mold Breaker
+        if event_name == "on_defense" and len(args) >= 2:
+            incoming_attack = args[0]
+            attacker = args[1]
+            if hasattr(attacker, 'talent') and attacker.talent == "Mold Breaker" and poke.talent in MOLD_BREAKER_IGNORED_ABILITIES:
+                # Ignorer l'effet défensif
+                print(f"[Mold Breaker] {attacker.name} ignore le talent {poke.talent} de {poke.name} !")
+                return None
         # Vérifier si la méthode du talent diffère de la méthode de base (qui ne fait rien)
         talent_method = getattr(talent, event_name)
         base_method = getattr(Talent, event_name)
@@ -781,4 +844,11 @@ talent_registry = {
     "Sap Sipper": SapSipper(),
     "Thermal Exchange": ThermalExchange(),
     "Analytic": Analytic(),
+    "Gale Wings": GaleWings(),
+    "Mold Breaker": MoldBreaker(),
+    "Sand Stream": SandStream(),
+    "Moxie": Moxie(),
+    "Ice Scales": IceScales(),
+    "Fluffy": Fluffy(),
+    "Fur Coat": FurCoat(),
 }

@@ -456,6 +456,10 @@ class Fight():
         
         # Sinon, appliquer les dégâts normalement
         pokemon.current_hp -= damage
+
+        # Incrémenter le compteur Rage Fist si le Pokémon est touché directement
+        if damage > 0 and hasattr(pokemon, 'nb_of_hit'):
+            pokemon.nb_of_hit += 1
         
         # Vérification du talent Sturdy
         if hasattr(pokemon, 'sturdy_activated') and pokemon.sturdy_activated and pokemon.current_hp <= 0:
@@ -477,6 +481,21 @@ class Fight():
         # Si le Pokémon est KO, supprimer ses effets de ruine
         if pokemon.current_hp <= 0:
             self.remove_ruin_effects(pokemon)
+            # Gestion Moxie: identifier l'attaquant potentiel (l'autre actif)
+            attacker = None
+            if pokemon == self.active1:
+                attacker = self.active2
+            elif pokemon == self.active2:
+                attacker = self.active1
+            if attacker and getattr(attacker, 'talent', None) == 'Moxie':
+                try:
+                    from pokemon import apply_stat_changes
+                    if attacker.current_hp > 0:  # Toujours vivant
+                        changed = apply_stat_changes(attacker, {"Attack": 1}, "self", self)
+                        if changed:
+                            print(f"L'Attaque de {attacker.name} augmente grâce à Moxie !")
+                except Exception as e:
+                    print(f"Erreur application Moxie: {e}")
             
         return actual_damage
 
@@ -598,7 +617,10 @@ class Fight():
                     delattr(p, 'original_types')  # Nettoyer l'attribut temporaire
                 p.lost_flying_from_roost = False
                 print(f"{p.name} récupère son type Vol !")
-        
+
+            if hasattr(p, 'original_weight'):
+                self.weight = self.original_weight  # Restaure le poids original si modifié
+
         # Traiter les attaques Future Sight programmées
         process_future_sight_attacks(self)
         
@@ -667,13 +689,19 @@ class Fight():
         """
         Gère l'action "Attaquer" d'un Pokémon sur un autre, en prenant en compte les effets de statut, multi-tours et priorités.
         """
+        # --- Sleep Talk handling ---
         if attack.name == "Sleep Talk":
-            available_attacks = [attacker.attack1, attacker.attack2, attacker.attack3, attacker.attack4]
-            sorted_available_attack = []
-            for atk in available_attacks:
-                if not (atk.name == "Sleep Talk" or "charge" in atk.flags):
-                    sorted_available_attack.append(atk)
-            attack = random.choice(sorted_available_attack)
+            # Only usable if the user is actually asleep
+            if attacker.status != "sleep":
+                print(f"{attacker.name} n'est pas endormi : Sleep Talk échoue !")
+                return
+            candidate_attacks = [attacker.attack1, attacker.attack2, attacker.attack3, attacker.attack4]
+            # Filter: existing, not Sleep Talk itself, not charging moves, has PP > 0
+            usable_for_sleep_talk = [a for a in candidate_attacks if a and a.name != "Sleep Talk" and "charge" not in a.flags and attacker.get_attack_pp(a) > 0]
+            if not usable_for_sleep_talk:
+                print(f"{attacker.name} n'a aucune capacité utilisable via Sleep Talk !")
+                return
+            attack = random.choice(usable_for_sleep_talk)
 
         if attack.name != "Glaive Rush" and hasattr(attacker, "glaive_rush"):
             attacker.glaive_rush = False
@@ -764,7 +792,8 @@ class Fight():
 
         if talent_mod_dict is None:
             talent_mod_dict = {"attack": 1.0, "power": 1.0, "accuracy": 1.0, "type": None}
-
+        
+        
         # Vérification Précision avec modificateurs
         if not self.calculate_hit_chance(attacker, defender, attack, talent_mod_dict, on_item_mod):
             print(f"{attacker.name} rate son attaque !")
@@ -772,17 +801,18 @@ class Fight():
                 attacker.current_hp //= 2
             return
 
-        print(f"{attacker.name} utilise {attack.name} !")
-        
-        # Vérifie si l'objet de choix le verrouille sur une attaque
-        if attacker.item and "Choice" in attacker.item:
+        # --- Choice item lock logic (before announcing the move) ---
+        if attacker.item and "Choice" in attacker.item and attack.name != "Struggle":
+            # If the currently locked move has no PP left, release the lock
+            if attacker.locked_attack and attacker.get_attack_pp(attacker.locked_attack) == 0:
+                attacker.locked_attack = None
             if attacker.locked_attack and attacker.locked_attack != attack:
                 print(f"{attacker.name} est verrouillé sur {attacker.locked_attack.name} à cause de {attacker.item} !")
-                attack = attacker.locked_attack  # Force l'utilisation de l'attaque verrouillée
-            
-            # Verrouille sur l'attaque utilisée (soit celle choisie, soit celle forcée)
+                attack = attacker.locked_attack
             if not attacker.locked_attack:
                 attacker.locked_attack = attack
+
+        print(f"{attacker.name} utilise {attack.name} !")
 
         # Consommation des PP (sauf pour Struggle qui a des PP infinis)
         if attack.name != "Struggle":
@@ -866,8 +896,6 @@ class Fight():
             # Déterminer la cible en fonction du target de l'attaque
             if attack.target == "Foe":
                 target = defender
-                if attacker.talent == "Prankster":
-                    trigger_talent(attacker, "prankster", attack, self)
             elif attack.target == "User":
                 target = attacker
             else:
@@ -1049,6 +1077,8 @@ class Fight():
         # Vérifier si l'attaque ignore les substituts
         if "authentic" in attack.flags or attacker.talent == "Infiltrator":
             bypass_substitute = True
+        else:
+            bypass_substitute = False
         self.damage_method(defender, damage, bypass_substitute)
         
         # Effet Rocky Helmet : si le défenseur porte Rocky Helmet et l'attaque est de contact
@@ -1067,7 +1097,11 @@ class Fight():
         """
         Calcule la priorité effective d'une attaque, en prenant en compte les talents.
         """
-        base_priority = attack.priority
+        if hasattr(attack, "get_priority"):
+            base_priority = attack.get_priority(self)
+        else:
+            base_priority = attack.priority
+
         if pokemon.talent == "Prankster" and attack.category == "Status":
             base_priority += 1
         if pokemon.talent == "Gale Wings" and attack.type == "Flying" and pokemon.current_hp == pokemon.max_hp:
@@ -1280,8 +1314,8 @@ class Fight():
         # Si l'attaque garantit la précision dans certaines conditions
         if effective_accuracy == True:
             return True
-        
-        if defender.glaive_rush:
+
+        if hasattr(defender, 'glaive_rush') and defender.glaive_rush:
             return True
 
         # Calcul normal de précision
@@ -1319,10 +1353,17 @@ class Fight():
             self.damage_method(pokemon, dmg)
             pokemon.toxic_counter += 1
 
-    def check_status_before_attack(self, attacker: pokemon, attack: Attack) -> bool:
+    def check_status_before_attack(self, attacker: pokemon, attack: Attack, attacker_before: pokemon = None) -> bool:
         """
         Vérifie si le Pokémon peut agir selon son statut.
         Retourne True s'il peut attaquer, False sinon.
+
+        :param attacker: Le Pokémon qui attaque.
+
+        :param attack: Instance de l'attaque utilisée par attacker.
+
+        :param attacker_before: Instance du pokémon qui a possiblement attaqué avant, 
+        ce paramètre est surtout utilisé pour savoir si le talent de ce pokémon est Mold Breaker dans ce cas on ignore le possible Inner focus de attacker. Le paramètre de merde en gros
         """
         if attacker.status == "sleep":
             match attacker.sleep_counter:
@@ -1376,6 +1417,8 @@ class Fight():
                 return False
 
         if attacker.flinched:
+            if attacker_before.talent == "Mold Breaker":
+                return False # Dans tous les cas avec Mold Breaker il y a flinch même si le poke a Inner Focus
             if attacker.talent == "Inner Focus":
                 print(f"Inner Focus de {attacker.name} l'empêche d'être flinch !")
             else:
@@ -1680,7 +1723,7 @@ class Fight():
             protect_update(second, second_attack)
 
             # Première attaque
-            if self.check_status_before_attack(first, first_attack):
+            if self.check_status_before_attack(first, first_attack, second):
                 self.player_attack(first, first_attack, second, second_attack)
             
             for p in [self.active1, self.active2]:
@@ -1700,7 +1743,7 @@ class Fight():
             
             # Seconde attaque si vivant et pas remplacé
             if second.current_hp > 0:
-                if self.check_status_before_attack(second, second_attack):
+                if self.check_status_before_attack(second, second_attack, first):
                     self.player_attack(second, second_attack, first, first_attack)
                 
                 for p in [self.active1, self.active2]:

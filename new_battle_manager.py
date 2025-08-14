@@ -3,17 +3,15 @@ from pokemon import *
 import random
 from colors_utils import Colors
 from utilities import *
-from import_pokemon_team_from_json import import_team_from_json
+from import_pokemon_team_from_json import import_team_from_json, import_random_simple_team
 from damage_calc import *
 from IA.pokemon_ia import RandomAI, PlayerAI
 
-teamAI1 = import_team_from_json(5)
-teamAI2 = import_team_from_json(6)
 
 # Initialiser les IAs :
 # Option 1: IA vs IA (comme avant)
-ia1 = RandomAI(1)
-ia2 = RandomAI(2)
+ia1 = PlayerAI(1)
+ia2 = RandomAI(2)   
 
 # Option 2: Joueur vs IA (pour l'apprentissage supervisé)
 # ia1 = PlayerAI(1, "Joueur Humain")  # Joueur humain
@@ -22,6 +20,10 @@ ia2 = RandomAI(2)
 # Option 3: Joueur vs Joueur
 # ia1 = PlayerAI(1, "Joueur Humain 1")  # Joueur humain 1
 # ia2 = PlayerAI(2, "Joueur Humain 2")  # Joueur humain 2
+
+team_1 = import_team_from_json(27)
+team_2 = import_team_from_json(28)
+
 
 def print_fight(ia1, ia2):
     print(f"{Colors.BG_WHITE}{Colors.BOLD}{Colors.BLACK}Le combat oppose une {ia1.name} à une {ia2.name} !{Colors.RESET}{Colors.UNBOLD}{Colors.BG_DEFAULT}")
@@ -35,7 +37,6 @@ def battle_manager(team1: list[pokemon], team2: list[pokemon]):
     :param team1: Première équipe de Pokémon qui est l'équipe jouée par l'IA que l'on veut étudier.
     :param team2: Deuxième équipe de Pokémon qui est l'équipe adverse et sert juste à jouer le combat.
     """
-
     fight = Fight(team1, team2)
 
     # Initialiser les variables de téracristalisation
@@ -87,12 +88,17 @@ def reset_team(team : list[pokemon]):
     for pokemon in team:
         pokemon.pokemon_center()
 
-for i in range(100):
-    print(f"Début du combat {i+1}")
-    battle_manager(teamAI1, teamAI2)
-    print(f"Fin du combat {i+1}\n")
-    reset_team(teamAI1)
-    reset_team(teamAI2)
+battle_manager(team_1, team_2)
+    
+"""
+ratio_victoire_defaite_par_equipes = []
+for i in range(len(nombre_de_victoire_par_equipes)):
+    if nombre_de_combats_par_equipes[i] > 0:
+        ratio = nombre_de_victoire_par_equipes[i] / nombre_de_combats_par_equipes[i]
+    else:
+        ratio = 0
+    ratio_victoire_defaite_par_equipes.append(ratio)
 
-print(f"IA1 ({ia1.name}) a gagné {ia1.wins} fois sur {ia1.total_battles} combats.")
-print(f"IA2 ({ia2.name}) a gagné {ia2.wins} fois sur {ia2.total_battles} combats.")
+for i in range(len(ratio_victoire_defaite_par_equipes)):
+    print(f"Équipe {i}: {ratio_victoire_defaite_par_equipes[i]}")
+"""

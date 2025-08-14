@@ -187,7 +187,7 @@ class BlackSludge(Item):
     Black Sludge soigne 1/16 des PV des pokemons de type Poison à la fin du tour, mais inflige 1/8 des PV aux Pokémon qui ne sont pas de type Poison.
     """
     def on_turn_end(self, poke, fight=None):
-        if poke.type1 == "Poison" or poke.type2 == "Poison":
+        if "Poison" in poke.types:
             heal = int(poke.max_hp * 0.0625)
             print(f"{poke.name} récupère {heal} PV grâce à sa Black Sludge.")
             poke.current_hp = min(poke.current_hp + heal, poke.max_hp)
@@ -374,14 +374,14 @@ class WeaknessPolicy(Item):
     """
     def on_defense(self, poke, attack, fight=None):
         from damage_calc import type_effectiveness
-        if type_effectiveness(attack, poke) > 1:
+        # type_effectiveness attend un nom de type (str), pas l'objet attaque
+        if type_effectiveness(attack.type, poke) > 1:
             from pokemon import apply_stat_changes
             print(f" L'attaque Spéciale et l'Attaque de {poke.name} augmentent beaucoup !")
             stat_changes = {"Sp. Atk": 2, "Attack": 2}
-            success = apply_stat_changes(poke, stat_changes, "self", fight)
+            apply_stat_changes(poke, stat_changes, "self", fight)
             poke.item_saved = poke.item  # Sauvegarde l'objet pour le prochain combat
             poke.item = None  # Consomme l'objet après utilisation
-            
         return None
 
 class BigRoot(Item):

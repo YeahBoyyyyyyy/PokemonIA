@@ -626,7 +626,7 @@
                   "2" : {
                     "name":"Garchomp",
                     "item":"Rocky Helmet",
-                    "moves":["Earthquake", "Outrage", "Fire Fang"],
+                    "moves":["Earthquake", "Dragon Claw", "Fire Fang"],
                     "ability":"Rough Skin",
                     "nature":"Jolly",
                     "tera_type":"Ground",
@@ -931,7 +931,71 @@
                     "evs": {},
                     "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
                       }
+            },
+          "team27": {
+                  "1" : {
+                    "name":"Excadrill",
+                    "item":"Life Orb",
+                    "moves":["Earthquake", "Iron Head", "Stealth Rock"],
+                    "ability":"Mold Breaker",
+                    "nature":"Adamant",
+                    "tera_type":"Ground",
+                    "evs": {},
+                    "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
+                      },
+                  "2" : {
+                    "name":"Iron-Valiant",
+                    "item":"Choice Specs",
+                    "moves":["Psycho Cut", "Moonblast", "Shadow Ball"],
+                    "ability":"Quark Drive",
+                    "nature":"Timid",
+                    "tera_type":"Fairy",
+                    "evs": {},
+                    "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
+                      },
+                  "3" : {
+                    "name":"Corviknight",
+                    "item":"Leftovers",
+                    "moves":["Brave Bird", "Roost", "Defog"],
+                    "ability":"Pressure",
+                    "nature":"Impish",
+                    "tera_type":"Flying",
+                    "evs": {},
+                    "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
             }
+          },
+          "team28": {
+            "1" : {
+              "name":"Hatterene",
+              "item":"Assault Vest",
+              "moves":["Psychic", "Moonblast", "Mystical Fire"],
+              "ability":"Magic Bounce",
+              "nature":"Calm",
+              "tera_type":"Fairy",
+              "evs": {},
+              "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
+            },
+            "2" : {
+              "name":"Great-Tusk",
+              "item":"Leftovers",
+              "moves":["Earthquake", "Headlong Rush", "Rapid Spin"],
+              "ability":"Protosynthesis",
+              "nature":"Impish",
+              "tera_type":"Ground",
+              "evs": {},
+              "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
+            },
+            "3" : {
+              "name":"Okidogi",
+              "item":"Choice Band",
+              "moves":["Drain Punch", "Mach Punch", "Ice Punch"],
+              "ability":"Toxic Chain",
+              "nature":"Adamant",
+              "tera_type":"Fighting",
+              "evs": {},
+              "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
+            }
+          }
         }
     ]
 }

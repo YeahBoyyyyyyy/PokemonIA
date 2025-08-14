@@ -6,6 +6,7 @@ from Materials.pokedex_9G_complete import pokemon_data_gen9
 from Materials.pokemon_attacks import attack_registry
 sys.path.append("C:/Users/natha/OneDrive/Desktop/Travail/IA Combats pokémons/PokemonIA")
 import json
+import random
 
 def import_team_from_json(id):
     """
@@ -61,3 +62,8 @@ def import_pokemon_from_pokedex(pokemon_name):
     raw_poke = pokemon_data_gen9[pokemon_name]
     poke = pokemon(raw_poke)
     return poke
+
+def import_random_simple_team():
+    from utilities import BORNS_SIMPLE_TEAM_OF_3
+    id = random.randint(BORNS_SIMPLE_TEAM_OF_3[0], BORNS_SIMPLE_TEAM_OF_3[1])
+    return id

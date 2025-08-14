@@ -368,6 +368,156 @@ class PlayerAI(PokemonAI):
                 print("Veuillez entrer un nombre valide.")
 
 class HeuristicAI(PokemonAI):
+    """IA heuristique: choisit l'action avec un score basé sur matchup, dégâts estimés, sécurité HP et opportunités Tera."""
+    def __init__(self, team_id, aggression_level=0.65, switch_threshold=0.35, tera_aggression=0.15):
+        super().__init__(team_id, "Heuristic AI")
+        self.aggression_level = aggression_level  # Importance d'attaquer
+        self.switch_threshold = switch_threshold  # En-dessous de ce score, on préfère switch
+        self.tera_aggression = tera_aggression    # Bonus si Tera offensive possible
+        self.turns = 0
+
+    def choose_action(self, fight, available_actions):
+        from Materials.pokemon_attacks import Struggle
+        self.turns += 1
+        if available_actions is None:
+            available_actions = self.get_available_actions(fight)
+        info = self.get_pokemon_info(fight)
+        my_poke = info['my_pokemon']
+        enemy = info['enemy_pokemon']
+
+        attacks = available_actions['attacks'] if available_actions['attacks'] else []
+        switches = available_actions['switches'] if available_actions['switches'] else []
+        can_tera = available_actions['can_terastallize']
+
+        # 1. Evaluer chaque attaque
+        attack_choices = []
+        for atk in attacks:
+            atk_score, details = self._score_attack(my_poke, enemy, atk, tera=False)
+            tera_score = None
+            if can_tera:
+                tera_score, tera_details = self._score_attack(my_poke, enemy, atk, tera=True)
+            attack_choices.append({
+                'attack': atk,
+                'score': atk_score,
+                'details': details,
+                'tera_score': tera_score,
+                'tera_details': tera_details if can_tera else None
+            })
+
+        # 2. Evaluer les switches
+        switch_choices = []
+        for sw in switches:
+            sw_score, sw_details = self._score_switch(sw, enemy)
+            switch_choices.append({'pokemon': sw, 'score': sw_score, 'details': sw_details})
+
+        # 3. Décision
+        best_attack = max(attack_choices, key=lambda x: x['score'], default=None)
+        best_switch = max(switch_choices, key=lambda x: x['score'], default=None)
+
+        # Décider si switch vaut mieux qu'attaquer
+        choose_switch = False
+        if best_switch and (not best_attack or best_switch['score'] > best_attack['score'] + (1 - self.aggression_level)):
+            # Encourager switch si notre HP bas ou matchup mauvais
+            hp_ratio = my_poke.current_hp / my_poke.max_hp
+            my_matchup = evaluate_pokemon_type_efficiency(my_poke, enemy)
+            if hp_ratio < 0.3 or my_matchup < 0.75 or best_switch['score'] - best_attack['score'] > 0.5:
+                choose_switch = True
+
+        if choose_switch:
+            # Trouver l'index dans l'équipe
+            team = fight.team1 if self.team_id == 1 else fight.team2
+            idx = team.index(best_switch['pokemon'])
+            return ('switch', idx, None)
+
+        # Considérer Tera sur la meilleure attaque
+        if best_attack and can_tera and best_attack['tera_score'] is not None:
+            tera_gain = best_attack['tera_score'] - best_attack['score']
+            # Conditions tactiques pour Tera
+            enemy_threat = evaluate_pokemon_type_efficiency(enemy, my_poke)
+            offensive_window = tera_gain > 0.35
+            finishing = (enemy.current_hp / enemy.max_hp) < 0.35 and best_attack['tera_score'] > best_attack['score']
+            survival_need = enemy_threat > 1.5 and my_poke.current_hp / my_poke.max_hp < 0.5
+            late_game = self._count_alive(fight, self.team_id) <= 2 or self._count_alive(fight, 3 - self.team_id) <= 2
+            if offensive_window and (finishing or late_game or survival_need):
+                return ('terastallize', best_attack['attack'], None)
+
+        # Attaque normale
+        if best_attack:
+            return ('attack', best_attack['attack'], False)
+
+        # Fallback
+        return ('attack', Struggle, False)
+
+    def _score_attack(self, my_poke, enemy, attack, tera=False):
+        # Base: puissance modifiée
+        base_power = getattr(attack, 'base_power', getattr(attack, 'power', 50))
+        # STAB (avec Tera si activée)
+        stab = 1.0
+        move_type = getattr(attack, 'type', None)
+        if tera:
+            # Simuler Tera sur le premier type actuel (après Tera probable)
+            if move_type == my_poke.types[0]:
+                stab += 0.5
+        else:
+            if move_type in my_poke.original_types:
+                stab += 0.5
+        # Efficacité de type (en utilisant pokemon vs enemy; approximation pour l'attaque)
+        type_eff = 1.0
+        if move_type and hasattr(enemy, 'original_types'):
+            type_eff = 1.0
+            # Simplifié: utiliser un poke factice pour calculer (si needed on pourrait créer un wrapper)
+            # On approxime via ratio de my_poke vs enemy (déjà multi-typage)
+            type_eff = evaluate_pokemon_type_efficiency(type('Tmp', (), {'original_types': [move_type], 'types': [move_type], 'tera_activated': False})(), enemy)
+        # HP ratios
+        enemy_hp_ratio = enemy.current_hp / enemy.max_hp if enemy.max_hp else 1
+        my_hp_ratio = my_poke.current_hp / my_poke.max_hp if my_poke.max_hp else 1
+
+        # Offensive scoring
+        raw_damage_est = base_power * stab * type_eff
+        normalized_damage = min(raw_damage_est / 120, 1.0)
+        pressure = (1 - enemy_hp_ratio) * 0.2  # plus l'ennemi est bas, plus on valorise un finish
+
+        # Sécurité: éviter de suicider si HP très bas
+        safety_penalty = 0.0
+        if my_hp_ratio < 0.25 and type_eff < 1:
+            safety_penalty = 0.15
+
+        score = normalized_damage + pressure - safety_penalty
+        if tera:
+            score += 0.1  # léger bonus pour opportunité Tera
+        details = {
+            'power': base_power,
+            'stab': stab,
+            'type_eff': type_eff,
+            'normalized_damage': normalized_damage,
+            'pressure': pressure,
+            'safety_penalty': safety_penalty,
+            'tera': tera
+        }
+        return score, details
+
+    def _score_switch(self, candidate, enemy):
+        # Matchup (types) : plus grand est mieux (notre offensive) et inverse (défense) => on combine
+        offensive = evaluate_pokemon_type_efficiency(candidate, enemy)
+        defensive = 1 / max(evaluate_pokemon_type_efficiency(enemy, candidate), 0.25)
+        hp_ratio = candidate.current_hp / candidate.max_hp if candidate.max_hp else 1
+        # Bonus pour HP plus élevé et meilleure défense
+        score = (offensive * 0.4) + (defensive * 0.4) + (hp_ratio * 0.2)
+        # Pénalité si status grave
+        if getattr(candidate, 'status', 'normal') in ['poison', 'burn', 'sleep', 'paralysis']:
+            score -= 0.1
+        return score, {
+            'offensive': offensive,
+            'defensive': defensive,
+            'hp_ratio': hp_ratio
+        }
+
+    def _count_alive(self, fight, team_id):
+        team = fight.team1 if team_id == 1 else fight.team2
+        return sum(1 for p in team if p.current_hp > 0)
+
+"""
+class HeuristicAI(PokemonAI):
     def __init__(self, team_id, aggression_level=0.7):
         super().__init__(team_id, "Heuristic AI")
         self.aggression_level = aggression_level  # 0-1, influence attaque vs switch
@@ -383,7 +533,8 @@ class HeuristicAI(PokemonAI):
         return
     
     def calculate_type_advantage(self, my_pokemon, enemy_pokemon):
-        # Calculer l'avantage/désavantage de type
+        efficiency = evaluate_pokemon_type_efficiency(my_pokemon, enemy_pokemon)
+        
         return
         
     def assess_hp_danger(self, pokemon):
@@ -393,3 +544,4 @@ class HeuristicAI(PokemonAI):
     def find_best_switch(self, available_switches, enemy_pokemon):
         # Trouver le meilleur switch selon les matchups
         return
+"""

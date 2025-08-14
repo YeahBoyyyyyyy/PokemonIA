@@ -113,6 +113,8 @@ class pokemon():
         # Téracristalisation
         self.tera_type = random.choice(self.types)  # Type de la Téracristalisation
         self.tera_activated = False  # Indique si le Pokémon a été Téracristalisé
+        # Compteur pour Rage Fist (nombre de fois où le Pokémon a été touché dans ce combat)
+        self.nb_of_hit = 0
 
     def _calculate_initial_stats(self):
         """Calcule les stats initiales sans modificateurs"""
@@ -142,7 +144,8 @@ class pokemon():
         if self.tera_activated:
             print(f"{self.name} est déjà téracristallisé !")
             return False
-            
+        
+        self.original_types = self.types.copy()
         self.tera_type = tera_type
         self.tera_activated = True
         
@@ -320,6 +323,10 @@ class pokemon():
             self.libero_active = False
         if hasattr(self, "glaive_rush"):
             self.glaive_rush = False
+        if hasattr(self, 'moxie_pending'):
+            self.moxie_pending = False
+        if hasattr(self, "original_weight"):
+            self.weight = self.original_weight  # Restaure le poids original si modifié
         self.actualize_stats()
     
     def pokemon_center(self):
@@ -334,6 +341,7 @@ class pokemon():
         self.tera_activated = False  # Réinitialise l'état de Téracristallisation
         self.restore_all_pp()  # Réinitialise les PP de toutes les attaques
         self.item = self.item_saved  # Restaure l'objet d'origine
+        self.nb_of_hit = 0  # Reset du compteur pour Rage Fist
 
     ## Printing methods pour debugger
     def print_pokemon_status(self):

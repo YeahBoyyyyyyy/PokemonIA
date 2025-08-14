@@ -50,6 +50,15 @@ class Attack:
         self.critical_chance_up = critical_chance_up  # Chance de coup critique, à définir dans les attaques concrètes
         self.guaranteed_critical = False  # Indique si l'attaque est un coup critique garanti
 
+    # Compatibilité : certains endroits utilisent encore attack.power
+    @property
+    def power(self):
+        return self.base_power
+
+    @power.setter
+    def power(self, value):
+        self.base_power = value
+
     def apply_effect(self, user : PK.pokemon, target : PK.pokemon, fight):
         pass  # Surcharge dans les attaques concrètes
 
@@ -257,7 +266,8 @@ class TorchSong(Attack):
             accuracy=100,
             priority=0,
             pp=16,
-            flags=["protect", "mirror"]
+            flags=["protect", "mirror"],
+            target="Foe"
         )
     def apply_effect(self, user, target, fight):
         stat_changes = {"Sp. Atk": 1}
@@ -275,7 +285,8 @@ class AquaStep(Attack):
             accuracy=100,
             priority=0,
             pp=16,
-            flags=["contact", "protect", "mirror"]
+            flags=["contact", "protect", "mirror"],
+            target="Foe"
         )
     
     def apply_effect(self, user, target, fight):
@@ -417,6 +428,48 @@ class Synthesis(Attack):
         user.current_hp = min(user.max_hp, user.current_hp + heal_amount)
         print(f"{user.name} récupère {heal_amount} PV grâce à Synthesis.")
 
+class StoneAxe(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Stone Axe",
+            type_="Rock",
+            category="Physical",
+            power=65,
+            accuracy=100,
+            priority=0,
+            pp=8,
+            flags=["contact", "protect", "mirror"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """Pose les pieges de Roc s'ils ne sont pas posés"""
+        team_id = fight.get_team_id(user)
+        hazards_side = fight.hazards_team1 if team_id == 1 else fight.hazards_team2
+        if not hazards_side["Stealth Rock"]:
+            hazards_side["Stealth Rock"] = True
+            print(f"{user.name} pose les pièges de Roc.")
+
+class Waterfall(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Waterfall",
+            type_="Water",
+            category="Physical",
+            power=80,
+            accuracy=100,
+            priority=0,
+            pp=16,
+            flags=["contact", "protect", "mirror", "secondary_effect"],
+            target="Foe"
+        )
+    
+    def apply_effect(self, user, target, fight):
+        """ 20% de chance de flinch"""
+        if random.randint(1, 100) <= 20:
+            target.flinched = True
+            print(f"{target.name} est flinch !")
+
 class StoneEdge(Attack):
     def __init__(self):
         super().__init__(
@@ -475,6 +528,62 @@ class FakeOut(Attack):
         else:
             print("L'attaque échoue !")
             return False
+
+class ShadowSneak(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Shadow Sneak",
+            type_="Ghost",
+            category="Physical",
+            power=40,
+            accuracy=100,
+            priority=1,
+            pp=16,
+            flags=["contact", "protect", "mirror"],
+            target="Foe"
+        )
+
+class QuickAttack(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Quick Attack",
+            type_="Normal",
+            category="Physical",
+            power=40,
+            accuracy=100,
+            priority=1,
+            pp=16,
+            flags=["contact", "protect", "mirror"],
+            target="Foe"
+        )
+
+class MachPunch(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Mach Punch",
+            type_="Fighting",
+            category="Physical",
+            power=40,
+            accuracy=100,
+            priority=1,
+            pp=16,
+            flags=["contact", "protect", "mirror"],
+            target="Foe"
+        )
+
+class Accelerock(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Accelerock",
+            type_="Rock",
+            category="Physical",
+            power=40,
+            accuracy=100,
+            priority=1,
+            pp=16,
+            flags=["contact", "protect", "mirror"],
+            target="Foe"
+        )
 
 class Thunderbolt(Attack):
     def __init__(self):
@@ -972,6 +1081,24 @@ class CloseCombat(Attack):
         stat_changes = {"Defense": -1, "Sp. Def": -1}
         apply_stat_changes(user, stat_changes, "self", fight)
 
+class HeadlongRush(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Headlong Rush",
+            type_="Ground",
+            category="Physical",
+            power=120,
+            accuracy=100,
+            priority=0,
+            pp=8,
+            flags=["contact", "protect", "mirror"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        stat_changes = {"Defense": -1, "Sp. Def": -1}
+        apply_stat_changes(user, stat_changes, "self", fight)
+
 class Psychic(Attack):
     def __init__(self):
         super().__init__(
@@ -1161,6 +1288,37 @@ class DrainingKiss(Attack):
                 else:
                     user.current_hp += actual_healing
                     print(f"{user.name} récupère {actual_healing} PV grâce à Draining Kiss !")
+
+class DrainPunch(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Drain Punch",
+            type_="Fighting",
+            category="Physical",
+            power=75,
+            accuracy=100,
+            priority=0,
+            pp=16,
+            flags=["contact", "protect", "mirror", "heal"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight, damage_dealt=0):
+        """
+        L'utilisateur récupère 50% des dégâts infligés.
+        """
+        if damage_dealt > 0:
+            healing = int(damage_dealt * 0.5)
+            if user.current_hp < user.max_hp:
+                actual_healing = min(healing, user.max_hp - user.current_hp)
+                if user.item == "Big Root":
+                    actual_healing = int(actual_healing * 1.3)
+                if target.talent == "Liquid Ooze":
+                    user.current_hp -= actual_healing
+                    print(f"{target.name} inflige {actual_healing} PV de dégâts à {user.name} avec Liquid Ooze !")
+                else:
+                    user.current_hp += actual_healing
+                    print(f"{user.name} récupère {actual_healing} PV grâce à Drain Punch !")
 
 class LeafStorm(Attack):
     def __init__(self):
@@ -1388,12 +1546,31 @@ class HyperBeam(Attack):
             flags=["protect", "mirror", "recharge"],
             target="Foe"
         )
-    
+
     def apply_effect(self, user, target, fight):
         # Hyper Beam oblige le Pokémon à se reposer au tour suivant
         user.must_recharge = True
         print(f"{user.name} doit se reposer au prochain tour après cette attaque puissante !")
-        
+
+class RageFist(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Rage Fist",
+            type_="Ghost",
+            category="Physical",
+            power=50,  # Base; sera recalculée
+            accuracy=100,
+            priority=0,
+            pp=16,
+            flags=["contact", "protect", "mirror"],
+            target="Foe"
+        )
+
+    def get_power(self, user, target, fight):
+        """Puissance = 50 + 50 * nb_of_hit, plafonnée à 350 (7 hits)"""
+        hits = getattr(user, 'nb_of_hit', 0)
+        return min(50 + 50 * hits, 350)
+    
 class Encore(Attack):
     def __init__(self):
         super().__init__(
@@ -3543,10 +3720,10 @@ class MeteorMash(Attack):
             if success:
                 print(f"L'Attaque de {user.name} augmente grâce à Meteor Mash !")
 
-class MegaHorn(Attack):
+class Megahorn(Attack):
     def __init__(self):
         super().__init__(
-            name="Mega Horn",
+            name="Megahorn",
             type_="Bug",
             category="Physical",
             power=120,
@@ -3648,11 +3825,17 @@ class GrassyGlide(Attack):
             category="Physical",
             power=55,
             accuracy=100,
-            priority=1 if self.fight.terrain == "Grassy Terrain" else 0,  # Priorité élevée si sur terrain herbeux
+            priority=0,
             pp=32,
             flags=["contact", "protect", "mirror"],
             target="Foe"
         )
+    
+    def get_priority(self, fight):
+        if fight.field == "Grassy Terrain":
+            return 1  # Priorité élevée si sur terrain herbeux
+        else:
+            return 0
 
 class HighJumpKick(Attack):
     def __init__(self):
@@ -4005,10 +4188,10 @@ class WildboltStorm(Attack):
                 target.status = "paralyzed"
                 print(f"{target.name} est paralysé par Wildbolt Storm !")
 
-class BoomBurst(Attack):
+class Boomburst(Attack):
     def __init__(self):
         super().__init__(
-            name="Boom Burst",
+            name="Boomburst",
             type_="Normal",
             category="Special",
             power=140,
@@ -4052,7 +4235,7 @@ class StrengthSap(Attack):
             if user.current_hp < user.max_hp:
                 healing = target.current_stats()['Attack']
                 actual_healing = min(healing, user.max_hp - user.current_hp)
-                if user.item and user.item.name == "Big Root":
+                if user.item and user.item == "Big Root":
                     actual_healing = int(actual_healing * 1.3)
                 if target.talent == "Liquid Ooze":
                     user.current_hp -= actual_healing
@@ -4210,6 +4393,185 @@ class FlashCannon(Attack):
             from pokemon import apply_stat_changes
             apply_stat_changes(target, {"Sp. Def": -1}, "opponent", fight)
 
+class FireBlast(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Fire Blast",
+            type_="Fire",
+            category="Special",
+            power=110,
+            accuracy=85,
+            priority=0,
+            pp=8,
+            flags=["protect", "mirror", "secondary_effect"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """10% de chance de brûler la cible"""
+        if random.random() < 0.1 and target.status is None:
+            target.apply_status("burn")
+            print(f"{target.name} est brûlé par Fire Blast !")
+
+class FireFang(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Fire Fang",
+            type_="Fire",
+            category="Physical",
+            power=65,
+            accuracy=95,
+            priority=0,
+            pp=24,
+            flags=["contact", "bite", "protect", "mirror", "secondary_effect"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """10% de chance de flinch et 10% de chance de brûler (indépendants)."""
+        if random.random() < 0.1 and not target.flinched:
+            target.flinched = True
+            print(f"{target.name} est appeuré par Fire Fang !")
+        if random.random() < 0.1 and target.status is None:
+            target.apply_status("burn")
+            print(f"{target.name} est brûlé par Fire Fang !")
+
+class ClangingScales(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Clanging Scales",
+            type_="Dragon",
+            category="Special",
+            power=110,
+            accuracy=100,
+            priority=0,
+            pp=5,
+            flags=["protect", "mirror", "sound"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """Baisse la Défense de l'utilisateur d'un niveau après l'attaque."""
+        from pokemon import apply_stat_changes
+        apply_stat_changes(user, {"Defense": -1}, "self", fight)
+
+class ElectroDrift(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Electro Drift",
+            type_="Electric",
+            category="Special",
+            power=100,
+            accuracy=100,
+            priority=0,
+            pp=5,
+            flags=["protect", "mirror", "secondary_effect", "contact"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """Paralyse la cible avec 30% de chance."""
+        if random.random() < 0.3:
+            target.apply_status("paralyzed")
+            print(f"{target.name} est paralysé par Electro Drift !")
+
+class PyroBall(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Pyro Ball",
+            type_="Fire",
+            category="Physical",
+            power=120,
+            accuracy=90,
+            priority=0,
+            pp=8,
+            flags=["protect", "mirror", "secondary_effect", "contact"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """10% de chance de brûler la cible."""
+        if random.random() < 0.1 and target.status is None:
+            target.apply_status("burn")
+            print(f"{target.name} est brûlé par Pyro Ball !")
+
+class PowerWhip(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Power Whip",
+            type_="Grass",
+            category="Physical",
+            power=120,
+            accuracy=85,
+            priority=0,
+            pp=16,
+            flags=["protect", "mirror", "contact"],
+            target="Foe"
+        )
+
+class Lunge(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Lunge",
+            type_="Bug",
+            category="Physical",
+            power=80,
+            accuracy=100,
+            priority=0,
+            pp=24,
+            flags=["protect", "mirror", "contact", "secondary_effect"],
+            target="Foe"
+        )
+    
+    def apply_effect(self, user, target, fight):
+        """Réduit l'Attaque de la cible de 1 cran."""
+        stats_changes = {"Attack": -1}
+        success = apply_stat_changes(target, stats_changes, "opponent", fight)
+        if success:
+            print(f"l'Attaque de {target.name} baisse !")
+
+class IronTail(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Iron Tail",
+            type_="Steel",
+            category="Physical",
+            power=100,
+            accuracy=75,
+            priority=0,
+            pp=24,
+            flags=["protect", "mirror", "contact", "secondary_effect"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """Réduit la Défense de la cible de 1 cran."""
+        stats_changes = {"Defense": -1}
+        success = apply_stat_changes(target, stats_changes, "opponent", fight)
+        if success:
+            print(f"La Défense de {target.name} baisse !")
+
+class MysticalFire(Attack):
+    def __init__(self):
+        super().__init__(
+            name="Mystical Fire",
+            type_="Fire",
+            category="Special",
+            power=75,
+            accuracy=100,
+            priority=0,
+            pp=15,
+            flags=["protect", "mirror", "secondary_effect"],
+            target="Foe"
+        )
+
+    def apply_effect(self, user, target, fight):
+        """Réduit l'Attaque Spéciale de la cible de 1 cran."""
+        stats_changes = {"Sp. Atk": -1}
+        success = apply_stat_changes(target, stats_changes, "opponent", fight)
+        if success:
+            print(f"L'Attaque Spéciale de {target.name} baisse !")
+
 def process_future_sight_attacks(fight):
     """
     Fonction à appeler à la fin de chaque tour pour gérer les attaques Future Sight.
@@ -4316,6 +4678,7 @@ def execute_future_sight(future_attack, fight):
         print(f"{current_target.name} est K.O. par Future Sight !")
 
 attack_registry = {
+    "Accelerock": Accelerock(),
     "Aerial Ace": AerialAce(),
     "Aeroblast": Aeroblast(),
     "Air Cutter": AirCutter(),
@@ -4323,11 +4686,11 @@ attack_registry = {
     "Aqua Step": AquaStep(),
     "Aurora Veil": AuroraVeil(),
     "Behemoth Blade": BehemothBlade(),
-    "Bitted Blade": BitterBlade(),
+    "Bitter Blade": BitterBlade(),
     "Bleakwind Storm": BleakwindStorm(),
     "Body Press": BodyPress(),
     "Body Slam": BodySlam(),
-    "Boom Burst": BoomBurst(),
+    "Boomburst": Boomburst(),
     "Bug Buzz": BugBuzz(),
     "Bulk Up": BulkUp(),
     "Bullet Punch": BulletPunch(),
@@ -4340,7 +4703,9 @@ attack_registry = {
     "Close Combat": CloseCombat(),
     "Crunch": Crunch(),
     "Dark Pulse": DarkPulse(),
+    "Drain Punch": DrainPunch(),
     "Defog": Defog(),
+    "Clanging Scales": ClangingScales(),
     "Dragon Claw": DragonClaw(),
     "Draco Meteor": DracoMeteor(),
     "Dragon Dance": DragonDance(),
@@ -4356,9 +4721,12 @@ attack_registry = {
     "Extreme Speed": ExtremeSpeed(),
     "Fake Out": FakeOut(),
     "Fiery Dance": FieryDance(),
+    "Fire Blast": FireBlast(),
+    "Fire Fang": FireFang(),
     "Fire Punch": FirePunch(),
     "Flamethrower": Flamethrower(),
     "Flare Blitz": FlareBlitz(),
+    "Flash Cannon": FlashCannon(),
     "Flip Turn": FlipTurn(),
     "Flower Trick": FlowerTrick(),
     "Focus Blast": FocusBlast(),
@@ -4370,6 +4738,7 @@ attack_registry = {
     "Gunk Shot": GunkShot(),
     "Hammer Arm": HammerArm(),
     "Heal Bell": HealBell(),
+    "Headlong Rush": HeadlongRush(),
     "Heat Wave": HeatWave(),
     "Heavy Slam": HeavySlam(),
     "Hex": Hex(),
@@ -4386,6 +4755,7 @@ attack_registry = {
     "Icy Wind": IcyWind(),
     "Iron Defense": IronDefense(),
     "Iron Head": IronHead(),
+    "Iron Tail": IronTail(),
     "Knock Off": KnockOff(),
     "Kowtow Cleave": KowtowCleave(),
     "Leaf Blade": LeafBlade(),
@@ -4393,13 +4763,16 @@ attack_registry = {
     "Light Screen": LightScreen(),
     "Liquidation": Liquidation(),
     "Low Kick": LowKick(),
+    "Lunge": Lunge(),
+    "Mach Punch": MachPunch(),
     "Magic Coat": MagicCoat(),
     "Make It Rain": MakeItRain(),
     "Malignant Chain": MalignantChain(),
-    "Mega Horn": MegaHorn(),
+    "Megahorn": Megahorn(),
     "Meteor Mash": MeteorMash(),
     "Moonblast": Moonblast(),
     "Mortal Spin": MortalSpin(),
+    "Mystical Fire": MysticalFire(),
     "Nasty Plot": NastyPlot(),
     "Nuzzle": Nuzzle(),
     "Overdrive": Overdrive(),
@@ -4410,12 +4783,16 @@ attack_registry = {
     "Poison Jab": PoisonJab(),
     "Population Bomb": PopulationBomb(),
     "Power Gem": PowerGem(),
+    "Power Whip": PowerWhip(),
     "Protect": Protect(),
     "Psychic": Psychic(),
     "Psycho Boost": PsychoBoost(),
     "Psycho Cut": PsychoCut(),
     "Psychic Noise": PsychicNoise(),
+    "Pyro Ball": PyroBall(),
+    "Quick Attack": QuickAttack(),
     "Quiver Dance": QuiverDance(),
+    "Rage Fist": RageFist(),
     "Rain Dance": RainDance(),
     "Rapid Spin": RapidSpin(),
     "Razor Shell": RazorShell(),
@@ -4431,6 +4808,7 @@ attack_registry = {
     "Scald": Scald(),
     "Shadow Ball": ShadowBall(),
     "Shadow Claw": ShadowClaw(),
+    "Shadow Sneak": ShadowSneak(),
     "Shed Tail": ShedTail(),
     "Shell Smash": ShellSmash(),
     "Shift Gear": ShiftGear(),
@@ -4445,7 +4823,9 @@ attack_registry = {
     "Springtide Storm": SpringtideStorm(),
     "Stealth Rock": StealthRock(),
     "Sticky Web": StickyWeb(),
+    "Stone Axe": StoneAxe(),
     "Stone Edge": StoneEdge(),
+    "Strength Sap": StrengthSap(),
     "Struggle": STRUGGLE_ATTACK,
     "Substitute": Substitute(),
     "Sucker Punch": SuckerPunch(),
@@ -4459,6 +4839,7 @@ attack_registry = {
     "Taunt": Taunt(),
     "Tera Blast": TeraBlast(),
     "Thunder": Thunder(),
+    "Thunderbolt": Thunderbolt(),
     "Thunder Wave": ThunderWave(),
     "Tidy Up": TidyUp(),
     "Torch Song": TorchSong(),
@@ -4470,6 +4851,7 @@ attack_registry = {
     "U-turn": UTurn(),
     "Vacuum Wave": VacuumWave(),
     "Volt Switch": VoltSwitch(),
+    "Waterfall": Waterfall(),
     "Wave Crash": WaveCrash(),
     "Wild Charge": WildCharge(),
     "Wildbolt Storm": WildboltStorm(),
