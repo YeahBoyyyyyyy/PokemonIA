@@ -438,6 +438,8 @@ def trigger_item(poke, event, *args):
         
         # Si la méthode a été surchargée (différente de la classe de base)
         if item_method.__func__ != base_method:
-            print(f"[ITEM] {poke.name} uses {poke.item} -> {event}")
+            from utilities import PRINTING_METHOD
+            if PRINTING_METHOD:
+                print(f"[ITEM] {poke.name} uses {poke.item} -> {event}")
             return item_method(poke, *args)
     return None

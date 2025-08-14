@@ -51,13 +51,26 @@ class PokemonAI(ABC):
             active_pokemon = fight.active2
             team = fight.team2
             tera_used = getattr(fight, 'tera_used_team2', False)
-        
+
+        possible_attacks = active_pokemon.get_usable_attacks()
+
+        if active_pokemon.can_switch:
+            switches = [p for p in team if p.current_hp > 0 and p != active_pokemon]
+
         # Actions disponibles
-        available_actions = {
-            'attacks': [atk for atk in active_pokemon.get_usable_attacks()],
-            'switches': [p for p in team if p.current_hp > 0 and p != active_pokemon],
-            'can_terastallize': not tera_used and not active_pokemon.tera_activated
-        }
+        if switches:
+            available_actions = {
+                'attacks': possible_attacks,
+                'switches': switches,
+                'can_terastallize': not tera_used and not active_pokemon.tera_activated
+            }
+        else:
+            available_actions = {
+                'attacks': possible_attacks,
+                'switches': [],  # Toujours inclure la clé 'switches' dans available_actions
+                'can_terastallize': not tera_used and not active_pokemon.tera_activated
+            }
+            
         
         return available_actions
     
@@ -89,15 +102,13 @@ class PokemonAI(ABC):
             'enemy_team': enemy_team
         }
     
-class PLAYERAI(PokemonAI):
-    """Joueur Humain qui rentre ses actions manuellement comme dans battle_interface.py"""
-
-    def choose_action(self, fight, available_actions):
-        return 
-
 class RandomAI(PokemonAI):
     """IA Pokémon qui choisit des actions aléatoires"""
-    
+    def __init__(self, team_id):
+        super().__init__(
+            team_id=team_id,
+            name="Random AI")
+
     def choose_action(self, fight, available_actions):
         from Materials.pokemon_attacks import Struggle
         """
@@ -122,7 +133,7 @@ class RandomAI(PokemonAI):
             possible_actions.append('attack')
         
         # Changer (si on a des Pokémon disponibles)
-        if available_actions['switches']:
+        if 'switches' in available_actions and available_actions['switches'] != []: 
             possible_actions.append('switch')
         
         # Téracristaliser (si possible ET si on a des attaques)
@@ -131,22 +142,24 @@ class RandomAI(PokemonAI):
         
         # Si aucune action possible, forcer l'attaque (Struggle)
         if not possible_actions:
-            return ('attack', Struggle, False)
+            return ('attack', Struggle(), False)
 
         # Choisir aléatoirement avec pondération
         if len(possible_actions) == 1:
             action_type = possible_actions[0]
         else:
-            # Pondération : 80% attaque, 15% switch, 5% tera
+            # Pondération : 80% attaque, 15% switch, 5% tera si peut switch sinon 90% attaque, 10% tera
             weights = []
-            for action in possible_actions:
-                if action == 'attack':
-                    weights.append(0.8)
-                elif action == 'switch':
-                    weights.append(0.15)
-                elif action == 'terastallize':
-                    weights.append(0.05)
-            
+            if 'switch' in possible_actions:
+                if 'terastallize' in possible_actions:
+                    weights.extend([0.8, 0.15, 0.05])
+                else:
+                    weights.extend([0.9, 0.1])
+            else:
+                if 'terastallize' in possible_actions:
+                    weights.extend([0.9, 0.1])
+                else:
+                    weights.append(1.0)
             action_type = random.choices(possible_actions, weights=weights)[0]
         
         # Exécuter l'action choisie
@@ -156,7 +169,7 @@ class RandomAI(PokemonAI):
                 attack = random.choice(available_actions['attacks'])
                 return ('attack', attack, False)
             else:
-                return ('attack', Struggle, False)  # Struggle
+                return ('attack', Struggle(), False)  # Struggle
 
         elif action_type == 'switch':
             if available_actions['switches']:
@@ -165,23 +178,22 @@ class RandomAI(PokemonAI):
                 return ('switch', team_index, None)
             else:
                 # Fallback vers attaque si pas de switch possible
-                return ('attack', Struggle, False)
+                return ('attack', Struggle(), False)
 
         elif action_type == 'terastallize':
             if available_actions['can_terastallize'] and available_actions['attacks']:
                 attack = random.choice(available_actions['attacks'])
                 return ('terastallize', attack, None)
             else:
-                return ('attack', Struggle, False)  # Struggle
+                return ('attack', Struggle(), False)  # Struggle
         
         # Fallback de sécurité
-        return ('attack', Struggle, False)  # Struggle
+        return ('attack', Struggle(), False)  # Struggle
 
     def choose_switch_in(self, fight):
         """
         Choisit le Pokémon à faire entrer lors d'un changement de pokémon.
         """
-        
         available_pokemon = self.get_available_actions(fight)['switches']
         if not available_pokemon:
             return None
@@ -193,13 +205,13 @@ class RandomAI(PokemonAI):
             poke_index_in_team = my_team.index(switch_pokemon)
             return poke_index_in_team
 
-    def get_available_actions(self, fight):
-        """
+    """def get_available_actions(self, fight):
+        
         Détermine les actions disponibles pour l'IA.
         
         Returns:
             dict: Actions disponibles
-        """
+        
         # Déterminer quelle équipe et quel Pokémon actif
         if self.team_id == 1:
             active_pokemon = fight.active1
@@ -212,14 +224,23 @@ class RandomAI(PokemonAI):
 
         possible_attacks = active_pokemon.get_usable_attacks()
 
-        # Actions disponibles
-        available_actions = {
-            'attacks': possible_attacks,
-            'switches': [p for p in team if p.current_hp > 0 and p != active_pokemon],
-            'can_terastallize': not tera_used and not active_pokemon.tera_activated
-        }
+        if active_pokemon.can_switch:
+            switches = [p for p in team if p.current_hp > 0 and p != active_pokemon]
 
-        return available_actions
+        # Actions disponibles
+        if switches:
+            available_actions = {
+                'attacks': possible_attacks,
+                'switches': switches,
+                'can_terastallize': not tera_used and not active_pokemon.tera_activated
+            }
+        else:
+                available_actions = {
+                'attacks': possible_attacks,
+                'can_terastallize': not tera_used and not active_pokemon.tera_activated
+            }
+
+        return available_actions"""
 
 
 class PlayerAI(PokemonAI):
@@ -268,7 +289,7 @@ class PlayerAI(PokemonAI):
                     # Attaquer
                     if not available_actions['attacks']:
                         print("Aucune attaque disponible! Utilisation de Struggle...")
-                        return ('attack', Struggle, False)
+                        return ('attack', Struggle(), False)
                     
                     return self._choose_attack(available_actions['attacks'])
                 
@@ -367,181 +388,119 @@ class PlayerAI(PokemonAI):
             except ValueError:
                 print("Veuillez entrer un nombre valide.")
 
-class HeuristicAI(PokemonAI):
-    """IA heuristique: choisit l'action avec un score basé sur matchup, dégâts estimés, sécurité HP et opportunités Tera."""
-    def __init__(self, team_id, aggression_level=0.65, switch_threshold=0.35, tera_aggression=0.15):
-        super().__init__(team_id, "Heuristic AI")
-        self.aggression_level = aggression_level  # Importance d'attaquer
-        self.switch_threshold = switch_threshold  # En-dessous de ce score, on préfère switch
-        self.tera_aggression = tera_aggression    # Bonus si Tera offensive possible
-        self.turns = 0
+class LowHeuristicAI(PokemonAI):
+    """
+    Simplified AI: Chooses actions based only on type effectiveness.
+    """
+    def __init__(self, team_id):
+        super().__init__(team_id, "Simple Heuristic AI")
 
     def choose_action(self, fight, available_actions):
         from Materials.pokemon_attacks import Struggle
-        self.turns += 1
+
         if available_actions is None:
             available_actions = self.get_available_actions(fight)
+
         info = self.get_pokemon_info(fight)
         my_poke = info['my_pokemon']
         enemy = info['enemy_pokemon']
 
         attacks = available_actions['attacks'] if available_actions['attacks'] else []
         switches = available_actions['switches'] if available_actions['switches'] else []
-        can_tera = available_actions['can_terastallize']
 
-        # 1. Evaluer chaque attaque
-        attack_choices = []
-        for atk in attacks:
-            atk_score, details = self._score_attack(my_poke, enemy, atk, tera=False)
-            tera_score = None
-            if can_tera:
-                tera_score, tera_details = self._score_attack(my_poke, enemy, atk, tera=True)
-            attack_choices.append({
-                'attack': atk,
-                'score': atk_score,
-                'details': details,
-                'tera_score': tera_score,
-                'tera_details': tera_details if can_tera else None
-            })
+        # Évaluer l'avantage des types des deux Pokémon
+        type_advantage = evaluate_type_efficiency(my_poke, enemy)
+        if PRINTING_METHOD:
+            print("Évaluation des types :", type_advantage)
 
-        # 2. Evaluer les switches
-        switch_choices = []
-        for sw in switches:
-            sw_score, sw_details = self._score_switch(sw, enemy)
-            switch_choices.append({'pokemon': sw, 'score': sw_score, 'details': sw_details})
+        # Si désavantage de type, prioriser le switch
+        if type_advantage < 1:
+            if switches:
+                best_switch = self._choose_switch(switches, enemy)
+                if best_switch:
+                    team = fight.team1 if self.team_id == 1 else fight.team2
+                    best_switch_id = team.index(best_switch)
+                    return ('switch', best_switch_id, None)
 
-        # 3. Décision
-        best_attack = max(attack_choices, key=lambda x: x['score'], default=None)
-        best_switch = max(switch_choices, key=lambda x: x['score'], default=None)
+        # Si avantage de type ou pas de switch possible, évaluer les attaques
+        best_attack = self._choose_attack(attacks, enemy)
 
-        # Décider si switch vaut mieux qu'attaquer
-        choose_switch = False
-        if best_switch and (not best_attack or best_switch['score'] > best_attack['score'] + (1 - self.aggression_level)):
-            # Encourager switch si notre HP bas ou matchup mauvais
-            hp_ratio = my_poke.current_hp / my_poke.max_hp
-            my_matchup = evaluate_pokemon_type_efficiency(my_poke, enemy)
-            if hp_ratio < 0.3 or my_matchup < 0.75 or best_switch['score'] - best_attack['score'] > 0.5:
-                choose_switch = True
+        # Si aucune attaque offensive efficace, prioriser les attaques de statut
+        if not best_attack:
+            status_moves = [atk for atk in attacks if atk.category == "Status"]
+            if status_moves:
+                return ('attack', random.choice(status_moves), False)
 
-        if choose_switch:
-            # Trouver l'index dans l'équipe
-            team = fight.team1 if self.team_id == 1 else fight.team2
-            idx = team.index(best_switch['pokemon'])
-            return ('switch', idx, None)
-
-        # Considérer Tera sur la meilleure attaque
-        if best_attack and can_tera and best_attack['tera_score'] is not None:
-            tera_gain = best_attack['tera_score'] - best_attack['score']
-            # Conditions tactiques pour Tera
-            enemy_threat = evaluate_pokemon_type_efficiency(enemy, my_poke)
-            offensive_window = tera_gain > 0.35
-            finishing = (enemy.current_hp / enemy.max_hp) < 0.35 and best_attack['tera_score'] > best_attack['score']
-            survival_need = enemy_threat > 1.5 and my_poke.current_hp / my_poke.max_hp < 0.5
-            late_game = self._count_alive(fight, self.team_id) <= 2 or self._count_alive(fight, 3 - self.team_id) <= 2
-            if offensive_window and (finishing or late_game or survival_need):
-                return ('terastallize', best_attack['attack'], None)
-
-        # Attaque normale
+        # Si une attaque efficace est trouvée, l'utiliser
         if best_attack:
-            return ('attack', best_attack['attack'], False)
+            return ('attack', best_attack, False)
 
-        # Fallback
+        # Si aucune option viable, utiliser Struggle
         return ('attack', Struggle, False)
 
-    def _score_attack(self, my_poke, enemy, attack, tera=False):
-        # Base: puissance modifiée
-        base_power = getattr(attack, 'base_power', getattr(attack, 'power', 50))
-        # STAB (avec Tera si activée)
-        stab = 1.0
-        move_type = getattr(attack, 'type', None)
-        if tera:
-            # Simuler Tera sur le premier type actuel (après Tera probable)
-            if move_type == my_poke.types[0]:
-                stab += 0.5
-        else:
-            if move_type in my_poke.original_types:
-                stab += 0.5
-        # Efficacité de type (en utilisant pokemon vs enemy; approximation pour l'attaque)
-        type_eff = 1.0
-        if move_type and hasattr(enemy, 'original_types'):
-            type_eff = 1.0
-            # Simplifié: utiliser un poke factice pour calculer (si needed on pourrait créer un wrapper)
-            # On approxime via ratio de my_poke vs enemy (déjà multi-typage)
-            type_eff = evaluate_pokemon_type_efficiency(type('Tmp', (), {'original_types': [move_type], 'types': [move_type], 'tera_activated': False})(), enemy)
-        # HP ratios
-        enemy_hp_ratio = enemy.current_hp / enemy.max_hp if enemy.max_hp else 1
-        my_hp_ratio = my_poke.current_hp / my_poke.max_hp if my_poke.max_hp else 1
+    def _choose_attack(self, attacks, enemy):
+        """
+        Choisit la meilleure attaque en fonction de l'efficacité des types et des dégâts potentiels.
+        """
+        best_move = None
+        highest_score = -1
+        for attack in attacks:
+            move_type = getattr(attack, 'type', None)
+            if move_type:
+                type_eff = evaluate_type_efficiency(
+                    type('Tmp', (), {'original_types': [move_type], 'types': [move_type], 'tera_activated': False})(),
+                    enemy
+                )
+                # Pondérer l'efficacité par la puissance de l'attaque
+                score = type_eff * attack.power
+                if score > highest_score:
+                    highest_score = score
+                    best_move = attack
 
-        # Offensive scoring
-        raw_damage_est = base_power * stab * type_eff
-        normalized_damage = min(raw_damage_est / 120, 1.0)
-        pressure = (1 - enemy_hp_ratio) * 0.2  # plus l'ennemi est bas, plus on valorise un finish
+        return best_move
 
-        # Sécurité: éviter de suicider si HP très bas
-        safety_penalty = 0.0
-        if my_hp_ratio < 0.25 and type_eff < 1:
-            safety_penalty = 0.15
+    def _choose_switch(self, switches, enemy):
+        """
+        Choisit le Pokémon à faire entrer lors d'un changement de Pokémon.
+        """
+        best_switch = None
+        best_switch_score = float('inf')
+        for switch in switches:
+            switch_score = evaluate_type_efficiency(switch, enemy)
+            # Prendre en compte les PV restants pour éviter d'envoyer un Pokémon faible
+            adjusted_score = switch_score / (switch.current_hp / switch.max_hp)
+            if adjusted_score < best_switch_score:
+                best_switch_score = adjusted_score
+                best_switch = switch
 
-        score = normalized_damage + pressure - safety_penalty
-        if tera:
-            score += 0.1  # léger bonus pour opportunité Tera
-        details = {
-            'power': base_power,
-            'stab': stab,
-            'type_eff': type_eff,
-            'normalized_damage': normalized_damage,
-            'pressure': pressure,
-            'safety_penalty': safety_penalty,
-            'tera': tera
-        }
-        return score, details
-
-    def _score_switch(self, candidate, enemy):
-        # Matchup (types) : plus grand est mieux (notre offensive) et inverse (défense) => on combine
-        offensive = evaluate_pokemon_type_efficiency(candidate, enemy)
-        defensive = 1 / max(evaluate_pokemon_type_efficiency(enemy, candidate), 0.25)
-        hp_ratio = candidate.current_hp / candidate.max_hp if candidate.max_hp else 1
-        # Bonus pour HP plus élevé et meilleure défense
-        score = (offensive * 0.4) + (defensive * 0.4) + (hp_ratio * 0.2)
-        # Pénalité si status grave
-        if getattr(candidate, 'status', 'normal') in ['poison', 'burn', 'sleep', 'paralysis']:
-            score -= 0.1
-        return score, {
-            'offensive': offensive,
-            'defensive': defensive,
-            'hp_ratio': hp_ratio
-        }
-
-    def _count_alive(self, fight, team_id):
+        return best_switch
+    
+    def choose_switch_in(self, fight):
+        """
+        Choisit le Pokémon à faire entrer lors d'un changement de pokémon.
+        """
+        team_id = self.team_id
         team = fight.team1 if team_id == 1 else fight.team2
-        return sum(1 for p in team if p.current_hp > 0)
+        if team_id == 1:
+            active_pokemon, enemy = fight.active1, fight.active2
+        else:
+            active_pokemon, enemy = fight.active2, fight.active1
 
-"""
-class HeuristicAI(PokemonAI):
-    def __init__(self, team_id, aggression_level=0.7):
-        super().__init__(team_id, "Heuristic AI")
-        self.aggression_level = aggression_level  # 0-1, influence attaque vs switch
+        switches = [p for p in team if p.current_hp > 0 and p != active_pokemon]
+        if not switches or switches == []:
+            return None
+        else:
+            best_switch = self._choose_switch(switches, enemy)
+            if best_switch:
+                team = fight.team1 if self.team_id == 1 else fight.team2
+                idx = team.index(best_switch)
+            else:
+                idx = team.index(switches[0])  # Si aucun switch optimal, prendre le premier disponible
+        return idx
     
-    def choose_action(self, fight, available_actions):
-        # 1. Évaluer la situation actuelle
-        # 2. Calculer les scores pour chaque action
-        # 3. Choisir la meilleure action
-        return
 
-    def evaluate_attack_damage(self, my_attack, enemy_pokemon):
-        # Estimer les dégâts approximatifs
-        return
-    
-    def calculate_type_advantage(self, my_pokemon, enemy_pokemon):
-        efficiency = evaluate_pokemon_type_efficiency(my_pokemon, enemy_pokemon)
-        
-        return
-        
-    def assess_hp_danger(self, pokemon):
-        # Évaluer si HP en danger (critique/moyen/safe)
-        return
-        
-    def find_best_switch(self, available_switches, enemy_pokemon):
-        # Trouver le meilleur switch selon les matchups
-        return
-"""
+class HighHeuristicAI(PokemonAI):
+    """
+    Pareil qu'au dessus sauf qu'il faut rajouter la possibilité de switch si low et un poke de l'equipe resiste
+    + calcul des degats très précis et pas juste les types.
+    """

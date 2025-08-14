@@ -5,12 +5,13 @@ from colors_utils import Colors
 from utilities import *
 from import_pokemon_team_from_json import import_team_from_json, import_random_simple_team
 from damage_calc import *
-from IA.pokemon_ia import RandomAI, PlayerAI
+from IA.pokemon_ia import RandomAI, PlayerAI, LowHeuristicAI
+
 
 
 # Initialiser les IAs :
 # Option 1: IA vs IA (comme avant)
-ia1 = PlayerAI(1)
+ia1 = LowHeuristicAI(1)
 ia2 = RandomAI(2)   
 
 # Option 2: Joueur vs IA (pour l'apprentissage supervisé)
@@ -20,9 +21,6 @@ ia2 = RandomAI(2)
 # Option 3: Joueur vs Joueur
 # ia1 = PlayerAI(1, "Joueur Humain 1")  # Joueur humain 1
 # ia2 = PlayerAI(2, "Joueur Humain 2")  # Joueur humain 2
-
-team_1 = import_team_from_json(27)
-team_2 = import_team_from_json(28)
 
 
 def print_fight(ia1, ia2):
@@ -87,9 +85,32 @@ def reset_team(team : list[pokemon]):
     """ Réinitialise l'équipe de Pokémon pour un nouveau combat."""
     for pokemon in team:
         pokemon.pokemon_center()
-
-battle_manager(team_1, team_2)
+"""
+for i in range(100):
+    team_1 = import_team_from_json(import_random_simple_team())
+    team_2 = import_team_from_json(import_random_simple_team())
+    battle_manager(team_1, team_2)
+    reset_team(team_1)
+    reset_team(team_2)
+"""    
+rounds = []
+compteur_changement_equipe = 10
+for i in range(10):
+    for i in range(100):
+        if compteur_changement_equipe > 9:
+            team_1 = import_team_from_json(import_random_simple_team())
+            team_2 = import_team_from_json(import_random_simple_team())
+            compteur_changement_equipe = 0
+        battle_manager(team_1, team_2)
+        reset_team(team_1)
+        reset_team(team_2)
+        compteur_changement_equipe +=1
+    rounds.append(ia1.wins)
+    ia1.wins = 0
     
+
+for i in range(len(rounds)):
+    print(f"Nombre victoire manche {ia1.name} {i}: {rounds[i]}/100")
 """
 ratio_victoire_defaite_par_equipes = []
 for i in range(len(nombre_de_victoire_par_equipes)):

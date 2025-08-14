@@ -2,7 +2,7 @@
 fichier regroupant tous les talents de poke et créant un dictionnaire regroupant tous leurs effets.
 '''
 import random
-from utilities import MOLD_BREAKER_IGNORED_ABILITIES, NON_DIRECT_PHYSICAL_ATTACK, DIRECT_SPECIAL_ATTACKS
+from utilities import MOLD_BREAKER_IGNORED_ABILITIES, NON_DIRECT_PHYSICAL_ATTACK, DIRECT_SPECIAL_ATTACKS, PRINTING_METHOD
 
 
 ON_ATTACK_MOD_DICT = {
@@ -641,17 +641,21 @@ class Contrary(Talent):
 class Protean(Talent):
     """Talent qui change le type du Pokémon en celui de la première attaque qu'il lance."""
     def on_attack(self, poke, attack, fight=None):
-        poke.types = [attack.type] # Pas besoin de sauvegarder les anciens types, cela est déjà fait dans pokemon.py à l'__init__
-        poke.protean_active = True  # Indique que Protean a été activé
-        print(f"{poke.name} change son type en {attack.type} grâce à Protean !")
-        return ON_ATTACK_MOD_DICT  # Pas de modification des dégâts par défaut
+        if poke.first_attack:
+            poke.types = [attack.type] # Pas besoin de sauvegarder les anciens types, cela est déjà fait dans pokemon.py à l'__init__
+            poke.protean_active = True  # Indique que Protean a été activé
+            if PRINTING_METHOD:
+                print(f"{poke.name} change son type en {attack.type} grâce à Protean !")
+            return ON_ATTACK_MOD_DICT  # Pas de modification des dégâts par défaut
 
 class Libero(Talent):
     """Talent qui change le type du Pokémon en celui de la première attaque qu'il lance, similaire à Protean."""
     def on_attack(self, poke, attack, fight=None):
-        poke.types = [attack.type]  # Change le type du Pokémon
-        poke.libero_active = True  # Indique que Libero a été activé
-        print(f"{poke.name} change son type en {attack.type} grâce à Libero !")
+        if poke.first_attack:
+            poke.types = [attack.type]  # Change le type du Pokémon
+            poke.libero_active = True  # Indique que Libero a été activé
+            if PRINTING_METHOD:
+                print(f"{poke.name} change son type en {attack.type} grâce à Libero !")
         return ON_ATTACK_MOD_DICT  # Pas de modification des dégâts par défaut
 
 class Technician(Talent):
@@ -752,6 +756,28 @@ class Analytic(Talent):
             return mod_dict
         return ON_ATTACK_MOD_DICT
         
+class ShadowTag(Talent):
+    """Talent qui empêche les Pokémon adverses de fuir ou de se retirer du combat."""
+    def on_entry(self, poke, fight):
+        opponent = fight.active2 if poke == fight.active1 else fight.active1
+
+        # Vérifier si l'adversaire est immunisé (par exemple, type Ghost ou talent Shadow Tag)
+        if "Ghost" in opponent.types or getattr(opponent, 'talent', None) == "Shadow Tag":
+            print(f"{opponent.name} est immunisé à Shadow Tag !")
+            return None
+
+        # Empêcher l'adversaire de fuir ou de switcher
+        opponent.cannot_switch = True
+        print(f"{poke.name} active Shadow Tag ! {opponent.name} ne peut pas fuir ou être remplacé.")
+        return "activated"
+
+    def on_exit(self, poke, fight):
+        """Désactive l'effet de Shadow Tag lorsque le Pokémon quitte le terrain."""
+        opponent = fight.active2 if poke == fight.active1 else fight.active1
+        if hasattr(opponent, 'cannot_switch'):
+            opponent.cannot_switch = False
+            print(f"{poke.name} quitte le terrain. {opponent.name} peut à nouveau fuir ou être remplacé.")
+
 def trigger_talent(poke, event_name, *args):
     """
     Déclenche l'effet du talent en fonction de l'événement.
@@ -778,7 +804,9 @@ def trigger_talent(poke, event_name, *args):
             result = talent_method(poke, *args)
             # Afficher le message seulement si le talent a effectivement fait quelque chose
             if result is not None:
-                print(f"[TALENT] {poke.name} active {poke.talent} -> {event_name}")
+                from utilities import PRINTING_METHOD
+                if PRINTING_METHOD:
+                    print(f"[TALENT] {poke.name} active {poke.talent} -> {event_name}")
             return result
     return None
 
@@ -851,4 +879,5 @@ talent_registry = {
     "Ice Scales": IceScales(),
     "Fluffy": Fluffy(),
     "Fur Coat": FurCoat(),
+    "Shadow Tag": ShadowTag()
 }

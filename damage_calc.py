@@ -95,7 +95,8 @@ def attack_carac(fight, user_pokemon : pokemon, attack : Attack, target_pokemon 
     target_current_stats = target_pokemon.current_stats()
 
     if is_critical_hit(user_pokemon, attack, target_pokemon):
-        print(f"{user_pokemon.name} porte un coup critique avec {attack.name} !")
+        if utilities.PRINTING_METHOD:
+            print(f"{user_pokemon.name} porte un coup critique avec {attack.name} !")
         critical = 1.5  # Coup critique inflige 1.5x les dégâts
         if attack.category == 'Physical' or attack.name == "Psychoc":
             if target_pokemon.stats_modifier[1] > 0:

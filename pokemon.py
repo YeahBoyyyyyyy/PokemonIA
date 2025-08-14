@@ -142,7 +142,8 @@ class pokemon():
         :param tera_type: Le type Tera (ex: "Fire", "Water", "Stellar", etc.)
         """
         if self.tera_activated:
-            print(f"{self.name} est déjà téracristallisé !")
+            if utilities.PRINTING_METHOD:
+                print(f"{self.name} est déjà téracristallisé !")
             return False
         
         self.original_types = self.types.copy()
@@ -153,7 +154,8 @@ class pokemon():
         if tera_type != "Stellar":
             self.types = [tera_type]  # Remplacer par le type Tera uniquement
         
-        print(f"{self.name} téracristallise en type {tera_type} !")
+        if utilities.PRINTING_METHOD:
+            print(f"{self.name} téracristallise en type {tera_type} !")
         return True
 
     def is_tera_stab(self, attack_type):
@@ -304,7 +306,6 @@ class pokemon():
         if hasattr(self, 'lost_flying_from_roost') and self.lost_flying_from_roost:
             if hasattr(self, 'original_types'):
                 self.types = self.original_types.copy()  # Restaurer les types originaux
-                delattr(self, 'original_types')
             self.lost_flying_from_roost = False
         self.disabled_turns = 0  # Réinitialise le nombre de tours restants
         self.leech_seeded_by = None # Réinitialise l'effet de Leech Seed
@@ -338,7 +339,7 @@ class pokemon():
         self.status = None  # Réinitialise le statut
         self.sleep_counter = None  # Réinitialise le compteur de sommeil
         self.toxic_counter = 1  # Réinitialise le compteur de poison grave
-        self.tera_activated = False  # Réinitialise l'état de Téracristallisation
+        self.tera_activated = False  # Réinitialise l'état de Téracristalisation
         self.restore_all_pp()  # Réinitialise les PP de toutes les attaques
         self.item = self.item_saved  # Restaure l'objet d'origine
         self.nb_of_hit = 0  # Reset du compteur pour Rage Fist
@@ -543,7 +544,8 @@ class pokemon():
 
     def get_usable_attacks(self):
         """
-        Retourne la liste des attaques utilisables (avec PP > 0), attaques bloquées par disable, les items (assault vest, choice items).
+        Retourne la liste des attaques utilisables (avec PP > 0), attaques bloquées par disable, les items (assault vest, choice items), 
+        cette fonction fait aussi en sorte que la liste retournée ne sera JAMAIS vide, si rien de dispo alors il y a STRUGGLE.
         
         :return: Liste des attaques utilisables
         """
@@ -605,6 +607,33 @@ class pokemon():
         self.pp2 = self.max_pp2
         self.pp3 = self.max_pp3
         self.pp4 = self.max_pp4
+    
+    def can_switch(self):
+        """
+        Vérifie si le Pokémon peut effectuer un switch.
+
+        :return: True si le Pokémon peut switcher, False sinon.
+        """
+        # Vérifier si le Pokémon est marqué comme ne pouvant pas switcher
+        if getattr(self, "cannot_switch", False):
+            return False
+
+        # Vérifier si le talent empêche le switch
+        if hasattr(self, "cannot_switch", False):
+            # Si l'adversaire a également Shadow Tag, le switch est permis
+            if hasattr(self.fight, "opponent") and self.fight.opponent.talent == "Shadow Tag":
+                return True
+            print(f"{self.name} est affecté par Shadow Tag et ne peut pas switcher.")
+            return False
+
+        # Vérifier si le Pokémon est affecté par une attaque bloquante
+        if getattr(self, "attack_blocked", False):
+            if utilities.PRINTING_METHOD:
+                print(f"{self.name} est affecté par une attaque bloquante et ne peut pas switcher.")
+            return False
+
+        # Si aucune condition ne bloque le switch, il est possible
+        return True
     
 def tailwind_mod(poke, fight):
     team_id = fight.get_team_id(poke)

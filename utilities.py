@@ -9,6 +9,8 @@ TERRAIN = ["Grassy Terrain", "Electric Terrain", "Psychic Terrain", "Misty Terra
 
 WEATHER = ["Sunny", "Rainy", "Snow", "Sandstorm", "None"]
 
+PRINTING_METHOD = False
+
 # Talents ignorés par Mold Breaker (liste interne en anglais correspondant aux talents présents dans le code)
 MOLD_BREAKER_IGNORED_ABILITIES = {
     "Water Absorb",
@@ -208,7 +210,7 @@ def transform_pokemon(pokemon, new_pokemon_name: str):
             setattr(new_pokemon_data, attr, getattr(pokemon, attr))
     return new_pokemon_data
 
-def evaluate_pokemon_type_efficiency(poke1, poke2):
+def evaluate_type_efficiency(poke1, poke2):
     """
     Evalue l'efficacité des types du pokemon1 face à ceux du pokemon2.
 

@@ -4826,7 +4826,7 @@ attack_registry = {
     "Stone Axe": StoneAxe(),
     "Stone Edge": StoneEdge(),
     "Strength Sap": StrengthSap(),
-    "Struggle": STRUGGLE_ATTACK,
+    "Struggle": Struggle(),
     "Substitute": Substitute(),
     "Sucker Punch": SuckerPunch(),
     "Sunny Day": SunnyDay(),
