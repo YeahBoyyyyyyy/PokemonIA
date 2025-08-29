@@ -413,8 +413,8 @@ class LowHeuristicAI(PokemonAI):
         if PRINTING_METHOD:
             print("Évaluation des types :", type_advantage)
 
-        # Si le Pokémon est paralysé ou brûlé, prioriser le switch
-        if my_poke.status in ["paralyzed", "burned"] and switches:
+        # Si le Pokémon est paralysé ou brûlé, prioriser le switch sauf si il a pu beaucoup de vie.
+        if my_poke.status in ["paralyzed", "burned"] and switches and my_poke.current_hp > my_poke.max_hp * 0.4:
             best_switch = self._choose_switch(switches, enemy)
             if best_switch:
                 team = fight.team1 if self.team_id == 1 else fight.team2
@@ -431,7 +431,7 @@ class LowHeuristicAI(PokemonAI):
                     return ('switch', best_switch_id, None)
 
         # Si avantage de type ou pas de switch possible, évaluer les attaques
-        best_attack = self._choose_attack(attacks, enemy)
+        best_attack = self._choose_attack(attacks, enemy, my_poke)
 
         # Si aucune attaque offensive efficace, prioriser les attaques de statut
         if not best_attack:
@@ -449,37 +449,44 @@ class LowHeuristicAI(PokemonAI):
         # Si aucune option viable, utiliser Struggle
         return ('attack', Struggle, False)
 
-    def _choose_attack(self, attacks, enemy):
+    def _choose_attack(self, attacks, enemy, my_poke):
         """
         Choisit la meilleure attaque en fonction de l'efficacité des types, des talents, des objets et des priorités.
         """
         best_move = None
         highest_score = -1
         for attack in attacks:
+            score = 1.0
             move_type = getattr(attack, 'type', None)
-            if move_type:
-                # Évaluer l'efficacité des types
-                type_eff = evaluate_type_efficiency(
-                    type('Tmp', (), {'original_types': [move_type], 'types': [move_type], 'tera_activated': False})(),
-                    enemy
-                )
-
+            if attack.category != "Status":
+                if move_type:
+                    # Évaluer l'efficacité des types
+                    type_eff = evaluate_type_efficiency(
+                        type('Tmp', (), {'original_types': [move_type], 'types': [move_type], 'tera_activated': False})(),
+                        enemy
+                    )
+                    
                 # Ajuster le score en fonction des talents de l'ennemi
                 if hasattr(enemy, 'talent') and enemy.talent == "Levitate" and move_type == "Ground":
                     type_eff = 0  # L'attaque de type Sol est inefficace
 
-                # Ajuster le score en fonction des objets de l'IA
-                if hasattr(self, 'item') and self.item == "Choice Band" and attack.category == "Physical":
-                    type_eff *= 1.5  # Bonus de puissance pour les attaques physiques
-
                 # Pondérer par la puissance de l'attaque et la priorité
                 score = type_eff * attack.power
-                if hasattr(attack, 'priority') and attack.priority > 0:
+                if hasattr(attack, 'priority') and attack.priority > 0 and enemy.current_hp < enemy.max_hp * 0.2:
                     score *= 1.2  # Bonus pour les attaques à priorité élevée
+
+                # Ajuster le score en fonction des objets de l'IA
+                if hasattr(self, 'item') and self.item == "Choice Band" and attack.category == "Physical":
+                    score *= 1.5  # Bonus de puissance pour les attaques physiques
+                elif hasattr(self, 'item') and self.item == "Choice Specs" and attack.category == "Special":
+                    score *= 1.5  # Bonus de puissance pour les attaques spéciales
 
                 if score > highest_score:
                     highest_score = score
                     best_move = attack
+            else:
+                if "heal" in attack.flags and my_poke.current_hp < my_poke.max_hp * 0.5:
+                    score *= 300  # Bonus de puissance pour les attaques de soin
 
         return best_move
 
@@ -491,11 +498,8 @@ class LowHeuristicAI(PokemonAI):
         best_switch_score = float('inf')
         for switch in switches:
             switch_score = evaluate_type_efficiency(switch, enemy)
-
-            # Ajuster le score en fonction des talents de l'ennemi
-            if hasattr(enemy, 'talent') and enemy.talent == "Arena Trap" and not switch.types.contains("Flying"):
-                switch_score += 10  # Désavantage si le talent bloque le switch
-
+            if switch_score == 0:
+                return switch
             # Prendre en compte les PV restants pour éviter d'envoyer un Pokémon faible
             adjusted_score = switch_score / (switch.current_hp / switch.max_hp)
             if adjusted_score < best_switch_score:
@@ -530,6 +534,9 @@ class LowHeuristicAI(PokemonAI):
 
 class HighHeuristicAI(PokemonAI):
     """
-    Pareil qu'au dessus sauf qu'il faut rajouter la possibilité de switch si low et un poke de l'equipe resiste
-    + calcul des degats très précis et pas juste les types.
+    IA avec heuristiques avancées, prenant en compte les changements de type, les talents et les objets.
     """
+    def __init__(self, team_id):
+        super().__init__(team_id, "High Heuristic AI")
+
+    

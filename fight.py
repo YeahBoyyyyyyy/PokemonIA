@@ -74,6 +74,26 @@ class Fight():
         for p in [self.active1, self.active2]:
             p.actualize_stats()  # Met à jour les stats des Pokémon actifs au début du combat
 
+    def get_active_pokemon(self, team_id):
+        """
+        Récupère le Pokémon actif d'une équipe.
+        """
+        if team_id == 1:
+            return self.active1
+        elif team_id == 2:
+            return self.active2
+        return None
+    
+    def get_enemy_pokemon(self, team_id):
+        """
+        Récupère le Pokémon ennemi d'une équipe.
+        """
+        if team_id == 1:
+            return self.active2
+        elif team_id == 2:
+            return self.active1
+        return None
+
     def set_fight_attribute(self):
         for poke in self.team1 + self.team2:
             poke.init_fight(self)
@@ -578,8 +598,9 @@ class Fight():
 
         for p in [self.active1, self.active2]:
             self.apply_status_damage(p)  # Appliquer les dégâts liés aux statuts persistants
-            trigger_item(p, "on_turn_end", self)  # Appliquer les effets des objets à la fin du tour
-            trigger_talent(p, "on_turn_end", self)  # Appliquer les effets des talents à la fin du tour
+            if p.current_hp > 0:
+                trigger_item(p, "on_turn_end", self)  # Appliquer les effets des objets à la fin du tour
+                trigger_talent(p, "on_turn_end", self)  # Appliquer les effets des talents à la fin du tour
             if p.flinched:
                 p.flinched = False  # Réinitialiser le statut de flinch à la fin du tour
 
@@ -718,12 +739,22 @@ class Fight():
         """
         Gère l'action "Attaquer" d'un Pokémon sur un autre, en prenant en compte les effets de statut, multi-tours et priorités.
         """
+        from Materials.pokemon_attacks import Struggle
+    
         # --- Sleep Talk handling ---
         if attack.name == "Sleep Talk":
             # Only usable if the user is actually asleep
             if attacker.status != "sleep":
                 if utilities.PRINTING_METHOD:
-                    print(f"{attacker.name} n'est pas endormi : Sleep Talk échoue !")
+                    print(f"{attacker.name} n'est pas endormi : Sleep Talk échoue ! + nombre pp Sleep Talk: {attacker.get_attack_pp(attack)}")
+                    pp_cost = 1
+                    # Vérifier si l'adversaire a le talent Pressure (augmente la consommation de PP)
+                    if hasattr(defender, 'talent') and defender.talent == "Pressure":
+                        pp_cost = 2
+                        if utilities.PRINTING_METHOD:
+                            print(f"{defender.name}'s Pressure increases PP consumption!")
+                    # Consommer les PP
+                    booleen_inutile = attacker.use_pp(attack, pp_cost)
                 return
             candidate_attacks = [attacker.attack1, attacker.attack2, attacker.attack3, attacker.attack4]
             # Filter: existing, not Sleep Talk itself, not charging moves, has PP > 0
@@ -731,8 +762,21 @@ class Fight():
             if not usable_for_sleep_talk:
                 if utilities.PRINTING_METHOD:
                     print(f"{attacker.name} n'a aucune capacité utilisable via Sleep Talk !")
+                    # Consommation des PP (sauf pour Struggle qui a des PP infinis)
+                pp_cost = 1
+                # Vérifier si l'adversaire a le talent Pressure (augmente la consommation de PP)
+                if hasattr(defender, 'talent') and defender.talent == "Pressure":
+                    pp_cost = 2
+                    if utilities.PRINTING_METHOD:
+                        print(f"{defender.name}'s Pressure increases PP consumption!")
+                 # Consommer les PP
+                if not attacker.use_pp(attack, pp_cost):
+                    if utilities.PRINTING_METHOD:
+                        print(f"ERREUR: {attacker.name} n'a pas assez de PP pour {attack.name} !")
+                    attack = Struggle()  # Passer à Struggle si pas assez de PP
                 return
-            attack = random.choice(usable_for_sleep_talk)
+            else:
+                attack = random.choice(usable_for_sleep_talk)
 
         if attack.name != "Glaive Rush" and hasattr(attacker, "glaive_rush"):
             attacker.glaive_rush = False
@@ -873,7 +917,7 @@ class Fight():
             if not attacker.use_pp(attack, pp_cost):
                 if utilities.PRINTING_METHOD:
                     print(f"ERREUR: {attacker.name} n'a pas assez de PP pour {attack.name} !")
-                return
+                attack = Struggle()  # Passer à Struggle si pas assez de PP
     
         if defender.protect:
             if utilities.PRINTING_METHOD:
@@ -1503,8 +1547,8 @@ class Fight():
                 return False
 
         if attacker.flinched:
-            if attacker_before.talent == "Mold Breaker":
-                return False # Dans tous les cas avec Mold Breaker il y a flinch même si le poke a Inner Focus
+            if attacker_before and attacker_before.talent == "Mold Breaker":
+                return False  # Dans tous les cas avec Mold Breaker il y a flinch même si le poke a Inner Focus
             if attacker.talent == "Inner Focus":
                 if utilities.PRINTING_METHOD:
                     print(f"Inner Focus de {attacker.name} l'empêche d'être flinch !")
@@ -1547,6 +1591,7 @@ class Fight():
         if hazards["Spikes"] > 0 and "Flying" not in pokemon.types and pokemon.talent != "Levitate":
             damage = int(pokemon.max_hp * 0.0625 * hazards["Spikes"])  # 1/16 par couche de Spikes
             if utilities.PRINTING_METHOD:
+
                 print(f"{pokemon.name} subit {damage} points de dégâts à cause des Spikes !")
             self.damage_method(pokemon, damage)
 

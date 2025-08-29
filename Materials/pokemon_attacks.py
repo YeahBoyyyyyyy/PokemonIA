@@ -3534,12 +3534,12 @@ class Struggle(Attack):
             flags=["contact", "protect"],
             target="Foe"
         )
-    
+
     def apply_effect(self, user, target, fight):
         # L'utilisateur perd 1/4 de ses PV max en dégâts de recul
         recoil_damage = max(1, user.max_hp // 4)
         print(f"{user.name} subit {recoil_damage} dégâts de recul de Struggle !")
-        fight.damage_method(user, recoil_damage)
+        fight.damage_method(user, recoil_damage, True)
 
 # Instance globale de Struggle pour tous les Pokémon
 STRUGGLE_ATTACK = Struggle()
@@ -4352,10 +4352,6 @@ class SleepTalk(Attack):
             flags=[],
             target="User"
         )
-    
-    def apply_effect(self, user, target, fight):
-        if user.status != "sleep":
-            print(f"L'attaque échoue !")
 
 class GlaiveRush(Attack):
     def __init__(self):

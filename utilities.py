@@ -9,7 +9,7 @@ TERRAIN = ["Grassy Terrain", "Electric Terrain", "Psychic Terrain", "Misty Terra
 
 WEATHER = ["Sunny", "Rainy", "Snow", "Sandstorm", "None"]
 
-PRINTING_METHOD = False
+PRINTING_METHOD = True
 
 # Talents ignorés par Mold Breaker (liste interne en anglais correspondant aux talents présents dans le code)
 MOLD_BREAKER_IGNORED_ABILITIES = {

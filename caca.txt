@@ -1,0 +1,108 @@
+class HighHeuristicAI(PokemonAI):
+    """
+    Advanced AI: Chooses actions based on predicted damage calculations and other heuristics.
+    """
+    def __init__(self, team_id):
+        super().__init__(team_id, "High Heuristic AI")
+
+    def choose_action(self, fight, available_actions):
+        from Materials.pokemon_attacks import Struggle
+
+        if available_actions is None:
+            available_actions = self.get_available_actions(fight)
+
+        info = self.get_pokemon_info(fight)
+        my_poke = info['my_pokemon']
+        enemy = info['enemy_pokemon']
+
+        attacks = available_actions['attacks'] if available_actions['attacks'] else []
+        switches = available_actions['switches'] if available_actions['switches'] else []
+
+        # Si désavantage de type ou PV faibles, prioriser le switch
+        if my_poke.current_hp / my_poke.max_hp < 0.3 and switches:
+            best_switch = self._choose_switch(switches, enemy)
+            if best_switch:
+                team = fight.team1 if self.team_id == 1 else fight.team2
+                best_switch_id = team.index(best_switch)
+                return ('switch', best_switch_id, None)
+
+        # Calculer les dégâts prévus pour chaque attaque
+        best_attack = self._choose_attack_based_on_damage(attacks, my_poke, enemy)
+
+        # Si une attaque efficace est trouvée, l'utiliser
+        if best_attack:
+            return ('attack', best_attack, False)
+
+        # Si aucune attaque offensive efficace, prioriser les attaques de statut
+        status_moves = [atk for atk in attacks if atk.category == "Status"]
+        if status_moves:
+            return ('attack', random.choice(status_moves), False)
+
+        # Si aucune option viable, utiliser Struggle
+        return ('attack', Struggle, False)
+
+    def _choose_attack_based_on_damage(self, attacks, my_poke, enemy):
+        """
+        Choisit la meilleure attaque en fonction des dégâts prévus.
+        """
+        best_move = None
+        highest_damage = -1
+        for attack in attacks:
+            predicted_damage = self._calculate_predicted_damage(attack, my_poke, enemy)
+            if predicted_damage > highest_damage:
+                highest_damage = predicted_damage
+                best_move = attack
+
+        return best_move
+
+    def _calculate_predicted_damage(self, attack, my_poke, enemy):
+        """
+        Calcule les dégâts prévus d'une attaque sur l'ennemi en utilisant `damage_calc`.
+        """
+        from damage_calc import damage_calc
+
+        # Utiliser la fonction damage_calc pour obtenir les dégâts prévus
+        fight = my_poke.fight  # Assumer que le Pokémon a une référence au combat
+        damage_info = damage_calc(my_poke, attack, enemy, fight)
+
+        # Retourner les dégâts moyens (entre min_roll et max_roll)
+        if damage_info and len(damage_info) == 4:
+            min_roll = damage_info[2] if damage_info[2] is not None else 0
+            max_roll = damage_info[3] if damage_info[3] is not None else 0
+            return (min_roll + max_roll) / 2
+
+        return 0
+
+    def _calculate_predicted_damage_from_enemy(self, attack, enemy_poke, my_poke):
+        """
+        Calcule les dégâts prévus d'une attaque ennemie sur notre Pokémon en utilisant `damage_calc`.
+        """
+        from damage_calc import damage_calc
+
+        # Utiliser la fonction damage_calc pour obtenir les dégâts prévus
+        fight = enemy_poke.fight  # Assumer que le Pokémon a une référence au combat
+        damage_info = damage_calc(enemy_poke, attack, my_poke, fight)
+
+        # Retourner les dégâts moyens (entre min_roll et max_roll)
+        if damage_info and len(damage_info) == 4:
+            min_roll = damage_info[2] if damage_info[2] is not None else 0
+            max_roll = damage_info[3] if damage_info[3] is not None else 0
+            return (min_roll + max_roll) / 2
+
+        return 0
+
+    def _choose_switch(self, switches, enemy):
+        """
+        Choisit le Pokémon à faire entrer lors d'un changement de Pokémon, en tenant compte des dégâts prévus.
+        """
+        best_switch = None
+        lowest_predicted_damage = float('inf')
+        for switch in switches:
+            for attack in [enemy.attack1, enemy.attack2, enemy.attack3, enemy.attack4]:
+                if attack is not None:  # Vérifier que l'attaque n'est pas None
+                    predicted_damage = self._calculate_predicted_damage_from_enemy(attack, enemy, switch)
+                    if predicted_damage < lowest_predicted_damage:
+                        lowest_predicted_damage = predicted_damage
+                        best_switch = switch
+
+        return best_switch

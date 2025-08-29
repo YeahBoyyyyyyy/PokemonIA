@@ -1,4 +1,3 @@
-import fight
 from pokemon import pokemon
 import sys
 sys.path.append("C:/Users/natha/OneDrive/Desktop/Travail/IA Combats pokémons/PokemonIA/Materials")

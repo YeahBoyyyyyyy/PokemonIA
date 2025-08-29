@@ -1,13 +1,9 @@
-from fight import Fight
 from pokemon import *
-import random
 from colors_utils import Colors
 from utilities import *
 from import_pokemon_team_from_json import import_team_from_json, import_random_simple_team
 from damage_calc import *
-from IA.pokemon_ia import RandomAI, PlayerAI, LowHeuristicAI
-
-
+from IA.pokemon_ia import RandomAI, PlayerAI, LowHeuristicAI, HighHeuristicAI
 
 # Initialiser les IAs :
 # Option 1: IA vs IA (comme avant)
@@ -35,6 +31,7 @@ def battle_manager(team1: list[pokemon], team2: list[pokemon]):
     :param team1: Première équipe de Pokémon qui est l'équipe jouée par l'IA que l'on veut étudier.
     :param team2: Deuxième équipe de Pokémon qui est l'équipe adverse et sert juste à jouer le combat.
     """
+    from fight import Fight
     fight = Fight(team1, team2)
 
     # Initialiser les variables de téracristalisation
@@ -96,7 +93,7 @@ for i in range(100):
 rounds = []
 compteur_changement_equipe = 10
 for i in range(10):
-    for i in range(100):
+    for i in range(200):
         if compteur_changement_equipe > 9:
             team_1 = import_team_from_json(import_random_simple_team())
             team_2 = import_team_from_json(import_random_simple_team())
@@ -110,7 +107,9 @@ for i in range(10):
     
 
 for i in range(len(rounds)):
-    print(f"Nombre victoire manche {ia1.name} {i}: {rounds[i]}/100")
+    print(f"Nombre victoire manche {ia1.name} {i}: {rounds[i]}/200. Taux de victoires : {rounds[i] / 200}")
+
+print(f"Nombre de victoires moyenne {ia1.name}: {sum(rounds) / len(rounds)} et taux de victoires moyen : {sum(rounds) / (len(rounds) * 200)}")
 """
 ratio_victoire_defaite_par_equipes = []
 for i in range(len(nombre_de_victoire_par_equipes)):
