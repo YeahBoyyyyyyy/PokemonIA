@@ -3,7 +3,7 @@ from fight import Fight
 from Materials.pokemon_attacks import Attack
 from Materials.pokemon_items import trigger_item
 from Materials.pokemon_talents import trigger_talent
-import utilities
+import Materials.utilities as utilities
 
 def damage_calc(attacker, attack, defender, fight):
     if attack.category == "Status":
@@ -94,6 +94,7 @@ def attack_carac(fight, user_pokemon : pokemon, attack : Attack, target_pokemon 
     user_current_stats = user_pokemon.current_stats()
     target_current_stats = target_pokemon.current_stats()
 
+
     if is_critical_hit(user_pokemon, attack, target_pokemon):
         if utilities.PRINTING_METHOD:
             print(f"{user_pokemon.name} porte un coup critique avec {attack.name} !")
@@ -104,9 +105,15 @@ def attack_carac(fight, user_pokemon : pokemon, attack : Attack, target_pokemon 
             else:
                 defense_stat = target_current_stats['Defense']
             if user_pokemon.stats_modifier[0] < 0:
-                attack_stat = int(user_pokemon.calculate_stat(user_pokemon.base_stats['Attack'], user_pokemon.ivs['Attack'], user_pokemon.evs['Attack'], user_pokemon.nature_modifier[0], 0) * user_pokemon.hidden_modifier["Attack"])
+                if attack.name == "Body Press":
+                    attack_stat = int(user_pokemon.calculate_stat(user_pokemon.base_stats['Defense'], user_pokemon.ivs['Defense'], user_pokemon.evs['Defense'], user_pokemon.nature_modifier[1], 0) * user_pokemon.hidden_modifier["Defense"])
+                else:
+                    attack_stat = int(user_pokemon.calculate_stat(user_pokemon.base_stats['Attack'], user_pokemon.ivs['Attack'], user_pokemon.evs['Attack'], user_pokemon.nature_modifier[0], 0) * user_pokemon.hidden_modifier["Attack"])
             else:
-                attack_stat = user_current_stats['Attack']
+                if attack.name == "Body Press":
+                    attack_stat = user_current_stats['Defense']
+                else:
+                    attack_stat = user_current_stats['Attack']
         else:
             if target_pokemon.stats_modifier[3] > 0:
                 defense_stat = int(target_pokemon.calculate_stat(target_pokemon.base_stats['Sp. Def'], target_pokemon.ivs['Sp. Def'], target_pokemon.evs['Sp. Def'], target_pokemon.nature_modifier[3], 0) * target_pokemon.hidden_modifier["Sp. Def"])
@@ -121,7 +128,10 @@ def attack_carac(fight, user_pokemon : pokemon, attack : Attack, target_pokemon 
     else:
         critical = 1.0
         defense_stat = target_current_stats['Defense'] if attack.category == 'Physical' else target_current_stats['Sp. Def']
-        attack_stat = user_current_stats['Attack'] if attack.category == 'Physical' else user_current_stats['Sp. Atk']
+        if attack.name == "Body Press":
+            attack_stat = user_current_stats['Defense']
+        else:
+            attack_stat = user_current_stats['Attack'] if attack.category == 'Physical' else user_current_stats['Sp. Atk']
         damage = ((22 * base_power * (attack_stat / defense_stat)) / 50 + 2) * burn * screen * type_eff * terrain_boost * weather_boost * critical * stab * berry * attack_boost * multiplier * glaive_rush
 
     possible_damages = [damage * r for r in rdm]

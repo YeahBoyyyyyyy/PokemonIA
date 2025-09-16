@@ -1,6 +1,6 @@
 from pokemon import *
 from colors_utils import Colors
-from utilities import *
+from Materials.utilities import *
 from import_pokemon_team_from_json import import_team_from_json, import_random_simple_team
 from damage_calc import *
 from IA.pokemon_ia import RandomAI, PlayerAI, LowHeuristicAI, HighHeuristicAI
@@ -55,6 +55,7 @@ def battle_manager(team1: list[pokemon], team2: list[pokemon]):
             break
 
         fight.print_fight_status()
+        print("Item", fight.active1.item, fight.active2.item)
         
         # Plus besoin de pause manuelle car PlayerAI gère son propre rythme
         # input("Appuyez sur Entrée pour continuer...")  # Optionnel pour debug
@@ -82,21 +83,16 @@ def reset_team(team : list[pokemon]):
     """ Réinitialise l'équipe de Pokémon pour un nouveau combat."""
     for pokemon in team:
         pokemon.pokemon_center()
-"""
-for i in range(100):
-    team_1 = import_team_from_json(import_random_simple_team())
-    team_2 = import_team_from_json(import_random_simple_team())
-    battle_manager(team_1, team_2)
-    reset_team(team_1)
-    reset_team(team_2)
-"""    
+
 rounds = []
 compteur_changement_equipe = 10
 for i in range(10):
     for i in range(200):
-        if compteur_changement_equipe > 9:
+        if compteur_changement_equipe > 5:
             team_1 = import_team_from_json(import_random_simple_team())
+            print(f"Équipe 1 (IA étudiée) : {[poke.name for poke in team_1]}")
             team_2 = import_team_from_json(import_random_simple_team())
+            print(f"Équipe 2 (Adverse) : {[poke.name for poke in team_2]}")
             compteur_changement_equipe = 0
         battle_manager(team_1, team_2)
         reset_team(team_1)
@@ -110,6 +106,7 @@ for i in range(len(rounds)):
     print(f"Nombre victoire manche {ia1.name} {i}: {rounds[i]}/200. Taux de victoires : {rounds[i] / 200}")
 
 print(f"Nombre de victoires moyenne {ia1.name}: {sum(rounds) / len(rounds)} et taux de victoires moyen : {sum(rounds) / (len(rounds) * 200)}")
+
 """
 ratio_victoire_defaite_par_equipes = []
 for i in range(len(nombre_de_victoire_par_equipes)):

@@ -1,5 +1,5 @@
 import random
-import utilities # Données de la table des types et des natures
+import Materials.utilities as utilities # Données de la table des types et des natures
 from Materials.pokemon_items import trigger_item
 from Materials.pokemon_talents import trigger_talent
 from pp_manager import *
@@ -326,6 +326,10 @@ class pokemon():
             self.glaive_rush = False
         if hasattr(self, 'moxie_pending'):
             self.moxie_pending = False
+        if hasattr(self, 'chilling_neigh_pending'):
+            self.chilling_neigh_pending = False
+        if hasattr(self, 'grim_neigh_pending'):
+            self.grim_neigh_pending = False
         if hasattr(self, "original_weight"):
             self.weight = self.original_weight  # Restaure le poids original si modifié
         self.actualize_stats()

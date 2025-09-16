@@ -2,7 +2,7 @@
 fichier regroupant tous les talents de poke et créant un dictionnaire regroupant tous leurs effets.
 '''
 import random
-from utilities import MOLD_BREAKER_IGNORED_ABILITIES, NON_DIRECT_PHYSICAL_ATTACK, DIRECT_SPECIAL_ATTACKS, PRINTING_METHOD
+from Materials.utilities import MOLD_BREAKER_IGNORED_ABILITIES, NON_DIRECT_PHYSICAL_ATTACK, DIRECT_SPECIAL_ATTACKS, PRINTING_METHOD
 
 
 ON_ATTACK_MOD_DICT = {
@@ -126,6 +126,18 @@ class Chlorophyll(Talent):
                 poke.stats["Speed"] = poke.stats["Speed"] // 2
                 return "activated"
         return None
+    
+class SwiftSwim(Talent):
+    """Talent qui double la vitesse du Pokémon sous la pluie."""
+    def modify_stat(self, poke, fight=None):
+        if fight:
+            if fight.weather["current"] == "Rain" and fight.weather["previous"] != "Rain":
+                poke.stats["Speed"] = int(poke.stats["Speed"] * 2)
+                return "activated"
+            elif fight.weather["previous"] == "Rain" and fight.weather["current"] != "Rain":
+                poke.stats["Speed"] = poke.stats["Speed"] // 2
+                return "activated"
+        return None
 
 class Overgrow(Talent):
     """ Talent qui booste les attaques de type Plante quand le Pokémon a moins de 1/3 de ses PV."""
@@ -163,7 +175,8 @@ class Drought(Talent):
     """ Talent qui invoque le soleil quand le Pokémon entre en combat."""
     def on_entry(self, poke, fight):
         if fight.weather["current"] != "Sunny":
-            fight.set_weather("Sunny", duration=5)
+            rounds = 8 if poke.item == "Heat Rock" else 5
+            fight.set_weather("Sunny", duration=rounds)
             print(f"{poke.name} invoque le soleil !")
         return "activated"
     
@@ -227,6 +240,17 @@ class SapSipper(Talent):
             apply_stat_changes(poke, {"Attack": 1}, "self", fight)
             print(f"{poke.name} absorbe les attaques de type Plante et augmente son Attaque !")
             return 0  # annule les dégâts
+
+class SpeedBoost(Talent):
+    """ Talent qui augmente la Vitesse de 1 niveau à la fin de chaque tour."""
+    def on_turn_end(self, poke, fight=None):
+        from pokemon import apply_stat_changes
+        stat_changes = {"Speed": 1}
+        success = apply_stat_changes(poke, stat_changes, "self", fight)
+        if success:
+            print(f"La vitesse de {poke.name} augmente grâce à Speed Boost !")
+            return "activated"
+        return None
 
 class ThickFat(Talent):
     """ Talent qui réduit de moitié les dégâts des attaques de type Feu et Glace."""
@@ -615,7 +639,7 @@ class IceFace(Talent):
     On suppose que personne ne sera assez bête pour utiliser Ice Face sur un autre pokémon que Eiscue."""
     def on_defense(self, poke, incoming_attack, attacker_poke=None, fight=None):
         if incoming_attack.category == "Physical" and poke.ice_face_active and poke.name == "Eiscue-Ice-Face":
-            from utilities import transform_pokemon
+            from Materials.utilities import transform_pokemon
             # Activer l'effet Ice Face
             poke.ice_face_active = False
             print(f"{poke.name} utilise Ice Face pour résister à l'attaque physique !")
@@ -694,11 +718,42 @@ class Moxie(Talent):
     def on_attack(self, poke, attack, fight=None):
         # Le boost est géré juste après un KO dans fight via un flag sur l'attaquant.
         return ON_ATTACK_MOD_DICT
-    def on_entry(self, poke, fight):
-        poke.moxie_pending = False
-    def on_exit(self, poke, fight):
-        if hasattr(poke, 'moxie_pending'):
-            poke.moxie_pending = False
+    def modify_stat(self, poke, fight=None):
+        if hasattr(poke, 'pending_moxie'):
+            if poke.pending_moxie:
+                from pokemon import apply_stat_changes
+                apply_stat_changes(poke, {"Attack": 1}, "self", fight)
+                print(f"{poke.name} augmente son Attaque grâce à Moxie !")
+                poke.pending_moxie = False  # Réinitialiser le flag
+                return "activated"
+
+class ChillingNeigh(Talent):
+    """Augmente l'Attaque après un kill."""
+    def on_attack(self, poke, attack, fight=None):
+        # Le boost est géré juste après un KO dans fight via un flag sur l'attaquant.
+        return ON_ATTACK_MOD_DICT
+    def modify_stat(self, poke, fight=None):
+        if hasattr(poke, 'pending_chilling_neigh'):
+            if poke.pending_chilling_neigh:
+                from pokemon import apply_stat_changes
+                apply_stat_changes(poke, {"Attack": 1}, "self", fight)
+                print(f"{poke.name} augmente son Attaque grâce à Chilling Neigh !")
+                poke.pending_chilling_neigh = False  # Réinitialiser le flag
+                return "activated"
+        
+class GrimNeigh(Talent):
+    """Augmente l'Attaque Spéciale après un kill."""
+    def on_attack(self, poke, attack, fight=None):
+        # Le boost est géré juste après un KO dans fight via un flag sur l'attaquant.
+        return ON_ATTACK_MOD_DICT
+    def modify_stat(self, poke, fight=None):
+        if hasattr(poke, "pending_grim_neigh"):
+            if poke.pending_grim_neigh:
+                from pokemon import apply_stat_changes
+                apply_stat_changes(poke, {"Sp. Atk": 1}, "self", fight)
+                print(f"{poke.name} augmente son Attaque Spéciale grâce à Grim Neigh !")
+                poke.pending_grim_neigh = False  # Réinitialiser le flag
+                return "activated"
 
 class Steadfast(Talent):
     """Augmente la vitesse de 1 niveau quand le Pokémon est flinch par une attaque."""
@@ -778,6 +833,44 @@ class ShadowTag(Talent):
             opponent.cannot_switch = False
             print(f"{poke.name} quitte le terrain. {opponent.name} peut à nouveau fuir ou être remplacé.")
 
+class MotorDrive(Talent):
+    """Talent qui augmente la Vitesse de 1 niveau lorsqu'il est touché par une attaque de type Électrik. 
+    Il est immunisé aux attaques de type Électrik."""
+    def on_defense(self, poke, incoming_attack, attacker_poke=None, fight=None):
+        if incoming_attack.type == "Electric":
+            from pokemon import apply_stat_changes
+            apply_stat_changes(poke, {"Speed": 1}, "self", fight)
+            print(f"La vitesse de {poke.name} augmente grâce à Motor Drive !")
+            return 0  # Annule les dégâts de l'attaque électrique
+        return 1.0  # Pas de modification des dégâts pour les autres types d'attaques
+
+class OrichalcumPulse(Talent):
+    """Talent qui augmente l'attaque de 1.33 sous le soleil et invoque le soleil à l'entrée."""
+    def on_entry(self, poke, fight):
+        if fight.weather["current"] != "Sunny":
+            rounds = 8 if poke.item == "Heat Rock" else 5
+            fight.set_weather("Sunny", duration=rounds)
+            print(f"{poke.name} invoque le soleil !")
+        return "activated"
+    
+    def on_attack(self, poke, attack, fight=None):
+        if fight and fight.weather.get("current") == "Sunny":
+            mod_dict = ON_ATTACK_MOD_DICT.copy()
+            mod_dict["attack"] = 1.33
+            print(f"L'attaque de {poke.name} est augmentée grâce à Orichalcum Pulse !")
+            return mod_dict
+        return ON_ATTACK_MOD_DICT
+
+class Justified(Talent):
+    """Augmente l'Attaque d'un niveau lorsqu'il est touché par une attaque de type Ténèbres."""
+    def on_defense(self, poke, incoming_attack, attacker_poke=None, fight=None):
+        if incoming_attack.type == "Dark":
+            from pokemon import apply_stat_changes
+            apply_stat_changes(poke, {"Attack": 1}, "self", fight)
+            print(f"L'attaque de {poke.name} augmente grâce à Justified !")
+            return "activated"
+        return None
+
 def trigger_talent(poke, event_name, *args):
     """
     Déclenche l'effet du talent en fonction de l'événement.
@@ -804,7 +897,7 @@ def trigger_talent(poke, event_name, *args):
             result = talent_method(poke, *args)
             # Afficher le message seulement si le talent a effectivement fait quelque chose
             if result is not None:
-                from utilities import PRINTING_METHOD
+                from Materials.utilities import PRINTING_METHOD
                 if PRINTING_METHOD:
                     print(f"[TALENT] {poke.name} active {poke.talent} -> {event_name}")
             return result
@@ -879,5 +972,11 @@ talent_registry = {
     "Ice Scales": IceScales(),
     "Fluffy": Fluffy(),
     "Fur Coat": FurCoat(),
-    "Shadow Tag": ShadowTag()
+    "Shadow Tag": ShadowTag(),
+    "Speed Boost": SpeedBoost(),
+    "Motor Drive": MotorDrive(),
+    "Orichalcum Pulse": OrichalcumPulse(),
+    "Chilling Neigh": ChillingNeigh(),
+    "Grim Neigh": GrimNeigh(),
+    "Justified": Justified(),
 }

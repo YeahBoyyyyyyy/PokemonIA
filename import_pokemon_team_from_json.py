@@ -8,6 +8,7 @@ import json
 import random
 
 def import_team_from_json(id):
+    print(f"Importation de l'équipe avec l'ID {id} depuis le fichier JSON.")
     """
     Importe une équipe de Pokémon à partir d'un fichier JSON. Tout est initialisé, stats, tera et PP.
     """
@@ -36,6 +37,7 @@ def import_pokemon_from_json(carac : dict):
     :param carac: Dictionnaire contenant les caractéristiques du Pokémon
     :return: Instance de la classe pokemon avec les caractéristiques importées
     """
+
     poke = import_pokemon_from_pokedex(carac["name"])
     poke.talent = carac["ability"]
     poke.item = carac["item"]
@@ -63,6 +65,6 @@ def import_pokemon_from_pokedex(pokemon_name):
     return poke
 
 def import_random_simple_team():
-    from utilities import BORNS_SIMPLE_TEAM_OF_3
+    from Materials.utilities import BORNS_SIMPLE_TEAM_OF_3
     id = random.randint(BORNS_SIMPLE_TEAM_OF_3[0], BORNS_SIMPLE_TEAM_OF_3[1])
     return id

@@ -221,6 +221,11 @@ class ThroatSpray(Item):
             poke.item = None  # Consomme l'objet après utilisation
         return ON_ATTACK_MOD_DICT
 
+class LoadedDice(Item):
+    """
+    Loaded Dice augmente la probabilité d'infliger plusieurs coups avec des attaques qui frappent 2-5 fois. Fait frapper au minimum 4 fois.
+    """
+
 class CovertCloak(Item):
     """
     Covert Cloak protège le Pokémon des effets secondaires des attaques adverses.
@@ -390,6 +395,30 @@ class BigRoot(Item):
     Cette classe est utilisée pour les attaques de soin comme Synthesis, Leech Seed, etc
     """
     
+class ExpertBelt(Item):
+    """
+    Expert Belt augmente la puissance des attaques super efficaces de 20%.
+    """
+    def on_attack(self, poke, attack, fight=None):
+        from damage_calc import type_effectiveness
+        team_id = fight.get_team_id(poke)
+        if team_id == 1:
+            opponent = fight.active2
+        else:
+            opponent = fight.active1
+
+        if type_effectiveness(attack.type, opponent) > 1:
+            print(f"L'Expert Belt de {poke.name} renforce son attaque super efficace !")
+            return {"attack": 1.0, "power": 1.2, "accuracy": 1.0}
+        return ON_ATTACK_MOD_DICT
+
+class HeatRock(Item):
+    """
+    Heat Rock prolonge la durée du soleil de 8 tours au lieu de 5.
+    Est géré dans pokemon_attacks.py car y'a pas trop de logique à mettre ici et le Heat Rock 
+    a un effet très précis.
+    """
+
 item_registry = {
     "Leftovers": Leftovers(),
     "Sitrus Berry": SitrusBerry(),
@@ -420,6 +449,9 @@ item_registry = {
     "Light Clay": LightClay(),
     "Weakness Policy": WeaknessPolicy(),
     "Big Root": BigRoot(),
+    "Expert Belt": ExpertBelt(),
+    "Heat Rock": HeatRock(),
+    "Loaded Dice": LoadedDice(),
 }
 
 def trigger_item(poke, event, *args):
@@ -438,7 +470,7 @@ def trigger_item(poke, event, *args):
         
         # Si la méthode a été surchargée (différente de la classe de base)
         if item_method.__func__ != base_method:
-            from utilities import PRINTING_METHOD
+            from Materials.utilities import PRINTING_METHOD
             if PRINTING_METHOD:
                 print(f"[ITEM] {poke.name} uses {poke.item} -> {event}")
             return item_method(poke, *args)

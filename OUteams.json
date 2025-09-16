@@ -23,7 +23,7 @@
                       "evs": {"HP": 252, "Defense": 252, "Sp. Def": 4},
                       "ivs": {"Attack": 0, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
                     },
-                "3": {"name": "Iron Treads",
+                "3": {"name": "Iron-Treads",
                       "item": "Booster Energy",
                       "moves": ["Rapid Spin", "Earthquake", "Stealth Rock", "Knock Off"],
                       "ability": "Quark Drive",
@@ -41,7 +41,7 @@
                       "evs": {"Attack": 252, "Defense": 4, "Speed": 252},
                       "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
                     },
-                "5": {"name": "Iron Moth",
+                "5": {"name": "Iron-Moth",
                       "item": "Booster Energy",
                       "moves": ["Fiery Dance", "Sludge Wave", "Tera Blast", "Substitute"],
                       "ability": "Quark Drive",
@@ -106,7 +106,7 @@
                       "evs": {"Attack": 252, "Speed": 252, "Sp. Def": 4},
                       "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
                     },
-                "6": {"name": "Iron Valiant",
+                "6": {"name": "Iron-Valiant",
                       "item": "Booster Energy",
                       "moves": ["Moonblast", "Shadow Ball", "Vacuum Wave", "Calm Mind"],
                       "ability": "Quark Drive",
@@ -258,39 +258,99 @@
                   "tera_type":"Grass",
                   "evs": {},
                   "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
-                    }
-            },
-            "team6": {
-                  "1" : {
-                  "name":"Charizard",
-                  "item":"Heavy-Duty Boots",
-                  "moves": ["Flare Blitz", "Brave Bird", "Roost"],
-                  "ability":"Drought",
-                  "nature":"Modest",
-                  "tera_type":"Fire",
-                  "evs": {},
-                  "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
                     },
-                  "2" : {
-                    "name":"Slowbro",
-                    "item":"Leftovers",
-                    "moves":["Scald", "Calm Mind", "Psychic"],
-                    "ability":"Regenerator",
-                    "nature":"Bold",
-                    "tera_type":"Water",
+                "4": {
+                    "name": "Charizard",
+                    "item": "Heavy-Duty Boots",
+                    "moves": ["Flare Blitz", "Brave Bird", "Roost"],
+                    "ability": "Drought",
+                    "nature": "Modest",
+                    "tera_type": "Fire",
                     "evs": {},
                     "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
-                      },
-                  "3" : {
-                    "name":"Venomoth",
-                    "item":"Heavy-Duty Boots",
-                    "moves":["Quiver Dance", "Sludge Bomb", "Bug Buzz"],
-                    "ability":"Wonder Skin",
-                    "nature":"Modest",
-                    "tera_type":"Bug",
+                },
+                "5": {
+                    "name": "Slowbro",
+                    "item": "Leftovers",
+                    "moves": ["Scald", "Calm Mind", "Psychic"],
+                    "ability": "Regenerator",
+                    "nature": "Bold",
+                    "tera_type": "Water",
                     "evs": {},
                     "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
-                      }
+                },
+                "6": {
+                    "name": "Venomoth",
+                    "item": "Heavy-Duty Boots",
+                    "moves": ["Quiver Dance", "Sludge Bomb", "Bug Buzz"],
+                    "ability": "Wonder Skin",
+                    "nature": "Modest",
+                    "tera_type": "Bug",
+                    "evs": {},
+                    "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
+                }
+            },
+              "team6": {
+                "1": {
+                  "name": "Enamorus-Incarnate", 
+                  "item": "Choice Scarf", 
+                  "moves": ["Moonblast", "Earth Power", "Mystical Fire"], 
+                  "ability": "Contrary", 
+                  "nature": "Modest", 
+                  "tera_type": "Fairy", 
+                  "evs": {"Sp. Atk": 252, "Speed": 252, "HP": 4},
+                  "ivs": {"HP": 31, "Attack": 0, "Defense": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
+              },
+                "2": {
+                  "name": "Brute-Bonnet", 
+                  "item": "Loaded Dice", 
+                  "moves": ["Bullet Seed", "Sucker Punch", "Spore"], 
+                  "ability": "Protosynthesis", 
+                  "nature": "Adamant", 
+                  "tera_type": "Fire", 
+                  "evs": {"Attack": 252, "Speed": 216, "HP": 40}, 
+                  "ivs": {"HP": 31, "Attack": 31, "Defense": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
+              },
+                "3": {
+                  "name": "Polteageist", 
+                  "item": "Focus Sash", 
+                  "moves": ["Shell Smash", "Shadow Ball", "Stored Power"], 
+                  "ability": "Weak Armor", 
+                  "nature": "Timid", 
+                  "tera_type": "Ghost", 
+                  "evs": {"Sp. Atk": 252, "Speed": 252, "HP": 4}, 
+                  "ivs": {"HP": 31, "Attack": 0, "Defense": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
+              },
+                "4": {
+                  "name": "Vivillon", 
+                  "item": "Heavy-Duty Boots", 
+                  "moves": ["Hurricane", "Sleep Powder", "Quiver Dance"], 
+                  "ability": "Compound Eyes", 
+                  "nature": "Timid", 
+                  "tera_type": "Bug", 
+                  "evs": {"Sp. Atk": 252, "Speed": 252, "HP": 4}, 
+                  "ivs": {"HP": 31, "Attack": 0, "Defense": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
+                },
+                "5": {
+                  "name": "Iron-Boulder", 
+                  "item": "Booster Energy", 
+                  "moves": ["Stone Edge", "Close Combat", "Earthquake"], 
+                  "ability": "Quark Drive", 
+                  "nature": "Jolly", 
+                  "tera_type": "Rock", 
+                  "evs": {"Attack": 252, "Speed": 252, "HP": 4}, 
+                  "ivs": {"HP": 31, "Attack": 31, "Defense": 31, "Sp. Atk": 0, "Sp. Def": 31, "Speed": 31}
+                },
+                "6": {
+                  "name": "Archaludon", 
+                  "item": "Assault Vest", 
+                  "moves": ["Body Press", "Dragon Pulse", "Thunderbolt"], 
+                  "ability": "Stamina", 
+                  "nature": "Modest", 
+                  "tera_type": "Steel", 
+                  "evs": {"HP": 252, "Sp. Atk": 252, "Sp. Def": 4}, 
+                  "ivs": {"HP": 31, "Attack": 0, "Defense": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
+                }
             },
             "team7": {
                   "1" : {
@@ -322,42 +382,40 @@
                     "tera_type":"Water",
                     "evs": {},
                     "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
-                      }
+                      },
+                  "4": {
+                    "name": "Serperior",
+                    "item": "Leftovers",
+                    "moves": ["Leaf Storm", "Dragon Pulse", "Substitute"],
+                    "ability": "Contrary",
+                    "nature": "Timid",
+                    "tera_type": "Grass",
+                    "evs": {},
+                    "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
+                },
+                "5": {
+                    "name": "Emboar",
+                    "item": "Choice Band",
+                    "moves": ["Flare Blitz", "Close Combat", "Wild Charge"],
+                    "ability": "Blaze",
+                    "nature": "Adamant",
+                    "tera_type": "Fire",
+                    "evs": {},
+                    "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
+                },
+                "6": {
+                    "name": "Samurott",
+                    "item": "Focus Sash",
+                    "moves": ["Razor Shell", "Ice Beam", "Megahorn"],
+                    "ability": "Torrent",
+                    "nature": "Modest",
+                    "tera_type": "Water",
+                    "evs": {},
+                    "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
+                }
             },
             "team8": {
-                  "1" : {
-                  "name":"Serperior",
-                  "item":"Leftovers",
-                  "moves": ["Leaf Storm", "Dragon Pulse", "Substitute"],
-                  "ability":"Contrary",
-                  "nature":"Timid",
-                  "tera_type":"Grass",
-                  "evs": {},
-                  "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
-                    },
-                  "2" : {
-                    "name":"Emboar",
-                    "item":"Choice Band",
-                    "moves":["Flare Blitz", "Close Combat", "Wild Charge"],
-                    "ability":"Blaze",
-                    "nature":"Adamant",
-                    "tera_type":"Fire",
-                    "evs": {},
-                    "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
-                      },
-                  "3" : {
-                    "name":"Samurott",
-                    "item":"Focus Sash",
-                    "moves":["Razor Shell", "Ice Beam", "Megahorn"],
-                    "ability":"Torrent",
-                    "nature":"Modest",
-                    "tera_type":"Water",
-                    "evs": {},
-                    "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
-                      }
-            },
-            "team9": {
-                  "1" : {
+                "1" : {
                   "name":"Talonflame",
                   "item":"Sharp Beak",
                   "moves": ["Brave Bird", "Flare Blitz", "U-turn"],
@@ -386,41 +444,39 @@
                     "tera_type":"Grass",
                     "evs": {},
                     "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
-                      }
-            },
-            "team10": {
-                  "1" : {
-                  "name":"Decidueye",
-                  "item":"Choice Specs",
-                  "moves": ["Shadow Ball", "Leaf Storm", "Focus Blast"],
-                  "ability":"Overgrow",
-                  "nature":"Modest",
-                  "tera_type":"Ghost",
-                  "evs": {},
-                  "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
-                    },
-                  "2" : {
-                    "name":"Incineroar",
-                    "item":"Assault Vest",
-                    "moves":["Flare Blitz", "Knock Off", "U-turn"],
-                    "ability":"Intimidate",
-                    "nature":"Adamant",
-                    "tera_type":"Dark",
-                    "evs": {},
-                    "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
                       },
-                  "3" : {
-                    "name":"Primarina",
-                    "item":"Mystic Water",
-                    "moves":["Moonblast", "Surf", "Psychic"],
-                    "ability":"Torrent",
-                    "nature":"Modest",
-                    "tera_type":"Fairy",
+                  "4": {
+                    "name": "Decidueye",
+                    "item": "Choice Specs",
+                    "moves": ["Shadow Ball", "Leaf Storm", "Focus Blast"],
+                    "ability": "Overgrow",
+                    "nature": "Modest",
+                    "tera_type": "Ghost",
                     "evs": {},
                     "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
-                      }
+                },
+                "5": {
+                    "name": "Incineroar",
+                    "item": "Assault Vest",
+                    "moves": ["Flare Blitz", "Knock Off", "U-turn"],
+                    "ability": "Intimidate",
+                    "nature": "Adamant",
+                    "tera_type": "Dark",
+                    "evs": {},
+                    "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
+                },
+                "6": {
+                    "name": "Primarina",
+                    "item": "Mystic Water",
+                    "moves": ["Moonblast", "Surf", "Psychic"],
+                    "ability": "Torrent",
+                    "nature": "Modest",
+                    "tera_type": "Fairy",
+                    "evs": {},
+                    "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
+                }
             },
-            "team11": {
+            "team9": {
                   "1" : {
                   "name":"Dragapult",
                   "item":"Choice Band",
@@ -450,10 +506,8 @@
                     "tera_type":"Steel",
                     "evs": {},
                     "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
-                      }
-            },
-            "team12": {
-                  "1" : {
+                      },
+                  "4" : {
                   "name":"Rillaboom",
                   "item":"Choice Band",
                   "moves": ["Grassy Glide", "Wood Hammer", "U-turn"],
@@ -463,7 +517,7 @@
                   "evs": {},
                   "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
                     },
-                  "2" : {
+                  "5" : {
                     "name":"Cinderace",
                     "item":"Life Orb",
                     "moves":["Pyro Ball", "High Jump Kick", "U-turn"],
@@ -473,18 +527,18 @@
                     "evs": {},
                     "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
                       },
-                  "3" : {
+                  "6" : {
                     "name":"Inteleon",
                     "item":"Choice Specs",
                     "moves":["Hydro Pump", "Ice Beam", "Focus Blast"],
                     "ability":"Torrent",
                     "nature":"Timid",
-                    "tera_type":"Water",
+                    "tera_type": "Water",
                     "evs": {},
                     "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
                       }
             },
-            "team13": {
+            "team10": {
                   "1" : {
                   "name":"Meowscarada",
                   "item":"Focus Sash",
@@ -511,13 +565,11 @@
                     "moves":["Aqua Step", "Close Combat", "Ice Spinner"],
                     "ability":"Moxie",
                     "nature":"Adamant",
-                    "tera_type":"Water",
+                    "tera_type": "Water",
                     "evs": {},
                     "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
-                      }
-            },
-            "team14": {
-                  "1" : {
+                      },
+                  "4" : {
                   "name":"Tyranitar",
                   "item":"Choice Scarf",
                   "moves": ["Stone Edge", "Crunch", "Earthquake"],
@@ -527,7 +579,7 @@
                   "evs": {},
                   "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
                     },
-                  "2" : {
+                  "5" : {
                     "name":"Metagross",
                     "item":"Choice Band",
                     "moves":["Meteor Mash", "Earthquake", "Ice Punch"],
@@ -537,7 +589,7 @@
                     "evs": {},
                     "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
                       },
-                  "3" : {
+                  "6" : {
                     "name":"Salamence",
                     "item":"Life Orb",
                     "moves":["Dragon Claw", "Earthquake", "Fire Fang"],
@@ -548,7 +600,7 @@
                     "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
                       }
             },
-            "team15": {
+            "team11": {
                   "1" : {
                   "name":"Hydreigon",
                   "item":"Choice Specs",
@@ -578,10 +630,8 @@
                     "tera_type":"Ground",
                     "evs": {},
                     "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
-                      }
-            },
-            "team16": {
-                  "1" : {
+                      },
+                  "4" : {
                   "name":"Kommo-o",
                   "item":"Throat Spray",
                   "moves": ["Clanging Scales", "Focus Blast", "Flamethrower"],
@@ -591,7 +641,7 @@
                   "evs": {},
                   "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
                     },
-                  "2" : {
+                  "5" : {
                     "name":"Mimikyu",
                     "item":"Life Orb",
                     "moves":["Shadow Claw", "Play Rough", "Shadow Sneak"],
@@ -601,7 +651,7 @@
                     "evs": {},
                     "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
                       },
-                  "3" : {
+                  "6" : {
                     "name":"Araquanid",
                     "item":"Choice Band",
                     "moves":["Lunge", "Liquidation", "Waterfall"],
@@ -612,7 +662,7 @@
                     "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
                       }
             },
-            "team17": {
+            "team12": {
                   "1" : {
                   "name":"Pikachu",
                   "item":"Light Ball",
@@ -642,10 +692,8 @@
                     "tera_type":"Fighting",
                     "evs": {},
                     "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
-                      }
-            },
-            "team18": {
-                  "1" : {
+                      },
+                  "4" : {
                   "name":"Espathra",
                   "item":"Focus Sash",
                   "moves": ["Psychic", "Shadow Ball", "Focus Blast"],
@@ -655,7 +703,7 @@
                   "evs": {},
                   "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
                     },
-                  "2" : {
+                  "5" : {
                     "name":"Krookodile",
                     "item":"Choice Scarf",
                     "moves":["Earthquake", "Crunch", "Stone Edge"],
@@ -665,7 +713,7 @@
                     "evs": {},
                     "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
                       },
-                  "3" : {
+                  "6" : {
                     "name":"Lycanroc-Midday",
                     "item":"Life Orb",
                     "moves":["Stone Edge", "Accelerock", "Crunch"],
@@ -676,7 +724,7 @@
                     "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
                       }
             },
-            "team19": {
+            "team13": {
                   "1" : {
                   "name":"Gyarados",
                   "item":"Leftovers",
@@ -703,13 +751,11 @@
                     "moves":["Glaive Rush", "Ice Punch", "Earthquake"],
                     "ability":"Thermal Exchange",
                     "nature":"Jolly",
-                    "tera_type":"Ice",
+                    "tera_type": "Ice",
                     "evs": {},
                     "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
-                      }
-            },
-            "team20": {
-                  "1" : {
+                      },
+                  "4" : {
                   "name":"Snorlax",
                   "item":"Leftovers",
                   "moves": ["Body Slam", "Rest", "Sleep Talk"],
@@ -719,7 +765,7 @@
                   "evs": {},
                   "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
                     },
-                  "2" : {
+                  "5" : {
                     "name":"Chandelure",
                     "item":"Choice Scarf",
                     "moves":["Fire Blast", "Shadow Ball", "Energy Ball"],
@@ -729,7 +775,7 @@
                     "evs": {},
                     "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
                       },
-                  "3" : {
+                  "6" : {
                     "name":"Goodra",
                     "item":"Assault Vest",
                     "moves":["Dragon Pulse", "Sludge Bomb", "Flamethrower"],
@@ -740,7 +786,7 @@
                     "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
                       }
             },
-            "team21": {
+            "team14": {
                   "1" : {
                   "name":"Hariyama",
                   "item":"Flame Orb",
@@ -770,9 +816,39 @@
                     "tera_type":"Fire",
                     "evs": {},
                     "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
-                      }
+                      },
+                  "4" : {
+                  "name":"Dragonite",
+                  "item":"Weakness Policy",
+                  "moves": ["Dragon Claw", "Earthquake", "Fire Punch"],
+                  "ability":"Multiscale",
+                  "nature":"Adamant",
+                  "tera_type":"Dragon",
+                  "evs": {},
+                  "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
+                    },
+                  "5" : {
+                    "name":"Gallade",
+                    "item":"Choice Scarf",
+                    "moves":["Close Combat", "Psycho Cut", "Leaf Blade"],
+                    "ability":"Steadfast",
+                    "nature":"Jolly",
+                    "tera_type":"Fighting",
+                    "evs": {},
+                    "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
+                      },
+                  "6" : {
+                    "name":"Grimmsnarl",
+                    "item":"Light Clay",
+                    "moves":["Foul Play", "Thunder Wave", "Light Screen"],
+                    "ability":"Prankster",
+                    "nature":"Careful",
+                    "tera_type":"Dark",
+                    "evs": {},
+                    "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
+                      }        
             },
-            "team22": {
+            "team15": {
                   "1" : {
                   "name":"Gengar",
                   "item":"Choice Specs",
@@ -802,10 +878,8 @@
                     "tera_type":"Electric",
                     "evs": {},
                     "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
-                      }
-            },
-            "team23": {
-                  "1" : {
+                      },
+                  "4" : {
                   "name":"Lapras",
                   "item":"Leftovers",
                   "moves": ["Surf", "Ice Beam", "Psychic"],
@@ -815,7 +889,7 @@
                   "evs": {},
                   "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
                     },
-                  "2" : {
+                  "5" : {
                     "name":"Haxorus",
                     "item":"Choice Band",
                     "moves":["Dragon Claw", "Earthquake", "Poison Jab"],
@@ -825,7 +899,7 @@
                     "evs": {},
                     "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
                       },
-                  "3" : {
+                  "6" : {
                     "name":"Kleavor",
                     "item":"Focus Sash",
                     "moves":["Stone Axe", "X-Scissor", "Close Combat"],
@@ -836,39 +910,7 @@
                     "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
                       }
             },
-            "team24": {
-                  "1" : {
-                  "name":"Dragonite",
-                  "item":"Weakness Policy",
-                  "moves": ["Dragon Claw", "Earthquake", "Fire Punch"],
-                  "ability":"Multiscale",
-                  "nature":"Adamant",
-                  "tera_type":"Dragon",
-                  "evs": {},
-                  "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
-                    },
-                  "2" : {
-                    "name":"Gallade",
-                    "item":"Choice Scarf",
-                    "moves":["Close Combat", "Psycho Cut", "Leaf Blade"],
-                    "ability":"Steadfast",
-                    "nature":"Jolly",
-                    "tera_type":"Fighting",
-                    "evs": {},
-                    "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
-                      },
-                  "3" : {
-                    "name":"Grimmsnarl",
-                    "item":"Light Clay",
-                    "moves":["Foul Play", "Thunder Wave", "Light Screen"],
-                    "ability":"Prankster",
-                    "nature":"Careful",
-                    "tera_type":"Dark",
-                    "evs": {},
-                    "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
-                      }
-            },
-            "team25": {
+            "team16": {
                   "1" : {
                   "name":"Slowbro",
                   "item":"Life Orb",
@@ -898,10 +940,8 @@
                     "tera_type":"Dragon",
                     "evs": {},
                     "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
-                      }
-            },
-            "team26": {
-                  "1" : {
+                      },
+                  "4" : {
                   "name":"Scizor",
                   "item":"Choice Band",
                   "moves": ["Bullet Punch", "U-turn", "Superpower"],
@@ -911,7 +951,7 @@
                   "evs": {},
                   "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
                     },
-                  "2" : {
+                  "5" : {
                     "name":"Conkeldurr",
                     "item":"Flame Orb",
                     "moves":["Drain Punch", "Mach Punch", "Ice Punch"],
@@ -921,7 +961,7 @@
                     "evs": {},
                     "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
                       },
-                  "3" : {
+                  "6" : {
                     "name":"Gholdengo",
                     "item":"Air Balloon",
                     "moves":["Make It Rain", "Shadow Ball", "Focus Blast"],
@@ -932,7 +972,7 @@
                     "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
                       }
             },
-          "team27": {
+          "team17": {
                   "1" : {
                     "name":"Excadrill",
                     "item":"Life Orb",
@@ -962,10 +1002,8 @@
                     "tera_type":"Flying",
                     "evs": {},
                     "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
-            }
-          },
-          "team28": {
-            "1" : {
+            },
+            "4" : {
               "name":"Hatterene",
               "item":"Assault Vest",
               "moves":["Psychic", "Moonblast", "Mystical Fire"],
@@ -975,7 +1013,7 @@
               "evs": {},
               "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
             },
-            "2" : {
+            "5" : {
               "name":"Great-Tusk",
               "item":"Leftovers",
               "moves":["Earthquake", "Headlong Rush", "Rapid Spin"],
@@ -985,7 +1023,7 @@
               "evs": {},
               "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
             },
-            "3" : {
+            "6" : {
               "name":"Okidogi",
               "item":"Choice Band",
               "moves":["Drain Punch", "Mach Punch", "Ice Punch"],
@@ -994,6 +1032,248 @@
               "tera_type":"Fighting",
               "evs": {},
               "ivs": {"Attack": 31, "Defense": 31, "HP": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
+            }
+          },
+          "team18": {
+            "1": {
+                "name": "Venusaur",
+                "item": "Leftovers",
+                "moves": ["Giga Drain", "Sludge Bomb", "Leech Seed"],
+                "ability": "Chlorophyll",
+                "nature": "Modest",
+                "tera_type": "Grass",
+                "evs": {"HP": 252, "Sp. Atk": 252, "Speed": 4},
+                "ivs": {"HP": 31, "Attack": 0, "Defense": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
+            },
+            "2": {
+                "name": "Charizard",
+                "item": "Heavy-Duty Boots",
+                "moves": ["Flamethrower", "Air Slash", "Roost"],
+                "ability": "Solar Power",
+                "nature": "Timid",
+                "tera_type": "Fire",
+                "evs": {"Sp. Atk": 252, "Speed": 252, "HP": 4},
+                "ivs": {"HP": 31, "Attack": 0, "Defense": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
+            },
+            "3": {
+                "name": "Blastoise",
+                "item": "Leftovers",
+                "moves": ["Scald", "Ice Beam", "Rapid Spin"],
+                "ability": "Torrent",
+                "nature": "Bold",
+                "tera_type": "Water",
+                "evs": {"HP": 252, "Defense": 252, "Sp. Atk": 4},
+                "ivs": {"HP": 31, "Attack": 0, "Defense": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
+            },
+            "4": {
+                "name": "Raichu",
+                "item": "Focus Sash",
+                "moves": ["Thunderbolt", "Nasty Plot", "Grass Knot"],
+                "ability": "Static",
+                "nature": "Timid",
+                "tera_type": "Electric",
+                "evs": {"Sp. Atk": 252, "Speed": 252, "HP": 4},
+                "ivs": {"HP": 31, "Attack": 0, "Defense": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
+            },
+            "5": {
+                "name": "Sandslash",
+                "item": "Life Orb",
+                "moves": ["Earthquake", "Knock Off", "Stealth Rock"],
+                "ability": "Sand Rush",
+                "nature": "Adamant",
+                "tera_type": "Ground",
+                "evs": {"Attack": 252, "HP": 252, "Speed": 4},
+                "ivs": {"HP": 31, "Attack": 31, "Defense": 31, "Sp. Atk": 0, "Sp. Def": 31, "Speed": 31}
+            },
+            "6": {
+                "name": "Clefable",
+                "item": "Leftovers",
+                "moves": ["Moonblast", "Calm Mind", "Soft-Boiled"],
+                "ability": "Magic Guard",
+                "nature": "Calm",
+                "tera_type": "Fairy",
+                "evs": {"HP": 252, "Sp. Def": 252, "Defense": 4},
+                "ivs": {"HP": 31, "Attack": 0, "Defense": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
+            }
+        },
+            "team19": {
+                "1": {
+                    "name": "Ninetales",
+                    "item": "Heat Rock",
+                    "moves": ["Flamethrower", "Solar Beam", "Will-O-Wisp"],
+                    "ability": "Drought",
+                    "nature": "Timid",
+                    "tera_type": "Fire",
+                    "evs": {"Sp. Atk": 252, "Speed": 252, "HP": 4},
+                    "ivs": {"HP": 31, "Attack": 0, "Defense": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
+                },
+                "2": {
+                    "name": "Pikachu",
+                    "item": "Light Ball",
+                    "moves": ["Volt Tackle", "Fake Out", "Grass Knot"],
+                    "ability": "Static",
+                    "nature": "Naive",
+                    "tera_type": "Electric",
+                    "evs": {"Attack": 252, "Speed": 252, "HP": 4},
+                    "ivs": {"HP": 31, "Attack": 31, "Defense": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
+                },
+                "3": {
+                    "name": "Sandslash-Alola",
+                    "item": "Leftovers",
+                    "moves": ["Iron Head", "Earthquake", "Swords Dance"],
+                    "ability": "Slush Rush",
+                    "nature": "Adamant",
+                    "tera_type": "Steel",
+                    "evs": {"Attack": 252, "HP": 252, "Speed": 4},
+                    "ivs": {"HP": 31, "Attack": 31, "Defense": 31, "Sp. Atk": 0, "Sp. Def": 31, "Speed": 31}
+                },
+                "4": {
+                    "name": "Ninetales-Alola",
+                    "item": "Light Clay",
+                    "moves": ["Aurora Veil", "Freeze-Dry", "Moonblast"],
+                    "ability": "Snow Warning",
+                    "nature": "Timid",
+                    "tera_type": "Ice",
+                    "evs": {"Sp. Atk": 252, "Speed": 252, "HP": 4},
+                    "ivs": {"HP": 31, "Attack": 0, "Defense": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
+                },
+                "5": {
+                    "name": "Arbok",
+                    "item": "Black Sludge",
+                    "moves": ["Gunk Shot", "Earthquake", "Glare"],
+                    "ability": "Intimidate",
+                    "nature": "Adamant",
+                    "tera_type": "Poison",
+                    "evs": {"Attack": 252, "HP": 252, "Speed": 4},
+                    "ivs": {"HP": 31, "Attack": 31, "Defense": 31, "Sp. Atk": 0, "Sp. Def": 31, "Speed": 31}
+                },
+                "6": {
+                    "name": "Raichu-Alola",
+                    "item": "Focus Sash",
+                    "moves": ["Thunderbolt", "Psychic", "Nasty Plot"],
+                    "ability": "Surge Surfer",
+                    "nature": "Timid",
+                    "tera_type": "Electric",
+                    "evs": {"Sp. Atk": 252, "Speed": 252, "HP": 4},
+                    "ivs": {"HP": 31, "Attack": 0, "Defense": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
+                }
+            },
+            "team20": {
+                "1": {
+                  "name": "Landorus-Therian",
+                  "item": "Rocky Helmet", 
+                  "moves": ["Earthquake", "Stealth Rock", "U-turn"], 
+                  "ability": "Intimidate", 
+                  "nature": "Jolly", 
+                  "tera_type": "Ground", 
+                  "evs": {"Attack": 252, "Speed": 252, "HP": 4}, 
+                  "ivs": {"HP": 31, "Attack": 31, "Defense": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
+                },
+                "2": {
+                  "name": "Quaquaval", 
+                  "item": "Life Orb", 
+                  "moves": ["Aqua Step", "Close Combat", "Ice Spinner"], 
+                  "ability": "Moxie", 
+                  "nature": "Adamant", 
+                  "tera_type": "Water", 
+                  "evs": {"Attack": 252, "Speed": 252, "HP": 4}, 
+                  "ivs": {"HP": 31, "Attack": 31, "Defense": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
+                },
+                "3": {
+                  "name": "Slowbro", 
+                  "item": "Leftovers", 
+                  "moves": ["Scald", "Calm Mind", "Psychic"], 
+                  "ability": "Regenerator", 
+                  "nature": "Bold", 
+                  "tera_type": "Water", 
+                  "evs": {"HP": 252, "Defense": 252, "Sp. Atk": 4}, 
+                  "ivs": {"HP": 31, "Attack": 0, "Defense": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
+                },
+                "4": {
+                  "name": "Beartic", 
+                  "item": "Choice Band", 
+                  "moves": ["Icicle Crash", "Superpower", "Aqua Jet"], 
+                  "ability": "Swift Swim", 
+                  "nature": "Adamant", 
+                  "tera_type": "Ice", 
+                  "evs": {"Attack": 252, "HP": 252, "Speed": 4},
+                  "ivs": {"HP": 31, "Attack": 31, "Defense": 31, "Sp. Atk": 0, "Sp. Def": 31, "Speed": 31}
+                },
+                "5": {
+                  "name": "Electivire", 
+                  "item": "Expert Belt", 
+                  "moves": ["Thunder Punch", "Ice Punch", "Earthquake"], 
+                  "ability": "Motor Drive", 
+                  "nature": "Jolly", 
+                  "tera_type": "Electric", 
+                  "evs": {"Attack": 252, "Speed": 252, "HP": 4}, 
+                  "ivs": {"HP": 31, "Attack": 31, "Defense": 31, "Sp. Atk": 0, "Sp. Def": 31, "Speed": 31}
+                },
+                "6": {
+                  "name": "Yanmega", 
+                  "item": "Life Orb", 
+                  "moves": ["Bug Buzz", "Air Slash", "Protect"], 
+                  "ability": "Speed Boost", 
+                  "nature": "Timid", 
+                  "tera_type": "Bug", 
+                  "evs": {"Sp. Atk": 252, "Speed": 252, "HP": 4}, 
+                  "ivs": {"HP": 31, "Attack": 0, "Defense": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
+                }
+            },
+            "team21": {
+                "1": {"name": "Torkoal", 
+                "item": "Heat Rock", 
+                "moves": ["Flamethrower", "Rapid Spin", "Stealth Rock"], 
+                "ability": "Drought", 
+                "nature": "Bold", 
+                "tera_type": "Fire", 
+                "evs": {"HP": 252, "Defense": 252, "Sp. Atk": 4}, 
+                "ivs": {"HP": 31, "Attack": 0, "Defense": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
+              },
+                "2": {"name": "Volbeat", 
+                "item": "Leftovers", 
+                "moves": ["Encore", "Thunder Wave", "Bug Buzz"], 
+                "ability": "Prankster", 
+                "nature": "Calm", 
+                "tera_type": "Bug", 
+                "evs": {"HP": 252, "Sp. Def": 252, "Speed": 4}, 
+                "ivs": {"HP": 31, "Attack": 0, "Defense": 31, "Sp. Atk": 31, "Sp. Def": 31, "Speed": 31}
+              },
+                "3": {"name": "Corviknight", 
+                "item": "Leftovers", 
+                "moves": ["Brave Bird", "Roost", "Defog"], 
+                "ability": "Pressure", 
+                "nature": "Impish", 
+                "tera_type": "Steel", 
+                "evs": {"HP": 252, "Defense": 252, "Speed": 4}, 
+                "ivs": {"HP": 31, "Attack": 31, "Defense": 31, "Sp. Atk": 0, "Sp. Def": 31, "Speed": 31}
+              },
+                "4": {"name": "Glastrier", 
+                "item": "Assault Vest", 
+                "moves": ["Icicle Crash", "High Horsepower", "Close Combat"], 
+                "ability": "Chilling Neigh", 
+                "nature": "Adamant", 
+                "tera_type": "Ice", 
+                "evs": {"Attack": 252, "HP": 252, "Speed": 4}, 
+                "ivs": {"HP": 31, "Attack": 31, "Defense": 31, "Sp. Atk": 0, "Sp. Def": 31, "Speed": 31}
+              },
+                "5": {"name": "Feraligatr", 
+                "item": "Life Orb", 
+                "moves": ["Waterfall", "Ice Punch", "Dragon Dance"], 
+                "ability": "Sheer Force", 
+                "nature": "Jolly", 
+                "tera_type": "Water", 
+                "evs": {"Attack": 252, "Speed": 252, "HP": 4}, 
+                "ivs": {"HP": 31, "Attack": 31, "Defense": 31, "Sp. Atk": 0, "Sp. Def": 31, "Speed": 31}
+              },
+                "6": {"name": "Virizion", 
+                "item": "Leftovers", 
+                "moves": ["Leaf Blade", "Close Combat", "Swords Dance"], 
+                "ability": "Justified", 
+                "nature": "Jolly", 
+                "tera_type": "Grass", 
+                "evs": {"Attack": 252, "Speed": 252, "HP": 4}, 
+                "ivs": {"HP": 31, "Attack": 31, "Defense": 31, "Sp. Atk": 0, "Sp. Def": 31, "Speed": 31}
             }
           }
         }

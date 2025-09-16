@@ -1,6 +1,6 @@
 import random
 from abc import ABC, abstractmethod
-from utilities import *
+from Materials.utilities import *
 from colors_utils import Colors
 
 class PokemonAI(ABC):

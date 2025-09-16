@@ -5674,6 +5674,21 @@ pokemon_data_gen9 = {
         "weight": 40.0,
         "fully_evolved": False
     },
+    "Archaludon": {
+        "name": "Archaludon",
+        "types": ["Steel", "Dragon"],
+        "abilities": ["Sturdy", "Stalwart", "Stamina"],
+        "stats": {
+            "HP": 90,
+            "Attack": 105,
+            "Defense": 130,
+            "Sp. Atk": 125,
+            "Sp. Def": 65,
+            "Speed": 85,
+        },
+        "weight": 60.0,
+        "fully_evolved": False
+    },
     "Dragapult": {
         "name": "Dragapult",
         "types": ["Dragon", "Ghost"],
@@ -7427,6 +7442,21 @@ pokemon_data_gen9 = {
             "Speed": 110,
         },
         "weight": 39.8,
+        "fully_evolved": True
+    },
+    "Yanmega": {
+        "name": "Yanmega",
+        "types": ["Bug", "Flying"],
+        "abilities": ["Speed Boost", "Tinted Lens"],
+        "stats": {
+            "HP": 86,
+            "Attack": 76,
+            "Defense": 86,
+            "Sp. Atk": 116,
+            "Sp. Def": 56,
+            "Speed": 95,
+        },
+        "weight": 51.5,
         "fully_evolved": True
     },
 }

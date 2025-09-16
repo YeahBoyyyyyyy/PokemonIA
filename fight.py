@@ -1,6 +1,6 @@
 from pokemon import pokemon, apply_stat_changes
 import random 
-import utilities 
+import Materials.utilities as utilities 
 from IA.pokemon_ia import PokemonAI
 from colors_utils import Colors as bcolors
 from Materials.pokemon_items import trigger_item, item_registry
@@ -575,6 +575,7 @@ class Fight():
                 drained = max(1, pokemon.max_hp // 8)
                 pokemon.current_hp = max(0, pokemon.current_hp - drained)
                 seeder = pokemon.leech_seeded_by
+                actual_healing = drained
                 if seeder.current_hp > 0:
                     if seeder.item == "Big Root":
                         actual_healing = int(drained * 1.3)
@@ -1107,18 +1108,21 @@ class Fight():
             hit_count = max_hits
         elif hasattr(attack, 'get_hit_count'):
             # Attaques avec un nombre variable de coups (comme Bullet Seed)
-            hit_count = attack.get_hit_count()
+            hit_count = attack.get_hit_count(attacker)
         else:
             # Fallback : 2-5 coups aléatoires - optimisation: éviter l'import dans la boucle
-            rand_val = random.random()
-            if rand_val < 0.375:
-                hit_count = 2
-            elif rand_val < 0.75:
-                hit_count = 3
-            elif rand_val < 0.875:
-                hit_count = 4
+            if attacker.item == "Loaded Dice":
+                hit_count = random.randint(4, 5)
             else:
-                hit_count = 5
+                rand_val = random.random()
+                if rand_val < 0.375:
+                    hit_count = 2
+                elif rand_val < 0.75:
+                    hit_count = 3
+                elif rand_val < 0.875:
+                    hit_count = 4
+                else:
+                    hit_count = 5
         
         if utilities.PRINTING_METHOD:
             print(f"{attacker.name} utilise {attack.name} ! L'attaque va frapper {hit_count} fois !")
@@ -1452,9 +1456,9 @@ class Fight():
             self.damage_method(pokemon, dmg, True)
         elif pokemon.status == "poison":
             if pokemon.talent == "Poison Heal":
+                dmg = -int(pokemon.max_hp * 0.125)
                 if utilities.PRINTING_METHOD:
                     print(f"{pokemon.name} regagne {dmg} PV grâce à Poison Heal ! ")
-                dmg = -int(pokemon.max_hp * 0.125)
             else:
                 dmg = int(pokemon.max_hp * 0.125)
                 if utilities.PRINTING_METHOD:
@@ -1464,9 +1468,9 @@ class Fight():
             if not hasattr(pokemon, "toxic_counter"):
                 pokemon.toxic_counter = 1
             if pokemon.talent == "Poison Heal":
+                dmg = -int(pokemon.max_hp * 0.125)
                 if utilities.PRINTING_METHOD:
                     print(f"{pokemon.name} regagne {dmg} PV grâce à Poison Heal ! ")
-                dmg = -int(pokemon.max_hp * 0.125)
             else:
                 dmg = int(pokemon.max_hp * 0.0625 * pokemon.toxic_counter)
                 if utilities.PRINTING_METHOD:
@@ -1872,6 +1876,10 @@ class Fight():
 
             # Vérifier les K.O. après la première attaque
             if second.current_hp <= 0:
+                # Mettre à jour les effets de boost après kill
+                first.pending_moxie = True if first.talent == "Moxie" else False
+                first.pending_chilling_neigh = True if first.talent == "Chilling Neigh" else False
+                first.pending_grim_neigh = True if first.talent == "Grim Neigh" else False
                 # Déterminer quelle IA contrôle le Pokémon K.O.
                 ko_ai = ai1 if second == self.active1 else ai2
                 self.new_handle_ko_replacement(second, ko_ai)
@@ -1892,6 +1900,9 @@ class Fight():
 
                 # Vérifier les K.O. après la deuxième attaque
                 if first.current_hp <= 0:
+                    # Mettre à jour les effets de boost après kill
+                    second.pending_moxie = True
+                    first.pending_moxie = False
                     # Déterminer quelle IA contrôle le Pokémon K.O.
                     ko_ai = ai1 if first == self.active1 else ai2
                     self.new_handle_ko_replacement(first, ko_ai)
@@ -1985,7 +1996,8 @@ def display_pokemon(poke : pokemon):
     color = Colors.color_hp(ratio)
     color_team = Colors.TEAM1 if poke.fight.get_team_id(poke) == 1 else Colors.TEAM2
     if utilities.PRINTING_METHOD:
-        print(f"{Colors.BOLD}{color_team}{poke.name}{Colors.RESET} (HP: {color}{poke.current_hp}/{poke.max_hp}{Colors.RESET}) - {poke.status} - {poke.item if poke.item else 'Aucun objet'}")
+        print(poke.item)
+        print(f"{Colors.BOLD}{color_team}{poke.name}{Colors.RESET} (HP: {color}{poke.current_hp}/{poke.max_hp}{Colors.RESET}) - {poke.status} - {poke.item if poke.item is not None else 'Aucun objet'}")
 
 def display_weather(fight : Fight):
     weath = fight.weather["current"]

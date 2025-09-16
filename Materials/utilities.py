@@ -93,7 +93,7 @@ DIRECT_SPECIAL_ATTACKS = {
     "Draining Kiss",
     "Electro Drift"
 }
-BORNS_SIMPLE_TEAM_OF_3 = [5, 26]
+BORNS_SIMPLE_TEAM_OF_3 = [1, 20]
 
 type_chart = [
     # Normal  Fight  Fly  Pois  Grou  Rock  Bug   Ghos  Stee  Fire  Wate  Gras  Elec  Psyc  Ice   Drag  Dark  Fair
@@ -218,6 +218,16 @@ def evaluate_type_efficiency(poke1, poke2):
     :param poke2: Pokemon sur lequel on évalue l'efficacité des types de poke1.
     :return: Un coefficient compris entre x(1/2)**9 et x(2)**9, valeurs possibles (1/2)**n et (2)**n ou n appartient à [0, 9].
     """
+    if hasattr(poke1, "original_types"):
+        original_type1 = poke1.original_types
+    else:
+        original_type1 = poke1.types
+
+    if hasattr(poke2, "original_types"):
+        original_type2 = poke2.original_types
+    else:
+        original_type2 = poke2.types
+
     efficiency = 1.0
     for type2 in poke2.original_types:
         for type1 in poke1.original_types:
@@ -233,4 +243,38 @@ def evaluate_type_efficiency(poke1, poke2):
 
     return efficiency     
 
-        
+def get_type_efficiency(pokemon, attack_type):
+    """
+    Retourne l'efficacité d'un type d'attaque contre un Pokémon.
+
+    :param pokemon: Instance de la classe pokemon
+    :param attack_type: Type de l'attaque (str)
+    :return: Coefficient d'efficacité (float)
+    """
+    if hasattr(pokemon, "original_types"):
+        original_types = pokemon.original_types
+    else:
+        original_types = pokemon.types
+
+    efficiency = 1.0
+    for poke_type in original_types:
+        efficiency *= type_chart[POKEMON_TYPES_ID[attack_type]][POKEMON_TYPES_ID[poke_type]]
+
+    if pokemon.tera_activated:
+        efficiency *= type_chart[POKEMON_TYPES_ID[attack_type]][POKEMON_TYPES_ID[pokemon.types[0]]]
+
+    return efficiency
+
+def is_stab(pokemon, attack):
+    """
+    Vérifie si une attaque bénéficie du STAB (Same Type Attack Bonus) pour un Pokémon donné.
+
+    :param pokemon: Instance de la classe pokemon
+    :param attack: Instance de la classe attack
+    :return: 1.5 si l'attaque bénéficie du STAB, sinon 1.0
+    """
+    if attack.type in pokemon.types:
+        return 1.5
+    if pokemon.tera_activated and attack.type == pokemon.tera_type:
+        return 1.5
+    return 1.0
