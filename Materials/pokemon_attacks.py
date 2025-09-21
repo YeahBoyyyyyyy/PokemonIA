@@ -1,6 +1,7 @@
 import pokemon as PK
 from pokemon import apply_stat_changes
 import random
+from utilities import print_infos
 
 
 '''
@@ -49,6 +50,7 @@ class Attack:
         self.multi_target = multi_target
         self.critical_chance_up = critical_chance_up  # Chance de coup critique, à définir dans les attaques concrètes
         self.guaranteed_critical = False  # Indique si l'attaque est un coup critique garanti
+        self.tags = []  # Pour ajouter des tags personnalisés si besoin comme la brulure, le poison, les effets secondaires (surtout utile pour l'IA qui ne peut pas connaitre chaque attaque independamment)
 
     # Compatibilité : certains endroits utilisent encore attack.power
     @property
@@ -145,7 +147,7 @@ class Flamethrower(Attack):
 
     def apply_effect(self, user, target, fight):
         if random.randint(1, 100) <= 10 and target.talent != "Thermal Exchange":
-            print(f"{target} est brulé !")
+            print_infos(f"{target} est brulé !")
             target.apply_status("burn")
 
 class HydroPump(Attack):
@@ -181,7 +183,7 @@ class Protect(Attack):
             user.protect = True
             user.protect_turns += 1
         else:
-            print("L'attaque échoue !")
+            print_infos("L'attaque échoue !")
             user.protect = False
             user.protect_turns = 0
 
@@ -253,11 +255,11 @@ class LeechSeed(Attack):
 
     def apply_effect(self, user, target, fight):
         if "Grass" in target.types:
-            print(f"{target.name} est de type Plante : Leech Seed échoue.")
+            print_infos(f"{target.name} est de type Plante : Leech Seed échoue.")
             return
         if target.leech_seeded_by is None:
             target.leech_seeded_by = user
-            print(f"{target.name} a été infecté !")
+            print_infos(f"{target.name} a été infecté !")
 
 class FlowerTrick(Attack):
     def __init__(self):
@@ -292,7 +294,7 @@ class TorchSong(Attack):
         stat_changes = {"Sp. Atk": 1}
         success = apply_stat_changes(user, stat_changes, "self", fight)
         if success:
-            print(f"L'Attaque Spéciale de {user.name} augmente grâce à Torch Song !")
+            print_infos(f"L'Attaque Spéciale de {user.name} augmente grâce à Torch Song !")
         
 class AquaStep(Attack):
     def __init__(self):
@@ -312,7 +314,7 @@ class AquaStep(Attack):
         stat_changes = {"Speed": 1}
         success = apply_stat_changes(user, stat_changes, "self", fight)
         if success:
-            print(f"La Vitesse de {user.name} augmente grâce à Aqua Step !")
+            print_infos(f"La Vitesse de {user.name} augmente grâce à Aqua Step !")
 
 class RainDance(Attack):
     def __init__(self):
@@ -330,7 +332,7 @@ class RainDance(Attack):
     
     def apply_effect(self, user, target, fight):
         fight.set_weather("Rain", duration=5)
-        print(f"{user.name} invoque la pluie !")
+        print_infos(f"{user.name} invoque la pluie !")
 
 class Sandstorm(Attack):
     def __init__(self):
@@ -348,7 +350,7 @@ class Sandstorm(Attack):
     
     def apply_effect(self, user, target, fight):
         fight.set_weather("Sandstorm", duration=5)
-        print(f"{user.name} invoque la tempête de sable !")
+        print_infos(f"{user.name} invoque la tempête de sable !")
 
 class SunnyDay(Attack):
     def __init__(self):
@@ -368,7 +370,7 @@ class SunnyDay(Attack):
         if fight.weather["current"] != "Sunny":
             rounds = 8 if user.item == "Heat Rock" else 5
             fight.set_weather("Sunny", duration=rounds)
-            print(f"{user.name} invoque le soleil !")
+            print_infos(f"{user.name} invoque le soleil !")
 
 class SlackOff(Attack):
     def __init__(self):
@@ -387,11 +389,11 @@ class SlackOff(Attack):
     def apply_effect(self, user, target, fight):
         # Vérifier si l'utilisateur est sous l'effet de Heal Block
         if getattr(user, 'heal_blocked', False):
-            print(f"{user.name} ne peut pas utiliser {self.name} car il est sous l'effet de Heal Block !")
+            print_infos(f"{user.name} ne peut pas utiliser {self.name} car il est sous l'effet de Heal Block !")
             return
         heal_amount = user.max_hp // 2
         user.current_hp = min(user.max_hp, user.current_hp + heal_amount)
-        print(f"{user.name} récupère {heal_amount} PV grâce à Slack Off.")
+        print_infos(f"{user.name} récupère {heal_amount} PV grâce à Slack Off.")
 
 class Recover(Attack):
     def __init__(self):
@@ -410,12 +412,12 @@ class Recover(Attack):
     def apply_effect(self, user, target, fight):
         # Vérifier si l'utilisateur est sous l'effet de Heal Block
         if getattr(user, 'heal_blocked', False):
-            print(f"{user.name} ne peut pas utiliser {self.name} car il est sous l'effet de Heal Block !")
+            print_infos(f"{user.name} ne peut pas utiliser {self.name} car il est sous l'effet de Heal Block !")
             return
             
         heal_amount = user.max_hp // 2
         user.current_hp = min(user.max_hp, user.current_hp + heal_amount)
-        print(f"{user.name} récupère {heal_amount} PV grâce à Recover.")
+        print_infos(f"{user.name} récupère {heal_amount} PV grâce à Recover.")
 
 class SoftBoiled(Attack):
     def __init__(self):
@@ -434,12 +436,12 @@ class SoftBoiled(Attack):
     def apply_effect(self, user, target, fight):
         # Vérifier si l'utilisateur est sous l'effet de Heal Block
         if getattr(user, 'heal_blocked', False):
-            print(f"{user.name} ne peut pas utiliser {self.name} car il est sous l'effet de Heal Block !")
+            print_infos(f"{user.name} ne peut pas utiliser {self.name} car il est sous l'effet de Heal Block !")
             return
             
         heal_amount = user.max_hp // 2
         user.current_hp = min(user.max_hp, user.current_hp + heal_amount)
-        print(f"{user.name} récupère {heal_amount} PV grâce à Soft-Boiled.")
+        print_infos(f"{user.name} récupère {heal_amount} PV grâce à Soft-Boiled.")
 
 class Synthesis(Attack):
     """Synthesis permet au Pokémon de récupérer plus ou moins de PV en fonction de la météo."""
@@ -459,7 +461,7 @@ class Synthesis(Attack):
     def apply_effect(self, user, target, fight):
         # Vérifier si l'utilisateur est sous l'effet de Heal Block
         if getattr(user, 'heal_blocked', False):
-            print(f"{user.name} ne peut pas utiliser {self.name} car il est sous l'effet de Heal Block !")
+            print_infos(f"{user.name} ne peut pas utiliser {self.name} car il est sous l'effet de Heal Block !")
             return
         
         if fight.weather["current"] == "Sunny":
@@ -470,7 +472,7 @@ class Synthesis(Attack):
             heal_amount = user.max_hp // 2
         
         user.current_hp = min(user.max_hp, user.current_hp + heal_amount)
-        print(f"{user.name} récupère {heal_amount} PV grâce à Synthesis.")
+        print_infos(f"{user.name} récupère {heal_amount} PV grâce à Synthesis.")
 
 class StoneAxe(Attack):
     def __init__(self):
@@ -492,7 +494,7 @@ class StoneAxe(Attack):
         hazards_side = fight.hazards_team1 if team_id == 1 else fight.hazards_team2
         if not hazards_side["Stealth Rock"]:
             hazards_side["Stealth Rock"] = True
-            print(f"{user.name} pose les pièges de Roc.")
+            print_infos(f"{user.name} pose les pièges de Roc.")
 
 class Waterfall(Attack):
     def __init__(self):
@@ -512,7 +514,7 @@ class Waterfall(Attack):
         """ 20% de chance de flinch"""
         if random.randint(1, 100) <= 20:
             target.flinched = True
-            print(f"{target.name} est flinch !")
+            print_infos(f"{target.name} est flinch !")
 
 class StoneEdge(Attack):
     def __init__(self):
@@ -546,7 +548,7 @@ class Nuzzle(Attack):
     def apply_effect(self, user, target, fight):
         if target.status == None:
             target.apply_status("paralyzed")
-            print(f"{target.name} est paralysé ! Il aura du mal à attaquer.")
+            print_infos(f"{target.name} est paralysé ! Il aura du mal à attaquer.")
 
 class FakeOut(Attack):
     def __init__(self):
@@ -570,7 +572,7 @@ class FakeOut(Attack):
         if user.first_attack:
             return True
         else:
-            print("L'attaque échoue !")
+            print_infos("L'attaque échoue !")
             return False
 
 class ShadowSneak(Attack):
@@ -647,7 +649,7 @@ class Thunderbolt(Attack):
         if random.randint(1, 100) <= 10:
             if target.status == None:
                 target.apply_status("paralyzed")
-                print(f"{target.name} est paralysé ! Il aura du mal à attaquer.")
+                print_infos(f"{target.name} est paralysé ! Il aura du mal à attaquer.")
 
 class Spore(Attack):
     def __init__(self):
@@ -666,11 +668,11 @@ class Spore(Attack):
     def apply_effect(self, user, target, fight):
         
         if "Grass" in target.types:
-            print(f"{target.name} est de type Plante : Spore échoue.")
+            print_infos(f"{target.name} est de type Plante : Spore échoue.")
             return
         if target.status is None:
             target.apply_status("sleep")
-            print(f"{target.name} s'endort mimimiimimi !")
+            print_infos(f"{target.name} s'endort mimimiimimi !")
 
 class SleepPowder(Attack):
     def __init__(self):
@@ -689,11 +691,11 @@ class SleepPowder(Attack):
     def apply_effect(self, user, target, fight):
         
         if "Grass" in target.types:
-            print(f"{target.name} est de type Plante : Sleep Powder échoue.")
+            print_infos(f"{target.name} est de type Plante : Sleep Powder échoue.")
             return
         if target.status is None:
             target.apply_status("sleep")
-            print(f"{target.name} s'endort mimimiimimi !")
+            print_infos(f"{target.name} s'endort mimimiimimi !")
 
 class WeatherBall(Attack):
     def __init__(self):
@@ -742,7 +744,7 @@ class KnockOff(Attack):
 
     def apply_effect(self, user, target, fight):
         if target.item:
-            print(f"{target.name} perd son objet {target.item} !")
+            print_infos(f"{target.name} perd son objet {target.item} !")
             target.item = None
             target.actualize_stats()
 
@@ -774,7 +776,7 @@ class UTurn(Attack):
         """
         # Vérifier si l'utilisateur est encore en vie
         if user.current_hp <= 0:
-            print(f"{user.name} est K.O. et ne peut pas utiliser U-turn pour changer !")
+            print_infos(f"{user.name} est K.O. et ne peut pas utiliser U-turn pour changer !")
             return
         
         # Déterminer quelle équipe possède l'utilisateur
@@ -788,13 +790,13 @@ class UTurn(Attack):
         available_pokemon = [p for p in team if p.current_hp > 0 and p != user]
         
         if not available_pokemon:
-            print(f"{user.name} ne peut pas changer car il n'y a pas d'autre Pokémon disponible !")
+            print_infos(f"{user.name} ne peut pas changer car il n'y a pas d'autre Pokémon disponible !")
             return
         
         # Marquer que le Pokémon doit changer après l'attaque
         user.must_switch_after_attack = True
         user.switch_reason = "U-Turn"
-        print(f"{user.name} doit revenir après U-turn !")
+        print_infos(f"{user.name} doit revenir après U-turn !")
 
 class FlipTurn(Attack):
     def __init__(self):
@@ -820,7 +822,7 @@ class FlipTurn(Attack):
         """
         # Vérifier si l'utilisateur est encore en vie
         if user.current_hp <= 0:
-            print(f"{user.name} est K.O. et ne peut pas utiliser Flip Turn pour changer !")
+            print_infos(f"{user.name} est K.O. et ne peut pas utiliser Flip Turn pour changer !")
             return
         
         # Déterminer quelle équipe possède l'utilisateur
@@ -834,13 +836,13 @@ class FlipTurn(Attack):
         available_pokemon = [p for p in team if p.current_hp > 0 and p != user]
         
         if not available_pokemon:
-            print(f"{user.name} ne peut pas changer car il n'y a pas d'autre Pokémon disponible !")
+            print_infos(f"{user.name} ne peut pas changer car il n'y a pas d'autre Pokémon disponible !")
             return
         
         # Marquer que le Pokémon doit changer après l'attaque
         user.must_switch_after_attack = True
         user.switch_reason = "Flip Turn"
-        print(f"{user.name} doit revenir après Flip Turn !")
+        print_infos(f"{user.name} doit revenir après Flip Turn !")
 
 
 class WillOWisp(Attack):
@@ -860,7 +862,7 @@ class WillOWisp(Attack):
     def apply_effect(self, user, target, fight):
         if target.status is None and "Fire" not in target.types and target.talent != "Thermal Exchange":
             target.apply_status("burn")
-            print(f"{target.name} est brûlé !")
+            print_infos(f"{target.name} est brûlé !")
 
 class Toxic(Attack):
     def __init__(self):
@@ -880,7 +882,7 @@ class Toxic(Attack):
 
         if target.status is None and "Poison" not in target.types and "Steel" not in target.types:
             target.apply_status("toxic")
-            print(f"{target.name} est empoisonné !")
+            print_infos(f"{target.name} est empoisonné !")
 
 class IceBeam(Attack):
     def __init__(self):
@@ -900,7 +902,7 @@ class IceBeam(Attack):
         if random.randint(1, 100) <= 10:
             if target.status is None:
                 target.apply_status("frozen")
-                print(f"{target.name} est gelé !")
+                print_infos(f"{target.name} est gelé !")
 
 class SuckerPunch(Attack):
     def __init__(self):
@@ -919,11 +921,11 @@ class SuckerPunch(Attack):
     def on_condition_attack(self, user, target, target_atk, fight):
         # Si la cible n'attaque pas (switch, KO, etc.), Sucker Punch échoue
         if target_atk is None:
-            print("L'attaque échoue !")
+            print_infos("L'attaque échoue !")
             return False
         # Si la cible utilise une attaque de statut, Sucker Punch échoue
         if target_atk.category == "Status":
-            print("L'attaque échoue !")
+            print_infos("L'attaque échoue !")
             return False
         # Sinon, l'attaque réussit
         return True
@@ -951,9 +953,9 @@ class Reflect(Attack):
             else:
                 duration = 5
             fight.add_screen("reflect", fight.get_team_id(user), duration)
-            print(f"{user.name} utilise Reflect ! Les dégâts physiques sont réduits de moitié pour {duration} tours.")
+            print_infos(f"{user.name} utilise Reflect ! Les dégâts physiques sont réduits de moitié pour {duration} tours.")
         else:
-            print("L'attaque échoue")
+            print_infos("L'attaque échoue")
 
 class LightScreen(Attack):
     def __init__(self):
@@ -979,9 +981,9 @@ class LightScreen(Attack):
             else:
                 duration = 5
             fight.add_screen("light_screen", user_team_id, duration)
-            print(f"{user.name} utilise Light Screen ! Les dégâts spéciaux sont réduits de moitié pour son équipe pendant 5 tours.")
+            print_infos(f"{user.name} utilise Light Screen ! Les dégâts spéciaux sont réduits de moitié pour son équipe pendant 5 tours.")
         else:
-            print("L'attaque échoue.")
+            print_infos("L'attaque échoue.")
 
 class AuroraVeil(Attack):
     def __init__(self):
@@ -1006,9 +1008,9 @@ class AuroraVeil(Attack):
             else:
                 duration = 5
             fight.add_screen("auroraveil", fight.get_team_id(user), duration)
-            print(f"{user.name} utilise Aurora Veil ! Les dégâts physiques et spéciaux sont réduits de moitié pour {duration} tours.")
+            print_infos(f"{user.name} utilise Aurora Veil ! Les dégâts physiques et spéciaux sont réduits de moitié pour {duration} tours.")
         else:
-            print("L'attaque échoue.")
+            print_infos("L'attaque échoue.")
 
 class SwordsDance(Attack):
     def __init__(self):
@@ -1028,7 +1030,7 @@ class SwordsDance(Attack):
         stat_changes = {"Attack": 2}
         success = apply_stat_changes(user, stat_changes, "self", fight)
         if success:
-            print(f"{user.name} utilise Swords Dance ! Son Attaque augmente de 2 niveaux.")
+            print_infos(f"{user.name} utilise Swords Dance ! Son Attaque augmente de 2 niveaux.")
 
 class NastyPlot(Attack):
     def __init__(self):
@@ -1048,7 +1050,7 @@ class NastyPlot(Attack):
         stat_changes = {"Sp. Atk": 2}
         success = apply_stat_changes(user, stat_changes, "self", fight)
         if success:
-            print(f"{user.name} utilise Nasty Plot ! Son Attaque Spéciale augmente de 2 niveaux.")
+            print_infos(f"{user.name} utilise Nasty Plot ! Son Attaque Spéciale augmente de 2 niveaux.")
 
 class CalmMind(Attack):
     def __init__(self):
@@ -1068,7 +1070,7 @@ class CalmMind(Attack):
         stat_changes = {"Sp. Atk": 1, "Sp. Def": 1}
         success = apply_stat_changes(user, stat_changes, "self", fight)
         if success:
-            print(f"{user.name} utilise Calm Mind ! Son Attaque Spéciale et sa Défense Spéciale augmentent de 1 niveau.")
+            print_infos(f"{user.name} utilise Calm Mind ! Son Attaque Spéciale et sa Défense Spéciale augmentent de 1 niveau.")
 
 class QuiverDance(Attack):
     def __init__(self):
@@ -1088,7 +1090,7 @@ class QuiverDance(Attack):
         stat_changes = {"Sp. Atk": 1, "Sp. Def": 1, "Speed": 1}
         success = apply_stat_changes(user, stat_changes, "self", fight)
         if success:
-            print(f"{user.name} utilise Papillodanse ! Sa Défense et son Attaque Spéciale ainsi que sa Vitesse augmentent !")
+            print_infos(f"{user.name} utilise Papillodanse ! Sa Défense et son Attaque Spéciale ainsi que sa Vitesse augmentent !")
 
 class BulkUp(Attack):
     def __init__(self):
@@ -1108,7 +1110,7 @@ class BulkUp(Attack):
         stat_changes = {"Attack": 1, "Defense": 1}
         success = apply_stat_changes(user, stat_changes, "self", fight)
         if success:
-            print(f"{user.name} utilise Bulk Up ! Son Attaque et sa Défense augmentent de 1 niveau.")
+            print_infos(f"{user.name} utilise Bulk Up ! Son Attaque et sa Défense augmentent de 1 niveau.")
 
 class IronDefense(Attack):
     def __init__(self):
@@ -1132,7 +1134,7 @@ class IronDefense(Attack):
         success = apply_stat_changes(user, stat_changes, "self", fight)
         
         if success:
-            print(f"{user.name} renforce sa Défense avec Iron Defense !")
+            print_infos(f"{user.name} renforce sa Défense avec Iron Defense !")
 
 class CloseCombat(Attack):
     def __init__(self):
@@ -1189,7 +1191,7 @@ class Psychic(Attack):
             stat_changes = {"Sp. Def": -1}
             success = apply_stat_changes(target, stat_changes, "opponent", fight)
             if success:
-                print(f"{target.name} subit une baisse de sa Défense Spéciale !")
+                print_infos(f"{target.name} subit une baisse de sa Défense Spéciale !")
 
 class DragonPulse(Attack):
     def __init__(self):
@@ -1264,7 +1266,7 @@ class ElectroShot(Attack):
         # Si c'est sous la pluie, pas de charge et boost direct
         if fight.weather["current"] == "Rain":
             apply_stat_changes(user, {"Sp. Atk": 1}, "self", fight)
-            print(f"{user.name} absorbe l'électricité de la pluie ! Son Attaque Spéciale augmente !")
+            print_infos(f"{user.name} absorbe l'électricité de la pluie ! Son Attaque Spéciale augmente !")
             return "attack"  # Attaque immédiatement
         
         # Au premier tour sans pluie : se charge
@@ -1272,13 +1274,13 @@ class ElectroShot(Attack):
             user.charging = True
             user.charging_attack = self
             apply_stat_changes(user, {"Sp. Atk": 1}, "self", fight)
-            print(f"{user.name} se charge d'électricité ! Son Attaque Spéciale augmente !")
+            print_infos(f"{user.name} se charge d'électricité ! Son Attaque Spéciale augmente !")
             return "charging"  # Indique que l'attaque est en cours de charge
         else:
             # Au deuxième tour : attaque (sans boost supplémentaire)
             user.charging = False
             user.charging_attack = None
-            print(f"{user.name} relâche l'électricité accumulée !")
+            print_infos(f"{user.name} relâche l'électricité accumulée !")
             return "attack"  # Indique que l'attaque est exécutée
     
     def on_condition_attack(self, user, target=None, target_attack=None, fight=None):
@@ -1327,7 +1329,7 @@ class BraveBird(Attack):
         if damage_dealt > 0:
             recoil_damage = damage_dealt // 3
             fight.damage_method(user, recoil_damage)
-            print(f"{user.name} subit {recoil_damage} PV de dégâts de recul après avoir utilisé Brave Bird.")
+            print_infos(f"{user.name} subit {recoil_damage} PV de dégâts de recul après avoir utilisé Brave Bird.")
 
 class DrainingKiss(Attack):
     def __init__(self):
@@ -1355,10 +1357,10 @@ class DrainingKiss(Attack):
                     actual_healing = int(actual_healing * 1.3)
                 if target.talent == "Liquid Ooze":
                     user.current_hp -= actual_healing
-                    print(f"{target.name} inflige {actual_healing} PV de dégâts à {user.name} avec Liquid Ooze !")
+                    print_infos(f"{target.name} inflige {actual_healing} PV de dégâts à {user.name} avec Liquid Ooze !")
                 else:
                     user.current_hp += actual_healing
-                    print(f"{user.name} récupère {actual_healing} PV grâce à Draining Kiss !")
+                    print_infos(f"{user.name} récupère {actual_healing} PV grâce à Draining Kiss !")
 
 class DrainPunch(Attack):
     def __init__(self):
@@ -1386,10 +1388,10 @@ class DrainPunch(Attack):
                     actual_healing = int(actual_healing * 1.3)
                 if target.talent == "Liquid Ooze":
                     user.current_hp -= actual_healing
-                    print(f"{target.name} inflige {actual_healing} PV de dégâts à {user.name} avec Liquid Ooze !")
+                    print_infos(f"{target.name} inflige {actual_healing} PV de dégâts à {user.name} avec Liquid Ooze !")
                 else:
                     user.current_hp += actual_healing
-                    print(f"{user.name} récupère {actual_healing} PV grâce à Drain Punch !")
+                    print_infos(f"{user.name} récupère {actual_healing} PV grâce à Drain Punch !")
 
 class LeafStorm(Attack):
     def __init__(self):
@@ -1412,7 +1414,7 @@ class LeafStorm(Attack):
         stat_changes = {"Sp. Atk": -2}
         success = apply_stat_changes(user, stat_changes, "self", fight)
         if success:
-            print(f"L'Attaque Spéciale de {user.name} diminue drastiquement !")
+            print_infos(f"L'Attaque Spéciale de {user.name} diminue drastiquement !")
 
 class PlayRough(Attack):
     def __init__(self):
@@ -1436,7 +1438,7 @@ class PlayRough(Attack):
             stat_changes = {"Attack": -1}
             success = apply_stat_changes(target, stat_changes, "opponent", fight)
             if success:
-                print(f"L'Attaque de {target.name} diminue !")
+                print_infos(f"L'Attaque de {target.name} diminue !")
 
 class ShellSmash(Attack):
     def __init__(self):
@@ -1466,7 +1468,7 @@ class ShellSmash(Attack):
         }
         success = apply_stat_changes(user, stat_changes, "self", fight)
         if success:
-            print(f"{user.name} brise sa carapace ! Ses capacités offensives et sa vitesse augmentent énormément !")
+            print_infos(f"{user.name} brise sa carapace ! Ses capacités offensives et sa vitesse augmentent énormément !")
 
 class ShiftGear(Attack):
     def __init__(self):
@@ -1489,7 +1491,7 @@ class ShiftGear(Attack):
         stat_changes = {"Attack": 1, "Speed": 2}
         success = apply_stat_changes(user, stat_changes, "self", fight)
         if success:
-            print(f"{user.name} change de vitesse ! Son Attaque et sa Vitesse augmentent !")
+            print_infos(f"{user.name} change de vitesse ! Son Attaque et sa Vitesse augmentent !")
 
 class TrickRoom(Attack):
     def __init__(self):
@@ -1533,7 +1535,7 @@ class WaveCrash(Attack):
         if damage_dealt > 0:
             recoil_damage = damage_dealt // 3
             fight.damage_method(user, recoil_damage)
-            print(f"{user.name} subit {recoil_damage} PV de dégâts de recul après avoir utilisé Wave Crash.")
+            print_infos(f"{user.name} subit {recoil_damage} PV de dégâts de recul après avoir utilisé Wave Crash.")
 
 class GrassKnot(Attack):
     def __init__(self):
@@ -1589,14 +1591,14 @@ class SolarBeam(Attack):
     def apply_effect(self, user, target, fight):
         # Si c'est ensoleillé, pas de charge
         if fight.weather["current"] == "Sunny":
-            print(f"{user.name} absorbe la lumière du soleil et attaque immédiatement !")
+            print_infos(f"{user.name} absorbe la lumière du soleil et attaque immédiatement !")
             return "attack"  # Attaque immédiatement
         
         # Au premier tour sans soleil : se charge
         if not user.charging or user.charging_attack != self:
             user.charging = True
             user.charging_attack = self
-            print(f"{user.name} absorbe la lumière du soleil !")
+            print_infos(f"{user.name} absorbe la lumière du soleil !")
             return "charging"  # Indique que l'attaque est en cours de charge
         else:
             # Au deuxième tour : attaque
@@ -1621,7 +1623,7 @@ class HyperBeam(Attack):
     def apply_effect(self, user, target, fight):
         # Hyper Beam oblige le Pokémon à se reposer au tour suivant
         user.must_recharge = True
-        print(f"{user.name} doit se reposer au prochain tour après cette attaque puissante !")
+        print_infos(f"{user.name} doit se reposer au prochain tour après cette attaque puissante !")
 
 class RageFist(Attack):
     def __init__(self):
@@ -1668,24 +1670,24 @@ class Encore(Attack):
             
         # Vérifier si le Pokémon est déjà sous l'effet d'Encore
         if target.encored_turns > 0:
-            print(f"{target.name} est déjà sous l'effet d'Encore ! L'attaque échoue.")
+            print_infos(f"{target.name} est déjà sous l'effet d'Encore ! L'attaque échoue.")
             return
             
         # Vérifier si le Pokémon a utilisé une attaque récemment
         if not target.last_used_attack:
-            print(f"{target.name} n'a pas utilisé d'attaque récemment ! L'attaque échoue.")
+            print_infos(f"{target.name} n'a pas utilisé d'attaque récemment ! L'attaque échoue.")
             return
             
         # Vérifier si l'attaque peut être répétée (exclure certaines attaques)
         non_encore_attacks = ["Transform", "Mimic", "Encore", "Struggle"]
         if target.last_used_attack.name in non_encore_attacks:
-            print(f"{target.last_used_attack.name} ne peut pas être répétée avec Encore !")
+            print_infos(f"{target.last_used_attack.name} ne peut pas être répétée avec Encore !")
             return
             
         # Appliquer l'effet Encore
         target.encored_turns = 3  # Selon les règles officielles, dure 3 tours
         target.encored_attack = target.last_used_attack
-        print(f"{target.name} est forcé de répéter {target.last_used_attack.name} pendant 3 tours grâce à Encore !")
+        print_infos(f"{target.name} est forcé de répéter {target.last_used_attack.name} pendant 3 tours grâce à Encore !")
 
 class Substitute(Attack):
     def __init__(self):
@@ -1706,11 +1708,11 @@ class Substitute(Attack):
             substitute_hp = user.max_hp // 4
             fight.damage_method(user, substitute_hp, bypass_substitute=True)  # Le Pokémon sacrifie 1/4 de ses PV
             user.substitute_hp = substitute_hp
-            print(f"{user.name} crée un clone avec {substitute_hp} PV !")
+            print_infos(f"{user.name} crée un clone avec {substitute_hp} PV !")
         elif user.has_substitute():
-            print(f"{user.name} a déjà un clone ! L'attaque échoue.")
+            print_infos(f"{user.name} a déjà un clone ! L'attaque échoue.")
         else:
-            print(f"{user.name} n'a pas assez de PV pour créer un clone ! L'attaque échoue.")
+            print_infos(f"{user.name} n'a pas assez de PV pour créer un clone ! L'attaque échoue.")
 
 class Snarl(Attack):
     def __init__(self):
@@ -1730,7 +1732,7 @@ class Snarl(Attack):
         stat_changes = {"Sp. Atk": -1}
         success = apply_stat_changes(target, stat_changes, "opponent", fight)
         if success:
-            print(f"{target.name} subit une baisse de sa Défense Spéciale !")
+            print_infos(f"{target.name} subit une baisse de sa Défense Spéciale !")
 
 class Roost(Attack):
     def __init__(self):
@@ -1750,7 +1752,7 @@ class Roost(Attack):
     def apply_effect(self, user, target, fight):
         # Vérifier si l'utilisateur est sous l'effet de Heal Block
         if getattr(user, 'heal_blocked', False):
-            print(f"{user.name} ne peut pas utiliser {self.name} car il est sous l'effet de Heal Block !")
+            print_infos(f"{user.name} ne peut pas utiliser {self.name} car il est sous l'effet de Heal Block !")
             return
             
         # Soigner 50% des PV max
@@ -1768,9 +1770,9 @@ class Roost(Attack):
             if len(user.types) == 0:
                 user.types = ["Normal"]
             
-            print(f"{user.name} se repose et récupère {heal_amount} PV ! Il perd temporairement son type Vol.")
+            print_infos(f"{user.name} se repose et récupère {heal_amount} PV ! Il perd temporairement son type Vol.")
         else:
-            print(f"{user.name} se repose et récupère {heal_amount} PV !")
+            print_infos(f"{user.name} se repose et récupère {heal_amount} PV !")
 
 class LeafBlade(Attack):
     def __init__(self):
@@ -1810,7 +1812,7 @@ class WoodHammer(Attack):
         if damage_dealt > 0:
             recoil_damage = damage_dealt // 3
             fight.damage_method(user, recoil_damage)
-            print(f"{user.name} subit {recoil_damage} PV de dégâts de recul après avoir utilisé Wood Hammer.")
+            print_infos(f"{user.name} subit {recoil_damage} PV de dégâts de recul après avoir utilisé Wood Hammer.")
 
 class Glare(Attack):
     def __init__(self):
@@ -1829,9 +1831,9 @@ class Glare(Attack):
     def apply_effect(self, user, target, fight):
         if target.status is None and "Ground" not in target.types:
             target.apply_status("paralyzed")
-            print(f"{target.name} est paralysé ! Il aura du mal à attaquer.")
+            print_infos(f"{target.name} est paralysé ! Il aura du mal à attaquer.")
         else:
-            print("L'attaque échoue.")
+            print_infos("L'attaque échoue.")
 
 class ThunderWave(Attack):
     def __init__(self):
@@ -1850,9 +1852,9 @@ class ThunderWave(Attack):
     def apply_effect(self, user, target, fight):
         if target.status is None and "Electric" not in target.types:
             target.apply_status("paralyzed")
-            print(f"{target.name} est paralysé ! Il aura du mal à attaquer.")
+            print_infos(f"{target.name} est paralysé ! Il aura du mal à attaquer.")
         else:
-            print("L'attaque échoue.")
+            print_infos("L'attaque échoue.")
 
 class Taunt(Attack):
     """Attaque qui n'est pas bloquée par les substituts et empêche l'usage d'attaques de statut"""
@@ -1872,7 +1874,7 @@ class Taunt(Attack):
     def apply_effect(self, user, target, fight):
         # Taunt dure 3 tours (comme dans les jeux officiels)
         target.taunted_turns = 3
-        print(f"{target.name} est provoqué et ne peut plus utiliser d'attaques de statut pendant 3 tours !")
+        print_infos(f"{target.name} est provoqué et ne peut plus utiliser d'attaques de statut pendant 3 tours !")
 
 class Earthquake(Attack):
     def __init__(self):
@@ -1908,7 +1910,7 @@ class PerishSong(Attack):
         )
 
     def apply_effect(self, user, target, fight):
-        print(f"{target.name} entend le Chant Perish ! Il sera K.O. dans 3 tours !")
+        print_infos(f"{target.name} entend le Chant Perish ! Il sera K.O. dans 3 tours !")
 
 class Trick(Attack):
     def __init__(self):
@@ -1954,7 +1956,7 @@ class Hurricane(Attack):
     def apply_effect(self, user, target, fight):
         if random.random() < 0.3:
             target.apply_status("confused")
-            print(f"{target.name} est confus !")
+            print_infos(f"{target.name} est confus !")
 
 class Thunder(Attack):
     def __init__(self):
@@ -1981,7 +1983,7 @@ class Thunder(Attack):
     def apply_effect(self, user, target, fight):
         if random.random() < 0.3:
             target.apply_status("paralyzed")
-            print(f"{target.name} est paralysé !")
+            print_infos(f"{target.name} est paralysé !")
 
 class Blizzard(Attack):
     def __init__(self):
@@ -2006,7 +2008,7 @@ class Blizzard(Attack):
     def apply_effect(self, user, target, fight):
         if random.random() < 0.1:
             target.apply_status("frozen")
-            print(f"{target.name} est gelé !")
+            print_infos(f"{target.name} est gelé !")
 
 class AerialAce(Attack):
     def __init__(self):
@@ -2043,7 +2045,7 @@ class Scald(Attack):
     def apply_effect(self, user, target, fight):
         if random.random() < 0.3 and target.talent != "Thermal Exchange":
             target.apply_status("burn")
-            print(f"{target.name} est brûlé !")
+            print_infos(f"{target.name} est brûlé !")
         
 class DynamicPunch(Attack):
     def __init__(self):
@@ -2062,7 +2064,7 @@ class DynamicPunch(Attack):
     def apply_effect(self, user, target, fight):
         # 100% de chance de rendre confus si l'attaque touche
         target.apply_status("confused")
-        print(f"{target.name} est confus à cause de Dynamic Punch !")
+        print_infos(f"{target.name} est confus à cause de Dynamic Punch !")
 
 class TeraBlast(Attack):
     def __init__(self):
@@ -2122,13 +2124,13 @@ class TeraBlast(Attack):
         new_type = self.get_effective_type(user, target, fight)
         if new_type != self.type:
             self.type = new_type
-            print(f"Tera Blast devient de type {self.type} !")
+            print_infos(f"Tera Blast devient de type {self.type} !")
         
         # Modifier la catégorie selon les stats
         new_category = self.get_effective_category(user, target, fight)
         if new_category != self.category:
             self.category = new_category
-            print(f"Tera Blast devient une attaque {self.category.lower()} !")
+            print_infos(f"Tera Blast devient une attaque {self.category.lower()} !")
     
     def restore_original_properties(self):
         """
@@ -2166,12 +2168,12 @@ class ShedTail(Attack):
         """
         # Vérifier si l'utilisateur a assez de PV
         if user.current_hp <= user.max_hp // 4:
-            print(f"{user.name} n'a pas assez de PV pour utiliser Shed Tail !")
+            print_infos(f"{user.name} n'a pas assez de PV pour utiliser Shed Tail !")
             return
         
         # Vérifier si le Pokémon a déjà un substitute
         if user.has_substitute():
-            print(f"{user.name} a déjà un clone !")
+            print_infos(f"{user.name} a déjà un clone !")
             return
         
         # Créer le substitute (même mécanique que Substitute)
@@ -2185,7 +2187,7 @@ class ShedTail(Attack):
         else:
             fight.pending_substitute_team2 = substitute_hp
         
-        print(f"{user.name} crée un clone avec {substitute_hp} PV qui sera transféré !")
+        print_infos(f"{user.name} crée un clone avec {substitute_hp} PV qui sera transféré !")
         
         # Déterminer quelle équipe possède l'utilisateur
         if team_id is None:
@@ -2197,13 +2199,13 @@ class ShedTail(Attack):
         available_pokemon = [p for p in team if p.current_hp > 0 and p != user]
         
         if not available_pokemon:
-            print(f"{user.name} ne peut pas changer car il n'y a pas d'autre Pokémon disponible !")
+            print_infos(f"{user.name} ne peut pas changer car il n'y a pas d'autre Pokémon disponible !")
             return
         
         # Marquer que l'utilisateur doit changer après l'attaque
         user.must_switch_after_attack = True
         user.switch_reason = "Shed Tail"
-        print(f"{user.name} doit revenir après avoir utilisé Shed Tail !")
+        print_infos(f"{user.name} doit revenir après avoir utilisé Shed Tail !")
 
 class Spikes(Attack):
     def __init__(self):
@@ -2231,9 +2233,9 @@ class Spikes(Attack):
         if opponent_hazards["Spikes"] < 3:
             opponent_hazards["Spikes"] += 1
             layers = opponent_hazards["Spikes"]
-            print(f"{user.name} pose des Spikes ! (Couche {layers}/3)")
+            print_infos(f"{user.name} pose des Spikes ! (Couche {layers}/3)")
         else:
-            print(f"Il y a déjà le maximum de Spikes sur le terrain !")
+            print_infos(f"Il y a déjà le maximum de Spikes sur le terrain !")
 
 class StealthRock(Attack):
     def __init__(self):
@@ -2260,9 +2262,9 @@ class StealthRock(Attack):
         
         if not opponent_hazards["Stealth Rock"]:
             opponent_hazards["Stealth Rock"] = True
-            print(f"{user.name} pose des Piège-de-Roc flottants !")
+            print_infos(f"{user.name} pose des Piège-de-Roc flottants !")
         else:
-            print(f"Il y a déjà des Piège-de-Roc sur le terrain !")
+            print_infos(f"Il y a déjà des Piège-de-Roc sur le terrain !")
 
 class ToxicSpikes(Attack):
     def __init__(self):
@@ -2291,9 +2293,9 @@ class ToxicSpikes(Attack):
             opponent_hazards["Toxic Spikes"] += 1
             layers = opponent_hazards["Toxic Spikes"]
             effect = "empoisonnement" if layers == 1 else "empoisonnement grave"
-            print(f"{user.name} pose des Toxic Spikes ! (Couche {layers}/2 - {effect})")
+            print_infos(f"{user.name} pose des Toxic Spikes ! (Couche {layers}/2 - {effect})")
         else:
-            print(f"Il y a déjà le maximum de Toxic Spikes sur le terrain !")
+            print_infos(f"Il y a déjà le maximum de Toxic Spikes sur le terrain !")
 
 class StickyWeb(Attack):
     def __init__(self):
@@ -2319,9 +2321,9 @@ class StickyWeb(Attack):
         
         if not opponent_hazards["Sticky Web"]:
             opponent_hazards["Sticky Web"] = True
-            print(f"{user.name} tisse une Toile Gluante !")
+            print_infos(f"{user.name} tisse une Toile Gluante !")
         else:
-            print(f"Il y a déjà une Toile Gluante sur le terrain !")
+            print_infos(f"Il y a déjà une Toile Gluante sur le terrain !")
 
 class RapidSpin(Attack):
     def __init__(self):
@@ -2360,13 +2362,13 @@ class RapidSpin(Attack):
             user_hazards["Toxic Spikes"] = 0
             user_hazards["Sticky Web"] = False
             user.leech_seeded_by = None  # Enlever le Leech Seed si présent
-            print(f"{user.name} supprime tous les pièges de son côté avec Rapid Spin !")
+            print_infos(f"{user.name} supprime tous les pièges de son côté avec Rapid Spin !")
         
         # Augmenter la vitesse (depuis la Gen VIII)
         stats_changes = {"Speed": 1}
         success = apply_stat_changes(user, stats_changes, "self", fight)
         if success:
-            print(f"{user.name} augmente sa Vitesse !")
+            print_infos(f"{user.name} augmente sa Vitesse !")
 
 class Defog(Attack):
     def __init__(self):
@@ -2398,12 +2400,12 @@ class Defog(Attack):
         if user.leech_seeded_by is not None:
             user.leech_seeded_by = None
         
-        print(f"{user.name} dissipe tous les pièges du terrain avec Débrouillard !")
+        print_infos(f"{user.name} dissipe tous les pièges du terrain avec Débrouillard !")
         
         # Réduire l'esquive de la cible
         if target.ev_and_acc_modifier[0] > -6:  # Evasion est à l'index 0
             target.ev_and_acc_modifier[0] -= 1
-            print(f"L'esquive de {target.name} diminue !")
+            print_infos(f"L'esquive de {target.name} diminue !")
 
 class MortalSpin(Attack):
     def __init__(self):
@@ -2435,12 +2437,12 @@ class MortalSpin(Attack):
         if user.leech_seeded_by is not None:
             user.leech_seeded_by = None
         
-        print(f"{user.name} supprime tous les pièges de son côté avec Mortal Spin !")
+        print_infos(f"{user.name} supprime tous les pièges de son côté avec Mortal Spin !")
         
         # Empoisonner la cible seulement si l'attaque a infligé des dégâts
         if damage_dealt > 0 and target.status is None and "Poison" not in target.types:
             target.apply_status("poison")
-            print(f"{target.name} est empoisonné par Mortal Spin !")
+            print_infos(f"{target.name} est empoisonné par Mortal Spin !")
 
 class MagicCoat(Attack):
     def __init__(self):
@@ -2463,7 +2465,7 @@ class MagicCoat(Attack):
         """
         user.magic_coat_active = True
         user.magic_coat_turns = 1
-        print(f"{user.name} se couvre d'un voile magique ! Les attaques de statut seront renvoyées !")
+        print_infos(f"{user.name} se couvre d'un voile magique ! Les attaques de statut seront renvoyées !")
 
 class PsychicNoise(Attack):
     def __init__(self):
@@ -2490,7 +2492,7 @@ class PsychicNoise(Attack):
         # Appliquer l'effet Heal Block
         target.heal_blocked = True
         target.heal_blocked_turns = 2  # Durée de l'effet selon les règles officielles
-        print(f"{target.name} ne peut plus se soigner pendant 2 tours à cause de Psychic Noise !")
+        print_infos(f"{target.name} ne peut plus se soigner pendant 2 tours à cause de Psychic Noise !")
 
 class HealBell(Attack):
     def __init__(self):
@@ -2526,9 +2528,9 @@ class HealBell(Attack):
                 healed_pokemon.append(pokemon.name)
         
         if healed_pokemon:
-            print(f"Heal Bell soigne les statuts de : {', '.join(healed_pokemon)} !")
+            print_infos(f"Heal Bell soigne les statuts de : {', '.join(healed_pokemon)} !")
         else:
-            print(f"Aucun Pokémon de l'équipe n'avait de statut à soigner.")
+            print_infos(f"Aucun Pokémon de l'équipe n'avait de statut à soigner.")
 
 class PartingShot(Attack):
     def __init__(self):
@@ -2557,12 +2559,12 @@ class PartingShot(Attack):
         success = apply_stat_changes(target, stat_changes, "opponent", fight)
         
         if success:
-            print(f"{target.name} subit une baisse de son Attaque et de sa Défense Spéciale !")
+            print_infos(f"{target.name} subit une baisse de son Attaque et de sa Défense Spéciale !")
         
         # Forcer le changement de Pokémon
         user.must_switch_after_attack = True
         user.switch_reason = "Parting Shot"
-        print(f"{user.name} doit changer après avoir utilisé Parting Shot !")
+        print_infos(f"{user.name} doit changer après avoir utilisé Parting Shot !")
 
 class HeavySlam(Attack):
     def __init__(self):
@@ -2645,7 +2647,7 @@ class FlareBlitz(Attack):
         if damage_dealt > 0:
             recoil_damage = damage_dealt // 3
             fight.damage_method(user, recoil_damage)
-            print(f"{user.name} subit {recoil_damage} PV de dégâts de recul après avoir utilisé Flare Blitz.")
+            print_infos(f"{user.name} subit {recoil_damage} PV de dégâts de recul après avoir utilisé Flare Blitz.")
 
 class WildCharge(Attack):
     def __init__(self):
@@ -2668,7 +2670,7 @@ class WildCharge(Attack):
         if damage_dealt > 0:
             recoil_damage = damage_dealt // 4
             fight.damage_method(user, recoil_damage)
-            print(f"{user.name} subit {recoil_damage} PV de dégâts de recul après avoir utilisé Wild Charge.")
+            print_infos(f"{user.name} subit {recoil_damage} PV de dégâts de recul après avoir utilisé Wild Charge.")
 
 class EarthPower(Attack):
     def __init__(self):
@@ -2752,7 +2754,7 @@ class SludgeBomb(Attack):
         """
         if random.random() < 0.3:
             target.apply_status("poison")
-            print(f"{target.name} est empoisonné !")
+            print_infos(f"{target.name} est empoisonné !")
 
 class BugBuzz(Attack):
     def __init__(self):
@@ -2840,7 +2842,7 @@ class IceBeam(Attack):
         """
         if random.random() < 0.1:
             target.apply_status("frozen")
-            print(f"{target.name} est gelé par Ice Beam !")
+            print_infos(f"{target.name} est gelé par Ice Beam !")
 
 class Roar(Attack):
     def __init__(self):
@@ -2890,7 +2892,7 @@ class DragonDance(Attack):
         success = apply_stat_changes(user, stat_changes, "self", fight)
         
         if success:
-            print(f"{user.name} danse pour augmenter son Attaque et sa Vitesse !")
+            print_infos(f"{user.name} danse pour augmenter son Attaque et sa Vitesse !")
 
 class ExtremeSpeed(Attack):
     def __init__(self):
@@ -3119,7 +3121,7 @@ class ChillyReception(Attack):
 
         # Vérifier si l'utilisateur est encore en vie
         if user.current_hp <= 0:
-            print(f"{user.name} est K.O. et ne peut pas switcher !")
+            print_infos(f"{user.name} est K.O. et ne peut pas switcher !")
             return
         
         # Déterminer quelle équipe possède l'utilisateur
@@ -3133,13 +3135,13 @@ class ChillyReception(Attack):
         available_pokemon = [p for p in team if p.current_hp > 0 and p != user]
         
         if not available_pokemon:
-            print(f"{user.name} ne peut pas changer car il n'y a pas d'autre Pokémon disponible !")
+            print_infos(f"{user.name} ne peut pas changer car il n'y a pas d'autre Pokémon disponible !")
             return
         
         # Marquer que le Pokémon doit changer après l'attaque
         user.must_switch_after_attack = True
         user.switch_reason = "Chilly Reception"
-        print(f"{user.name} doit revenir après Chilly Reception !")
+        print_infos(f"{user.name} doit revenir après Chilly Reception !")
 
 class Tailwind(Attack):
     def __init__(self):
@@ -3350,15 +3352,15 @@ class TidyUp(Attack):
         for pokemon in active_pokemon:
             if pokemon and hasattr(pokemon, 'substitute_hp') and pokemon.substitute_hp > 0:
                 pokemon.substitute_hp = 0
-                print(f"Le clone de {pokemon.name} est détruit par Tidy Up !")
+                print_infos(f"Le clone de {pokemon.name} est détruit par Tidy Up !")
         
-        print(f"{user.name} nettoie le terrain avec Tidy Up !")
+        print_infos(f"{user.name} nettoie le terrain avec Tidy Up !")
         
         # Augmenter l'Attaque et la Vitesse dans tous les cas
         stats_changes = {"Speed": 1, "Attack": 1}
         success = apply_stat_changes(user, stats_changes, "self", fight)
         if success:
-            print(f"{user.name} augmente sa Vitesse et son Attaque !")
+            print_infos(f"{user.name} augmente sa Vitesse et son Attaque !")
 
 class IcicleCrash(Attack):
     def __init__(self):
@@ -3409,7 +3411,7 @@ class FutureSight(Attack):
         target_position = 1 if target == fight.active1 else 2
         for existing_attack in fight.future_sight_attacks:
             if existing_attack['target_position'] == target_position:
-                print(f"Un Future Sight est déjà programmé pour cette position !")
+                print_infos(f"Un Future Sight est déjà programmé pour cette position !")
                 return
         
         # Programmer l'attaque pour dans 2 tours
@@ -3424,7 +3426,7 @@ class FutureSight(Attack):
         }
         
         fight.future_sight_attacks.append(future_attack)
-        print(f"{user.name} utilise Future Sight ! L'attaque frappera dans 2 tours !")
+        print_infos(f"{user.name} utilise Future Sight ! L'attaque frappera dans 2 tours !")
 
 
 class PsychoBoost(Attack):
@@ -3446,7 +3448,7 @@ class PsychoBoost(Attack):
         stat_changes = {"Sp. Atk": -2}
         success = apply_stat_changes(user, stat_changes, "self", fight)
         if success:
-            print(f"L'Attaque Spéciale de {user.name} diminue drastiquement !")
+            print_infos(f"L'Attaque Spéciale de {user.name} diminue drastiquement !")
 
 class Superpower(Attack):
     def __init__(self):
@@ -3467,7 +3469,7 @@ class Superpower(Attack):
         stat_changes = {"Attack": -1, "Defense": -1}
         success = apply_stat_changes(user, stat_changes, "self", fight)
         if success:
-            print(f"L'Attaque et la Défense de {user.name} diminuent !")
+            print_infos(f"L'Attaque et la Défense de {user.name} diminuent !")
 
 class MakeItRain(Attack):
     def __init__(self):
@@ -3488,7 +3490,7 @@ class MakeItRain(Attack):
         stat_changes = {"Sp. Atk": -1}
         success = apply_stat_changes(user, stat_changes, "self", fight)
         if success:
-            print(f"L'Attaque Spéciale de {user.name} diminue !")
+            print_infos(f"L'Attaque Spéciale de {user.name} diminue !")
 
 class IceSpinner(Attack):
     def __init__(self):
@@ -3507,7 +3509,7 @@ class IceSpinner(Attack):
     def apply_effect(self, user, target, fight):
         """Ice Spinner supprime les effets de terrain"""
         if fight.field:
-            print(f"{user.name} supprime l'effet de terrain avec Ice Spinner !")
+            print_infos(f"{user.name} supprime l'effet de terrain avec Ice Spinner !")
             fight.field = None
             fight.field_turn_left = None
 
@@ -3531,7 +3533,7 @@ class FieryDance(Attack):
             stat_changes = {"Sp. Atk": 1}
             success = apply_stat_changes(user, stat_changes, "self", fight)
             if success:
-                print(f"L'Attaque Spéciale de {user.name} augmente grâce à Fiery Dance !")
+                print_infos(f"L'Attaque Spéciale de {user.name} augmente grâce à Fiery Dance !")
 
 class SludgeWave(Attack):
     def __init__(self):
@@ -3552,7 +3554,7 @@ class SludgeWave(Attack):
         if random.random() < 0.1:
             if target.status is None:
                 target.status = "poison"
-                print(f"{target.name} est empoisonné par Sludge Wave !")
+                print_infos(f"{target.name} est empoisonné par Sludge Wave !")
 
 class CeaselessEdge(Attack):
     def __init__(self):
@@ -3578,7 +3580,7 @@ class CeaselessEdge(Attack):
             
         if hazards["Spikes"] < 3:
             hazards["Spikes"] += 1
-            print(f"{user.name} place des Spikes avec Ceaseless Edge !")
+            print_infos(f"{user.name} place des Spikes avec Ceaseless Edge !")
 
 class RazorShell(Attack):
     def __init__(self):
@@ -3600,7 +3602,7 @@ class RazorShell(Attack):
             stat_changes = {"Defense": -1}
             success = apply_stat_changes(target, stat_changes, "opponent", fight)
             if success:
-                print(f"La Défense de {target.name} diminue !")
+                print_infos(f"La Défense de {target.name} diminue !")
 
 class GunkShot(Attack):
     def __init__(self):
@@ -3621,7 +3623,7 @@ class GunkShot(Attack):
         if random.random() < 0.3:
             if target.status is None:
                 target.status = "poison"
-                print(f"{target.name} est empoisonné par Gunk Shot !")
+                print_infos(f"{target.name} est empoisonné par Gunk Shot !")
 
 class Struggle(Attack):
     """
@@ -3644,7 +3646,7 @@ class Struggle(Attack):
     def apply_effect(self, user, target, fight):
         # L'utilisateur perd 1/4 de ses PV max en dégâts de recul
         recoil_damage = max(1, user.max_hp // 4)
-        print(f"{user.name} subit {recoil_damage} dégâts de recul de Struggle !")
+        print_infos(f"{user.name} subit {recoil_damage} dégâts de recul de Struggle !")
         fight.damage_method(user, recoil_damage, True)
 
 # Instance globale de Struggle pour tous les Pokémon
@@ -3692,10 +3694,10 @@ class IceFang(Attack):
         if random.random() < 0.1:
             if not target.flinched:
                 target.flinched = True
-                print(f"{target.name} est appeuré !")
+                print_infos(f"{target.name} est appeuré !")
         if random.random() < 0.1:
             target.apply_status("frozen")
-            print(f"{target.name} est gelé par Ice Fang !")
+            print_infos(f"{target.name} est gelé par Ice Fang !")
 
 class Liquidation(Attack):
     def __init__(self):
@@ -3740,7 +3742,7 @@ class Overheat(Attack):
         stat_changes = {"Sp. Atk": -2}
         success = apply_stat_changes(user, stat_changes, "self", fight)
         if success:
-            print(f"L'Attaque Spéciale de {user.name} diminue drastiquement !")
+            print_infos(f"L'Attaque Spéciale de {user.name} diminue drastiquement !")
 
 class DracoMeteor(Attack):
     def __init__(self):
@@ -3763,7 +3765,7 @@ class DracoMeteor(Attack):
         stat_changes = {"Sp. Atk": -2}
         success = apply_stat_changes(user, stat_changes, "self", fight)
         if success:
-            print(f"L'Attaque Spéciale de {user.name} diminue drastiquement !")
+            print_infos(f"L'Attaque Spéciale de {user.name} diminue drastiquement !")
 
 class VoltSwitch(Attack):
     def __init__(self):
@@ -3794,13 +3796,13 @@ class VoltSwitch(Attack):
         available_pokemon = [p for p in team if p.current_hp > 0 and p != user]
         
         if not available_pokemon:
-            print(f"{user.name} ne peut pas changer car il n'y a pas d'autre Pokémon disponible !")
+            print_infos(f"{user.name} ne peut pas changer car il n'y a pas d'autre Pokémon disponible !")
             return
         
         # Marquer que l'utilisateur doit changer après l'attaque
         user.must_switch_after_attack = True
         user.switch_reason = "Volt Switch"
-        print(f"{user.name} doit revenir après avoir utilisé Volt Switch !")
+        print_infos(f"{user.name} doit revenir après avoir utilisé Volt Switch !")
 
 class MeteorMash(Attack):
     def __init__(self):
@@ -3824,7 +3826,7 @@ class MeteorMash(Attack):
             stat_changes = {"Attack": 1}
             success = apply_stat_changes(user, stat_changes, "self", fight)
             if success:
-                print(f"L'Attaque de {user.name} augmente grâce à Meteor Mash !")
+                print_infos(f"L'Attaque de {user.name} augmente grâce à Meteor Mash !")
 
 class Megahorn(Attack):
     def __init__(self):
@@ -3867,7 +3869,7 @@ class HammerArm(Attack):
         stat_changes = {"Speed": -1}
         success = apply_stat_changes(user, stat_changes, "self", fight)
         if success:
-                print(f"La Vitesse de {user.name} diminue après avoir utilisé Hammer Arm !")
+                print_infos(f"La Vitesse de {user.name} diminue après avoir utilisé Hammer Arm !")
 
 class PhantomForce(Attack):
     def __init__(self):
@@ -3892,7 +3894,7 @@ class PhantomForce(Attack):
             user.charging = True
             user.charging_attack = self
             user.phantom_force_active = True
-            print(f"{user.name} disparaît avec Phantom Force ! Il attaquera au prochain tour.")
+            print_infos(f"{user.name} disparaît avec Phantom Force ! Il attaquera au prochain tour.")
             return "charging"
         else:
             # Au deuxième tour : attaque et brise protect
@@ -4034,7 +4036,7 @@ class FirePunch(Attack):
         """
         if random.random() < 0.1 and target.talent != "Thermal Exchange":
             target.apply_status("burn")
-            print(f"{target.name} est brûlé par Fire Punch !")
+            print_infos(f"{target.name} est brûlé par Fire Punch !")
 
 class ThunderPunch(Attack):
     def __init__(self):
@@ -4055,7 +4057,7 @@ class ThunderPunch(Attack):
         """
         if random.random() < 0.1:
             target.apply_status("paralyzed")
-            print(f"{target.name} est paralysé par Thunder Punch !")
+            print_infos(f"{target.name} est paralysé par Thunder Punch !")
 
 class IcePunch(Attack):
     def __init__(self):
@@ -4077,7 +4079,7 @@ class IcePunch(Attack):
         """
         if random.random() < 0.1:
             target.apply_status("frozen")
-            print(f"{target.name} est gelé par Ice Punch !")
+            print_infos(f"{target.name} est gelé par Ice Punch !")
 
 class XScissor(Attack):
     def __init__(self):
@@ -4113,7 +4115,7 @@ class PoisonJab(Attack):
         """
         if random.random() < 0.3:
             target.apply_status("poisoned")
-            print(f"{target.name} est empoisonné par Poison Jab !")
+            print_infos(f"{target.name} est empoisonné par Poison Jab !")
 
 class Overdrive(Attack):
     def __init__(self):
@@ -4192,7 +4194,7 @@ class AirSlash(Attack):
         if random.random() < 0.3:
             if not target.flinched:
                 target.flinched = True
-                print(f"{target.name} est appeuré par Air Slash !")
+                print_infos(f"{target.name} est appeuré par Air Slash !")
 
 class BleakwindStorm(Attack):
     def __init__(self):
@@ -4222,7 +4224,7 @@ class BleakwindStorm(Attack):
             stat_changes = {"Speed": -1}
             success = apply_stat_changes(target, stat_changes, "opponent", fight)
             if success:
-                print(f"La Vitesse de {target.name} diminue à cause de Bleakwind Storm !")
+                print_infos(f"La Vitesse de {target.name} diminue à cause de Bleakwind Storm !")
 
 class HeatWave(Attack):
     def __init__(self):
@@ -4245,7 +4247,7 @@ class HeatWave(Attack):
         if random.random() < 0.1 and target.talent != "Thermal Exchange":
             if target.status is None:
                 target.status = "burn"
-                print(f"{target.name} est brûlé par Heat Wave !")
+                print_infos(f"{target.name} est brûlé par Heat Wave !")
 
 class IcyWind(Attack):
     def __init__(self):
@@ -4268,7 +4270,7 @@ class IcyWind(Attack):
         stat_changes = {"Speed": -1}
         success = apply_stat_changes(target, stat_changes, "opponent", fight)
         if success:
-            print(f"La Vitesse de {target.name} diminue à cause d'Icy Wind !")
+            print_infos(f"La Vitesse de {target.name} diminue à cause d'Icy Wind !")
 
 class SandsearStorm(Attack):
     def __init__(self):
@@ -4297,7 +4299,7 @@ class SandsearStorm(Attack):
         if random.random() < 0.2 and target.talent != "Thermal Exchange":
             if target.status is None:
                 target.status = "burn"
-                print(f"{target.name} est brûlé par Sandsear Storm !")
+                print_infos(f"{target.name} est brûlé par Sandsear Storm !")
 
 class SpringtideStorm(Attack):
     def __init__(self):
@@ -4321,7 +4323,7 @@ class SpringtideStorm(Attack):
             stat_changes = {"Attack": -1}
             success = apply_stat_changes(target, stat_changes, "opponent", fight)
             if success:
-                print(f"L'Attaque de {target.name} diminue à cause de Springtide Storm !")
+                print_infos(f"L'Attaque de {target.name} diminue à cause de Springtide Storm !")
 
 class WildboltStorm(Attack):
     def __init__(self):
@@ -4350,7 +4352,7 @@ class WildboltStorm(Attack):
         if random.random() < 0.2:
             if target.status is None:
                 target.status = "paralyzed"
-                print(f"{target.name} est paralysé par Wildbolt Storm !")
+                print_infos(f"{target.name} est paralysé par Wildbolt Storm !")
 
 class Boomburst(Attack):
     def __init__(self):
@@ -4388,7 +4390,7 @@ class StrengthSap(Attack):
         Échoue si la statistique d'Attaque de la cible est réduite à fond (-6).
         """
         if target.stats_modifier[0] <= -6:
-            print(f"{target.name} ne peut pas être affaibli davantage !")
+            print_infos(f"{target.name} ne peut pas être affaibli davantage !")
             return
         else:
             
@@ -4403,10 +4405,10 @@ class StrengthSap(Attack):
                     actual_healing = int(actual_healing * 1.3)
                 if target.talent == "Liquid Ooze":
                     user.current_hp -= actual_healing
-                    print(f"{target.name} inflige {actual_healing} PV de dégâts à {user.name} avec Liquid Ooze !")
+                    print_infos(f"{target.name} inflige {actual_healing} PV de dégâts à {user.name} avec Liquid Ooze !")
                 else:
                     user.current_hp += actual_healing
-                    print(f"{user.name} restaure {actual_healing} PV avec Strength Sap !")
+                    print_infos(f"{user.name} restaure {actual_healing} PV avec Strength Sap !")
 
 class BitterBlade(Attack):
     def __init__(self):
@@ -4434,10 +4436,10 @@ class BitterBlade(Attack):
                     actual_healing = int(actual_healing * 1.3)
                 if target.talent == "Liquid Ooze":
                     user.current_hp -= actual_healing
-                    print(f"{target.name} inflige {actual_healing} PV de dégâts à {user.name} avec Liquid Ooze !")
+                    print_infos(f"{target.name} inflige {actual_healing} PV de dégâts à {user.name} avec Liquid Ooze !")
                 else:
                     user.current_hp += actual_healing
-                    print(f"{user.name} récupère {actual_healing} PV grâce à Draining Kiss !")
+                    print_infos(f"{user.name} récupère {actual_healing} PV grâce à Draining Kiss !")
 
 class EnergyBall(Attack):
     def __init__(self):
@@ -4493,13 +4495,13 @@ class Rest(Attack):
     def apply_effect(self, user, target, fight):
         # Vérifier si l'utilisateur est sous l'effet de Heal Block
         if getattr(user, 'heal_blocked', False):
-            print(f"{user.name} ne peut pas utiliser {self.name} car il est sous l'effet de Heal Block !")
+            print_infos(f"{user.name} ne peut pas utiliser {self.name} car il est sous l'effet de Heal Block !")
             return
         
         current_hp = user.current_hp
         heal_amount = user.max_hp
         user.current_hp = min(user.max_hp, user.current_hp + heal_amount)
-        print(f"{user.name} récupère {user.max_hp - current_hp} PV grâce à Rest.")
+        print_infos(f"{user.name} récupère {user.max_hp - current_hp} PV grâce à Rest.")
 
 class SleepTalk(Attack):
     """Une des capacités connues du lanceur est choisie au hasard pour être utilisée. Échoue si le lanceur n'est pas endormi.
@@ -4571,7 +4573,7 @@ class FireBlast(Attack):
         """10% de chance de brûler la cible"""
         if random.random() < 0.1 and target.status is None:
             target.apply_status("burn")
-            print(f"{target.name} est brûlé par Fire Blast !")
+            print_infos(f"{target.name} est brûlé par Fire Blast !")
 
 class FireFang(Attack):
     def __init__(self):
@@ -4591,10 +4593,10 @@ class FireFang(Attack):
         """10% de chance de flinch et 10% de chance de brûler (indépendants)."""
         if random.random() < 0.1 and not target.flinched:
             target.flinched = True
-            print(f"{target.name} est appeuré par Fire Fang !")
+            print_infos(f"{target.name} est appeuré par Fire Fang !")
         if random.random() < 0.1 and target.status is None:
             target.apply_status("burn")
-            print(f"{target.name} est brûlé par Fire Fang !")
+            print_infos(f"{target.name} est brûlé par Fire Fang !")
 
 class ClangingScales(Attack):
     def __init__(self):
@@ -4633,7 +4635,7 @@ class ElectroDrift(Attack):
         """Paralyse la cible avec 30% de chance."""
         if random.random() < 0.3:
             target.apply_status("paralyzed")
-            print(f"{target.name} est paralysé par Electro Drift !")
+            print_infos(f"{target.name} est paralysé par Electro Drift !")
 
 class PyroBall(Attack):
     def __init__(self):
@@ -4653,7 +4655,7 @@ class PyroBall(Attack):
         """10% de chance de brûler la cible."""
         if random.random() < 0.1 and target.status is None:
             target.apply_status("burn")
-            print(f"{target.name} est brûlé par Pyro Ball !")
+            print_infos(f"{target.name} est brûlé par Pyro Ball !")
 
 class PowerWhip(Attack):
     def __init__(self):
@@ -4688,7 +4690,7 @@ class Lunge(Attack):
         stats_changes = {"Attack": -1}
         success = apply_stat_changes(target, stats_changes, "opponent", fight)
         if success:
-            print(f"l'Attaque de {target.name} baisse !")
+            print_infos(f"l'Attaque de {target.name} baisse !")
 
 class GigaDrain(Attack):
     def __init__(self):
@@ -4714,10 +4716,10 @@ class GigaDrain(Attack):
                     actual_healing = int(actual_healing * 1.3)
                 if target.talent == "Liquid Ooze":
                     user.current_hp -= actual_healing
-                    print(f"{target.name} inflige {actual_healing} PV de dégâts à {user.name} avec Liquid Ooze !")
+                    print_infos(f"{target.name} inflige {actual_healing} PV de dégâts à {user.name} avec Liquid Ooze !")
                 else:
                     user.current_hp += actual_healing
-                    print(f"{user.name} récupère {actual_healing} PV grâce à Giga Drain !")
+                    print_infos(f"{user.name} récupère {actual_healing} PV grâce à Giga Drain !")
 
 class BodyPress(Attack):
     def __init__(self):
@@ -4752,7 +4754,7 @@ class VoltTackle(Attack):
         if damage_dealt > 0:
             recoil_damage = user.max_hp // 3
             user.current_hp -= recoil_damage
-            print(f"{user.name} subit {recoil_damage} PV de dégâts de recul avec Volt Tackle !")
+            print_infos(f"{user.name} subit {recoil_damage} PV de dégâts de recul avec Volt Tackle !")
 
 class StoredPower(Attack):
     def __init__(self):
@@ -4799,7 +4801,7 @@ class IronTail(Attack):
         stats_changes = {"Defense": -1}
         success = apply_stat_changes(target, stats_changes, "opponent", fight)
         if success:
-            print(f"La Défense de {target.name} baisse !")
+            print_infos(f"La Défense de {target.name} baisse !")
 
 class MysticalFire(Attack):
     def __init__(self):
@@ -4820,7 +4822,7 @@ class MysticalFire(Attack):
         stats_changes = {"Sp. Atk": -1}
         success = apply_stat_changes(target, stats_changes, "opponent", fight)
         if success:
-            print(f"L'Attaque Spéciale de {target.name} baisse !")
+            print_infos(f"L'Attaque Spéciale de {target.name} baisse !")
 
 def process_future_sight_attacks(fight):
     """
@@ -4856,10 +4858,10 @@ def execute_future_sight(future_attack, fight):
         current_target = fight.active2
     
     if current_target.current_hp <= 0:
-        print(f"Future Sight de {future_attack['user_name']} rate car il n'y a plus de cible !")
+        print_infos(f"Future Sight de {future_attack['user_name']} rate car il n'y a plus de cible !")
         return
     
-    print(f"Future Sight de {future_attack['user_name']} frappe {current_target.name} !")
+    print_infos(f"Future Sight de {future_attack['user_name']} frappe {current_target.name} !")
     
     # Vérifier si l'utilisateur original est encore sur le terrain
     original_user = future_attack['user']
@@ -4921,11 +4923,11 @@ def execute_future_sight(future_attack, fight):
     damage = int(damage)
     
     # Appliquer les dégâts (Future Sight ignore les substituts)
-    print(f"Future Sight inflige {damage} dégâts !")
+    print_infos(f"Future Sight inflige {damage} dégâts !")
     fight.damage_method(current_target, damage, bypass_substitute=True)
     
     if current_target.current_hp <= 0:
-        print(f"{current_target.name} est K.O. par Future Sight !")
+        print_infos(f"{current_target.name} est K.O. par Future Sight !")
 
 attack_registry = {
     "Accelerock": Accelerock(),

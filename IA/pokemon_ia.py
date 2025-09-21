@@ -539,4 +539,26 @@ class HighHeuristicAI(PokemonAI):
     def __init__(self, team_id):
         super().__init__(team_id, "High Heuristic AI")
 
+    def choose_action(self, fight, available_actions):
+        return
     
+    def score_attack(self, fight, attack):
+        if self.team_id == 1:
+            my_poke = fight.active1
+            enemy = fight.active2
+        else:
+            my_poke = fight.active2
+            enemy = fight.active1
+        
+        score = [0, 0, 0, 0]
+        for i,atk in zip(range(4), [my_poke.attack1, my_poke.attack2, my_poke.attack3, my_poke.attack4]):
+            if atk != None:
+                from damage_calc import damage_calc
+                damages, chances_of_ko, _, _ = damage_calc(my_poke, enemy, atk, fight)
+                percentages = damages / enemy.current_hp
+                if chances_of_ko > 0.99:
+                    score[i] += 1000 # Très haute priorité pour les attaques qui peuvent KO
+                else:
+                    score[i] += percentages * 50
+                    
+

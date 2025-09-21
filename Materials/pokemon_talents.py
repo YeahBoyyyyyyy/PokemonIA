@@ -2,7 +2,7 @@
 fichier regroupant tous les talents de poke et créant un dictionnaire regroupant tous leurs effets.
 '''
 import random
-from Materials.utilities import MOLD_BREAKER_IGNORED_ABILITIES, NON_DIRECT_PHYSICAL_ATTACK, DIRECT_SPECIAL_ATTACKS, PRINTING_METHOD
+from Materials.utilities import MOLD_BREAKER_IGNORED_ABILITIES, NON_DIRECT_PHYSICAL_ATTACK, DIRECT_SPECIAL_ATTACKS, PRINTING_METHOD, print_infos
 
 
 ON_ATTACK_MOD_DICT = {
@@ -64,7 +64,7 @@ class Prankster(Talent):
         """Les pokémons de type Dark sont immunisés aux attaques de status venant d'un pokémon avec Prankster."""
         target = fight.active1 if fight.active2 == poke else fight.active2
         if "Dark" in target.types and attack.category == "Status":
-            print(f"{target.name} n'est pas affecté par les attaques de status provenant du talent prankskter !")
+            print_infos(f"{target.name} n'est pas affecté par les attaques de status provenant du talent prankskter !")
             return
         else:
             pass
@@ -90,7 +90,7 @@ class WaterAbsorb(Talent):
         if incoming_attack.type == "Water":
             healed = int(poke.max_hp * 0.25)
             poke.current_hp = min(poke.current_hp + healed, poke.max_hp)
-            print(f"{poke.name} absorbe l'eau et récupère {healed} PV !")
+            print_infos(f"{poke.name} absorbe l'eau et récupère {healed} PV !")
             return 0  # annule les dégâts
 
 class WindRider(Talent):
@@ -105,14 +105,14 @@ class WindRider(Talent):
             stat_changes = {"Attack" : 1}
             success = apply_stat_changes(poke, stat_changes, "self", fight)
             if success:
-                print(f"L'attaque de {poke.name} augmente grâce à Wind Rider !")
+                print_infos(f"L'attaque de {poke.name} augmente grâce à Wind Rider !")
     def on_defense(self, poke, incoming_attack, attacker_poke=None, fight=None):
         if "wind" in incoming_attack.flags:
             from pokemon import apply_stat_changes
             stat_changes = {"Attack" : 1}
             success = apply_stat_changes(poke, stat_changes, "self", fight)
             if success:
-                print(f"L'attaque de {poke.name} augmente grâce à Wind Rider !")
+                print_infos(f"L'attaque de {poke.name} augmente grâce à Wind Rider !")
             return 0  # annule les dégâts
 
 class Chlorophyll(Talent):
@@ -168,7 +168,7 @@ class Drizzle(Talent):
     def on_entry(self, poke, fight):
         if fight.weather["current"] != "Rain":
             fight.set_weather("Rain", duration=5)
-            print(f"{poke.name} invoque la pluie !")
+            print_infos(f"{poke.name} invoque la pluie !")
         return "activated"
 
 class Drought(Talent):
@@ -177,7 +177,7 @@ class Drought(Talent):
         if fight.weather["current"] != "Sunny":
             rounds = 8 if poke.item == "Heat Rock" else 5
             fight.set_weather("Sunny", duration=rounds)
-            print(f"{poke.name} invoque le soleil !")
+            print_infos(f"{poke.name} invoque le soleil !")
         return "activated"
     
 class SnowWarning(Talent):
@@ -185,7 +185,7 @@ class SnowWarning(Talent):
     def on_entry(self, poke, fight):
         if fight.weather["current"] != "Snow":
             fight.set_weather("Snow", duration=5)
-            print(f"{poke.name} invoque la grêle !")
+            print_infos(f"{poke.name} invoque la grêle !")
         return "activated"
 
 class Intimidate(Talent):
@@ -199,7 +199,7 @@ class Intimidate(Talent):
             stat_changes = {"Attack": -1}
             success = apply_stat_changes(opponent, stat_changes, "opponent", fight)
             if success:
-                print(f"{poke.name} intimide {opponent.name} !")
+                print_infos(f"{poke.name} intimide {opponent.name} !")
                 return "activated"
         return None
 
@@ -229,7 +229,7 @@ class FlashFire(Talent):
         if incoming_attack.type == "Fire":
             from pokemon import apply_stat_changes
             apply_stat_changes(poke, {"Sp. Atk": 1}, "self", fight)
-            print(f"{poke.name} absorbe le feu et augmente son Attaque Spéciale !")
+            print_infos(f"{poke.name} absorbe le feu et augmente son Attaque Spéciale !")
             return 0  # annule les dégâts
 
 class SapSipper(Talent):
@@ -238,7 +238,7 @@ class SapSipper(Talent):
         if incoming_attack.type == "Grass":
             from pokemon import apply_stat_changes
             apply_stat_changes(poke, {"Attack": 1}, "self", fight)
-            print(f"{poke.name} absorbe les attaques de type Plante et augmente son Attaque !")
+            print_infos(f"{poke.name} absorbe les attaques de type Plante et augmente son Attaque !")
             return 0  # annule les dégâts
 
 class SpeedBoost(Talent):
@@ -248,7 +248,7 @@ class SpeedBoost(Talent):
         stat_changes = {"Speed": 1}
         success = apply_stat_changes(poke, stat_changes, "self", fight)
         if success:
-            print(f"La vitesse de {poke.name} augmente grâce à Speed Boost !")
+            print_infos(f"La vitesse de {poke.name} augmente grâce à Speed Boost !")
             return "activated"
         return None
 
@@ -256,14 +256,14 @@ class ThickFat(Talent):
     """ Talent qui réduit de moitié les dégâts des attaques de type Feu et Glace."""
     def on_defense(self, poke, incoming_attack, attacker_poke=None, fight=None):
         if incoming_attack.type in ["Fire", "Ice"]:
-            print(f"{poke.name} réduit de moitié les dégâts grâce à sa graisse !")
+            print_infos(f"{poke.name} réduit de moitié les dégâts grâce à sa graisse !")
             return 0.5
         
 class Levitate(Talent):
     """ Talent qui immunise aux capacités de type sol."""
     def on_defense(self, poke, incoming_attack, attacker_poke=None, fight=None):
         if incoming_attack.type == "Ground":
-            print(f"{poke.name} est immunisé aux attaques de type Sol grâce à Lévitation !")
+            print_infos(f"{poke.name} est immunisé aux attaques de type Sol grâce à Lévitation !")
             return 0
         return 1.0
 
@@ -273,7 +273,7 @@ class Stamina(Talent):
         if incoming_attack.category in ["Physical", "Special"]:
             from pokemon import apply_stat_changes
             apply_stat_changes(poke, {"Defense": 1}, "self", fight)
-            print(f"{poke.name} augmente sa Défense grâce à Endurance !")
+            print_infos(f"{poke.name} augmente sa Défense grâce à Endurance !")
         return None
 
 class Sturdy(Talent):
@@ -284,7 +284,7 @@ class Sturdy(Talent):
             # On ne peut pas vraiment empêcher les dégâts ici, mais on peut marquer le Pokémon
             # pour qu'il garde au moins 1 PV dans la méthode damage_method
             poke.sturdy_activated = True
-            print(f"{poke.name} résiste grâce à Fermeté et garde 1 PV !")
+            print_infos(f"{poke.name} résiste grâce à Fermeté et garde 1 PV !")
             return "activated"  # Indique que le talent a été activé
         return None
 
@@ -304,7 +304,7 @@ class PoisonPuppeteer(Talent):
         if attack.category in ["Physical", "Special"]:
             if defender.status == "poison":
                 defender.is_confused = True
-                print(f"{defender.name} devient confus !")
+                print_infos(f"{defender.name} devient confus !")
         return ON_ATTACK_MOD_DICT
 
 class CursedBody(Talent):
@@ -313,7 +313,7 @@ class CursedBody(Talent):
         attacker = fight.active1 if poke == fight.active2 else fight.active2
         if random.random() < 0.3:  # 30% de chance de désactiver l'attaque
             attacker.disabled_attack = incoming_attack
-            print(f"{attacker.name} est entravé et ne peut plus utiliser {incoming_attack.name} !")
+            print_infos(f"{attacker.name} est entravé et ne peut plus utiliser {incoming_attack.name} !")
 
 class ClearBody(Talent):
     def on_stat_change(self, poke, stat_changes, source, fight=None):
@@ -323,7 +323,7 @@ class ClearBody(Talent):
             filtered_changes = {}
             for stat, change in stat_changes.items():
                 if change < 0:
-                    print(f"{poke.name} ignore la baisse de {stat} grâce à Clear Body !")
+                    print_infos(f"{poke.name} ignore la baisse de {stat} grâce à Clear Body !")
                 else:
                     filtered_changes[stat] = change
             return filtered_changes
@@ -336,7 +336,7 @@ class Competitive(Talent):
             # Vérifier s'il y a des réductions de stats
             has_reduction = any(change < 0 for change in stat_changes.values())
             if has_reduction:
-                print(f"{poke.name} devient compétitif ! Son Attaque Spéciale augmente !")
+                print_infos(f"{poke.name} devient compétitif ! Son Attaque Spéciale augmente !")
                 # Ajouter le boost d'Attaque Spéciale
                 poke.stats_modifier[2] = min(poke.stats_modifier[2] + 2, 6)
                 poke.actualize_stats()
@@ -349,7 +349,7 @@ class Defiant(Talent):
             # Vérifier s'il y a des réductions de stats
             has_reduction = any(change < 0 for change in stat_changes.values())
             if has_reduction:
-                print(f"{poke.name} devient provocateur ! Son Attaque augmente !")
+                print_infos(f"{poke.name} devient provocateur ! Son Attaque augmente !")
                 # Ajouter le boost d'Attaque
                 poke.stats_modifier[0] = min(poke.stats_modifier[0] + 2, 6)
                 poke.actualize_stats()
@@ -377,7 +377,7 @@ class GrassySurge(Talent):
         """Invoque le terrain herbu quand il entre sur le terrain s'il n'est pas déjà actif."""
         if fight.field != "Grassy Terrain":
             fight.set_field("Grassy Terrain")
-            print(f"{poke.name} invoque le terrain herbu !")
+            print_infos(f"{poke.name} invoque le terrain herbu !")
 
 class RoughSkin(Talent):
     def on_defense(self, poke, incoming_attack, attacker_poke=None, fight=None):
@@ -390,7 +390,7 @@ class RoughSkin(Talent):
                 attacker_poke._rough_skin_triggered = True
                 dmg = int(poke.max_hp * 0.125)
                 fight.damage_method(attacker_poke, dmg)
-                print(f"{attacker_poke.name} subit {dmg} points de dégâts à cause de Rough Skin !")
+                print_infos(f"{attacker_poke.name} subit {dmg} points de dégâts à cause de Rough Skin !")
         return 1.0  # Pas de modification des dégâts
 
 class CompoundEyes(Talent):
@@ -404,7 +404,7 @@ class IceScales(Talent):
     """Talent qui réduit les dégâts des attaques spéciales de 50%."""
     def on_defense(self, poke, incoming_attack, attacker_poke=None, fight=None):
         if incoming_attack and incoming_attack.category == "Special":
-            print(f"{poke.name} utilise Ice Scales pour réduire les dégâts !")
+            print_infos(f"{poke.name} utilise Ice Scales pour réduire les dégâts !")
             return 0.5  # Réduit les dégâts spéciaux de 50%
         return 1.0  # Pas de modification des dégâts
 
@@ -437,7 +437,7 @@ class Static(Talent):
         if (incoming_attack.category == "Physical" and not incoming_attack.name in NON_DIRECT_PHYSICAL_ATTACK) or (incoming_attack.category == "Special" and incoming_attack.name in DIRECT_SPECIAL_ATTACKS):
             if random.random() < 0.3:  # 30% de chance de paralyser
                 attacker_poke.status = "paralysis"
-                print(f"{attacker_poke.name} est paralysé par {poke.name}'s Static !")
+                print_infos(f"{attacker_poke.name} est paralysé par {poke.name}'s Static !")
 
 class FlameBody(Talent):
     """Talent qui brûle l'adversaire si une attaque de contact le touche."""
@@ -445,7 +445,7 @@ class FlameBody(Talent):
         if (incoming_attack.category == "Physical" and not incoming_attack.name in NON_DIRECT_PHYSICAL_ATTACK) or (incoming_attack.category == "Special" and incoming_attack.name in DIRECT_SPECIAL_ATTACKS):
             if random.random() < 0.3:  # 30% de chance de brûler
                 attacker_poke.status = "burn"
-                print(f"{attacker_poke.name} est brûlé par {poke.name}'s Flame Body !")
+                print_infos(f"{attacker_poke.name} est brûlé par {poke.name}'s Flame Body !")
 
 class MagicBounce(Talent):
     """Talent qui renvoie les attaques de statut à l'adversaire."""
@@ -456,21 +456,21 @@ class MagicBounce(Talent):
             "reflectable" in incoming_attack.flags and
             attacker_poke and attacker_poke.current_hp > 0):
             
-            print(f"{poke.name} renvoie {incoming_attack.name} à {attacker_poke.name} grâce à Magic Bounce !")
+            print_infos(f"{poke.name} renvoie {incoming_attack.name} à {attacker_poke.name} grâce à Magic Bounce !")
             
             # Vérifier si l'attaquant original a aussi Magic Bounce (éviter boucle infinie)
             if (hasattr(attacker_poke, 'talent') and 
                 attacker_poke.talent == "Magic Bounce"):
-                print(f"Mais {attacker_poke.name} a aussi Magic Bounce ! L'attaque échoue.")
+                print_infos(f"Mais {attacker_poke.name} a aussi Magic Bounce ! L'attaque échoue.")
                 return 0  # Annule complètement l'attaque
             
             # Vérifier si l'attaquant a Magic Coat actif
             if getattr(attacker_poke, 'magic_coat_active', False):
-                print(f"Mais {attacker_poke.name} a un voile magique actif ! L'attaque échoue.")
+                print_infos(f"Mais {attacker_poke.name} a un voile magique actif ! L'attaque échoue.")
                 return 0
             
             # Renvoyer l'attaque vers l'attaquant original
-            print(f"{incoming_attack.name} est renvoyée vers {attacker_poke.name} !")
+            print_infos(f"{incoming_attack.name} est renvoyée vers {attacker_poke.name} !")
             
             # Déterminer la nouvelle cible
             target = attacker_poke if incoming_attack.target == "Foe" else poke
@@ -480,7 +480,7 @@ class MagicBounce(Talent):
                 try:
                     incoming_attack.apply_effect(poke, target, fight)
                 except Exception as e:
-                    print(f"Erreur lors du renvoi de l'attaque : {e}")
+                    print_infos(f"Erreur lors du renvoi de l'attaque : {e}")
             
             return 0  # Annule l'attaque originale sur le Pokémon avec Magic Bounce
 
@@ -491,7 +491,7 @@ class DauntlessShield(Talent):
             from pokemon import apply_stat_changes
             poke.dauntless_shield_activated = True
             apply_stat_changes(poke, {"Defense": 1}, "self", fight)
-            print(f"{poke.name} active Egide Inflexible et augmente sa Défense !")
+            print_infos(f"{poke.name} active Egide Inflexible et augmente sa Défense !")
             return "activated"
         
 class IntrepidSword(Talent):
@@ -501,7 +501,7 @@ class IntrepidSword(Talent):
             from pokemon import apply_stat_changes
             poke.intrepid_sword_activated = True
             apply_stat_changes(poke, {"Attack": 1}, "self", fight)
-            print(f"{poke.name} active Epée Intrépide et augmente son Attaque !")
+            print_infos(f"{poke.name} active Epée Intrépide et augmente son Attaque !")
             return "activated"
         
 class SwordOfRuin(Talent):
@@ -511,7 +511,7 @@ class SwordOfRuin(Talent):
         """Applique l'effet de Sword of Ruin quand le Pokémon entre."""
         fight.ruin_effects_active["Sword of Ruin"] = True
         fight.apply_ruin_effects()
-        print(f"{poke.name} active Sword of Ruin !")
+        print_infos(f"{poke.name} active Sword of Ruin !")
         return "activated"
 
 class TabletsOfRuin(Talent):
@@ -521,7 +521,7 @@ class TabletsOfRuin(Talent):
         """Applique l'effet de Tablets of Ruin quand le Pokémon entre."""
         fight.ruin_effects_active["Tablets of Ruin"] = True
         fight.apply_ruin_effects()
-        print(f"{poke.name} active Tablets of Ruin !")
+        print_infos(f"{poke.name} active Tablets of Ruin !")
         return "activated"
 
 class VesselOfRuin(Talent):
@@ -531,7 +531,7 @@ class VesselOfRuin(Talent):
         """Applique l'effet de Vessel of Ruin quand le Pokémon entre."""
         fight.ruin_effects_active["Vessel of Ruin"] = True
         fight.apply_ruin_effects()
-        print(f"{poke.name} active Vessel of Ruin !")
+        print_infos(f"{poke.name} active Vessel of Ruin !")
         return "activated"
 
 class BeadsOfRuin(Talent):
@@ -541,7 +541,7 @@ class BeadsOfRuin(Talent):
         """Applique l'effet de Beads of Ruin quand le Pokémon entre."""
         fight.ruin_effects_active["Beads of Ruin"] = True
         fight.apply_ruin_effects()
-        print(f"{poke.name} active Beads of Ruin !")
+        print_infos(f"{poke.name} active Beads of Ruin !")
         return "activated"
     
 class ToxicDebris(Talent):
@@ -564,10 +564,10 @@ class ToxicDebris(Talent):
                 opponent_hazards["Toxic Spikes"] += 1
                 layers = opponent_hazards["Toxic Spikes"]
                 effect = "empoisonnement" if layers == 1 else "empoisonnement grave"
-                print(f"{poke.name} pose des Toxic Spikes ! (Couche {layers}/2 - {effect})")
+                print_infos(f"{poke.name} pose des Toxic Spikes ! (Couche {layers}/2 - {effect})")
                 return "activated"
             else:
-                print(f"Il y a déjà le maximum de Toxic Spikes sur le terrain !")
+                print_infos(f"Il y a déjà le maximum de Toxic Spikes sur le terrain !")
         return None
 
 class SupremeOverlord(Talent):
@@ -581,7 +581,7 @@ class SupremeOverlord(Talent):
             boost = 1 + 0.1 * num_kos
             poke.hidden_modifier["Attack"] *= boost
             poke.hidden_modifier["Sp. Atk"] *= boost
-            print(f"{poke.name} active Supreme Overlord et augmente son Attaque et Attaque Spéciale de {boost:.1f}x !")
+            print_infos(f"{poke.name} active Supreme Overlord et augmente son Attaque et Attaque Spéciale de {boost:.1f}x !")
             poke.actualize_stats()
             return "activated"
         return None
@@ -590,7 +590,7 @@ class Multiscale(Talent):
     """Talent qui réduit les dégâts subis par le Pokémon de 50% quand il est à plein PV."""
     def on_defense(self, poke, incoming_attack, attacker_poke=None, fight=None):
         if poke.current_hp == poke.max_hp:
-            print(f"{poke.name} réduit les dégâts grâce à Multiscale !")
+            print_infos(f"{poke.name} réduit les dégâts grâce à Multiscale !")
             return 0.5  # Réduit les dégâts de moitié
         return 1.0  # Pas de réduction si pas à plein PV
 
@@ -601,13 +601,13 @@ class BadDreams(Talent):
         if opponent.status == "sleep":
             damage = int(opponent.max_hp * 0.125)
             fight.damage_method(opponent, damage)
-            print(f"{opponent.name} subit {damage} points de dégâts à cause de Bad Dreams !")
+            print_infos(f"{opponent.name} subit {damage} points de dégâts à cause de Bad Dreams !")
 
 class GoodAsGold(Talent):
     """Talent qui rend le Pokémon immunisé aux attaques de statut provenant d'autres pokémon que lui-même."""
     def on_defense(self, poke, incoming_attack, attacker_poke, fight=None):
         if incoming_attack.category == "Status" and attacker_poke != poke:
-            print(f"{poke.name} est immunisé aux attaques de statut grâce à Good as Gold !")
+            print_infos(f"{poke.name} est immunisé aux attaques de statut grâce à Good as Gold !")
             return 0  # Annule l'attaque de statut
         return None  # Pas d'effet sur les autres types d'attaques
 
@@ -620,7 +620,7 @@ class Regenerator(Talent):
             old_hp = poke.current_hp
             poke.current_hp = min(poke.current_hp + healed, poke.max_hp)
             actual_healed = poke.current_hp - old_hp
-            print(f"{poke.name} récupère {actual_healed} PV grâce à Regenerator !")
+            print_infos(f"{poke.name} récupère {actual_healed} PV grâce à Regenerator !")
             return "activated"
         return None
 
@@ -628,7 +628,7 @@ class WonderSkin(Talent):
     """Talent qui fait que le pokemon a 50% de chance de faire échouer les capacités de statut dont il est la cible."""
     def on_defense(self, poke, incoming_attack, attacker_poke, fight=None):
         if incoming_attack.category == "Status" and incoming_attack.target != "User" and attacker_poke != poke and random.random() < 0.5:
-            print(f"{poke.name} fait échouer l'attaque de statut adverse grâce à Peau Miracle")
+            print_infos(f"{poke.name} fait échouer l'attaque de statut adverse grâce à Peau Miracle")
 
 class InnerFocus(Talent):
     """Talent qui empêche le pokémon d'être flinch (étourdi) par une attaque. 
@@ -642,7 +642,7 @@ class IceFace(Talent):
             from Materials.utilities import transform_pokemon
             # Activer l'effet Ice Face
             poke.ice_face_active = False
-            print(f"{poke.name} utilise Ice Face pour résister à l'attaque physique !")
+            print_infos(f"{poke.name} utilise Ice Face pour résister à l'attaque physique !")
             transform_pokemon(poke, "Eiscue-No-Ice-Face")
             return 0
 
@@ -652,7 +652,7 @@ class SheerForce(Talent):
         mod_dict = ON_ATTACK_MOD_DICT.copy()
         if "secondary_effect" in attack.flags:
             mod_dict["power"] = 1.3
-            print(f"{poke.name} utilise Sheer Force pour augmenter la puissance de {attack.name} !")
+            print_infos(f"{poke.name} utilise Sheer Force pour augmenter la puissance de {attack.name} !")
         return mod_dict
 
 class Contrary(Talent):
@@ -668,8 +668,7 @@ class Protean(Talent):
         if poke.first_attack:
             poke.types = [attack.type] # Pas besoin de sauvegarder les anciens types, cela est déjà fait dans pokemon.py à l'__init__
             poke.protean_active = True  # Indique que Protean a été activé
-            if PRINTING_METHOD:
-                print(f"{poke.name} change son type en {attack.type} grâce à Protean !")
+            print_infos(f"{poke.name} change son type en {attack.type} grâce à Protean !")
             return ON_ATTACK_MOD_DICT  # Pas de modification des dégâts par défaut
 
 class Libero(Talent):
@@ -678,8 +677,7 @@ class Libero(Talent):
         if poke.first_attack:
             poke.types = [attack.type]  # Change le type du Pokémon
             poke.libero_active = True  # Indique que Libero a été activé
-            if PRINTING_METHOD:
-                print(f"{poke.name} change son type en {attack.type} grâce à Libero !")
+            print_infos(f"{poke.name} change son type en {attack.type} grâce à Libero !")
         return ON_ATTACK_MOD_DICT  # Pas de modification des dégâts par défaut
 
 class Technician(Talent):
@@ -688,7 +686,7 @@ class Technician(Talent):
         if attack.base_power <= 60:
             mod_dict = ON_ATTACK_MOD_DICT.copy()
             mod_dict["power"] = 1.5
-            print(f"{poke.name} utilise Technician pour augmenter la puissance de {attack.name} !")
+            print_infos(f"{poke.name} utilise Technician pour augmenter la puissance de {attack.name} !")
             return mod_dict
         return ON_ATTACK_MOD_DICT  # Pas de modification si l'attaque est trop puissante
 
@@ -710,7 +708,7 @@ class SandStream(Talent):
     def on_entry(self, poke, fight):
         if fight.weather["current"] != "Sandstorm":
             fight.set_weather("Sandstorm", duration=5)
-            print(f"{poke.name} invoque une tempête de sable !")
+            print_infos(f"{poke.name} invoque une tempête de sable !")
         return "activated"
 
 class Moxie(Talent):
@@ -723,7 +721,7 @@ class Moxie(Talent):
             if poke.pending_moxie:
                 from pokemon import apply_stat_changes
                 apply_stat_changes(poke, {"Attack": 1}, "self", fight)
-                print(f"{poke.name} augmente son Attaque grâce à Moxie !")
+                print_infos(f"{poke.name} augmente son Attaque grâce à Moxie !")
                 poke.pending_moxie = False  # Réinitialiser le flag
                 return "activated"
 
@@ -737,7 +735,7 @@ class ChillingNeigh(Talent):
             if poke.pending_chilling_neigh:
                 from pokemon import apply_stat_changes
                 apply_stat_changes(poke, {"Attack": 1}, "self", fight)
-                print(f"{poke.name} augmente son Attaque grâce à Chilling Neigh !")
+                print_infos(f"{poke.name} augmente son Attaque grâce à Chilling Neigh !")
                 poke.pending_chilling_neigh = False  # Réinitialiser le flag
                 return "activated"
         
@@ -751,7 +749,7 @@ class GrimNeigh(Talent):
             if poke.pending_grim_neigh:
                 from pokemon import apply_stat_changes
                 apply_stat_changes(poke, {"Sp. Atk": 1}, "self", fight)
-                print(f"{poke.name} augmente son Attaque Spéciale grâce à Grim Neigh !")
+                print_infos(f"{poke.name} augmente son Attaque Spéciale grâce à Grim Neigh !")
                 poke.pending_grim_neigh = False  # Réinitialiser le flag
                 return "activated"
 
@@ -763,7 +761,7 @@ class Steadfast(Talent):
             stat_changes = {"Speed": 1}
             success = apply_stat_changes(poke, stat_changes, "self", fight)
             if success:
-                print(f"La vitesse de {poke.name} augmente de 1 niveau à cause du flinch!")
+                print_infos(f"La vitesse de {poke.name} augmente de 1 niveau à cause du flinch!")
 
 class LiquidOoze(Talent):
     """Ce Pokémon blesse ceux qui lui drainent des PVs pour se soigner proportionnellement à ce qu'ils auraient dû récupérer."""
@@ -787,7 +785,7 @@ class Guts(Talent):
         if poke.status:
             mod_dict = ON_ATTACK_MOD_DICT.copy()
             mod_dict["attack"] = 1.5
-            print(f"{poke.name} augmente son attaque grâce à Guts !")
+            print_infos(f"{poke.name} augmente son attaque grâce à Guts !")
             return mod_dict
         return ON_ATTACK_MOD_DICT  # Pas de modification si pas de problème de statut
 
@@ -797,7 +795,7 @@ class ThermalExchange(Talent):
         if incoming_attack.type == "Fire":
             from pokemon import apply_stat_changes
             apply_stat_changes(poke, {"Attack": 1}, "opponent")
-            print(f"L'attaque de {poke.name} augmente grâce à Thermal Exchange !")
+            print_infos(f"L'attaque de {poke.name} augmente grâce à Thermal Exchange !")
 
 class Analytic(Talent):
     """Si ce Pokémon agit le dernier pendant un tour, la puissance de son attaque est multipliée par 1,3 (augmentée de 30%)."""
@@ -807,7 +805,7 @@ class Analytic(Talent):
         if opponent.has_attacked_or_switched:
             mod_dict = ON_ATTACK_MOD_DICT.copy()
             mod_dict["power"] = 1.3
-            print(f"La puissance de {attack.name} est augmentée grâce à Analytic !")
+            print_infos(f"La puissance de {attack.name} est augmentée grâce à Analytic !")
             return mod_dict
         return ON_ATTACK_MOD_DICT
         
@@ -818,12 +816,12 @@ class ShadowTag(Talent):
 
         # Vérifier si l'adversaire est immunisé (par exemple, type Ghost ou talent Shadow Tag)
         if "Ghost" in opponent.types or getattr(opponent, 'talent', None) == "Shadow Tag":
-            print(f"{opponent.name} est immunisé à Shadow Tag !")
+            print_infos(f"{opponent.name} est immunisé à Shadow Tag !")
             return None
 
         # Empêcher l'adversaire de fuir ou de switcher
         opponent.cannot_switch = True
-        print(f"{poke.name} active Shadow Tag ! {opponent.name} ne peut pas fuir ou être remplacé.")
+        print_infos(f"{poke.name} active Shadow Tag ! {opponent.name} ne peut pas fuir ou être remplacé.")
         return "activated"
 
     def on_exit(self, poke, fight):
@@ -831,7 +829,7 @@ class ShadowTag(Talent):
         opponent = fight.active2 if poke == fight.active1 else fight.active1
         if hasattr(opponent, 'cannot_switch'):
             opponent.cannot_switch = False
-            print(f"{poke.name} quitte le terrain. {opponent.name} peut à nouveau fuir ou être remplacé.")
+            print_infos(f"{poke.name} quitte le terrain. {opponent.name} peut à nouveau fuir ou être remplacé.")
 
 class MotorDrive(Talent):
     """Talent qui augmente la Vitesse de 1 niveau lorsqu'il est touché par une attaque de type Électrik. 

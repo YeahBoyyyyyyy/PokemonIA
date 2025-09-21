@@ -6,6 +6,13 @@ from Materials.pokemon_talents import trigger_talent
 import Materials.utilities as utilities
 
 def damage_calc(attacker, attack, defender, fight):
+    """
+    Calcule les dégâts d'une attaque d'un Pokémon sur un autre en tenant compte des talents, objets, terrains, météo, etc.
+    :param attacker: Instance de la classe Pokemon qui attaque.
+    :param attack: Instance de la classe Attack qui est utilisée.
+    :param defender: Instance de la classe Pokemon qui est la cible de l'attaque.
+    :param fight: Instance de la classe Fight contenant toutes les informations sur le combat.
+    :return: Liste contenant les dégâts moyens, la probabilité de KO, les dégâts minimum et maximum."""
     if attack.category == "Status":
         return [None, None, None, None]  # Pas de dégâts pour les attaques de statut
 

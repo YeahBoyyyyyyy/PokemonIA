@@ -9,7 +9,12 @@ TERRAIN = ["Grassy Terrain", "Electric Terrain", "Psychic Terrain", "Misty Terra
 
 WEATHER = ["Sunny", "Rainy", "Snow", "Sandstorm", "None"]
 
-PRINTING_METHOD = True
+PRINTING_METHOD = False
+
+def print_infos(text:str):
+    """ Affiche des informations si le mode PRINTING_METHOD est activé."""
+    if PRINTING_METHOD:
+        print(text)
 
 # Talents ignorés par Mold Breaker (liste interne en anglais correspondant aux talents présents dans le code)
 MOLD_BREAKER_IGNORED_ABILITIES = {

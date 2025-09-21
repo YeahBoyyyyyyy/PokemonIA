@@ -88,7 +88,7 @@ rounds = []
 compteur_changement_equipe = 10
 for i in range(10):
     for i in range(200):
-        if compteur_changement_equipe > 5:
+        if compteur_changement_equipe >= 10:
             team_1 = import_team_from_json(import_random_simple_team())
             print(f"Équipe 1 (IA étudiée) : {[poke.name for poke in team_1]}")
             team_2 = import_team_from_json(import_random_simple_team())
