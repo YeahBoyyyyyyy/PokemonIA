@@ -163,8 +163,7 @@ class pokemon():
         Détermine si une attaque bénéficie du STAB Tera.
         
         :param attack_type: Type de l'attaque
-        :return: Multiplicateur STAB (1.0, 1.5, ou 2.0)
-        """
+        :return: Multiplicateur STAB (1.0, 1.5, ou 2.0)"""
         if not self.tera_activated:
             # STAB normal si pas téracristallisé
             return 1.5 if attack_type in self.types else 1.0
@@ -305,7 +304,10 @@ class pokemon():
         # Nettoyer les effets de Roost lors du changement
         if hasattr(self, 'lost_flying_from_roost') and self.lost_flying_from_roost:
             if hasattr(self, 'original_types'):
-                self.types = self.original_types.copy()  # Restaurer les types originaux
+                if not self.tera_activated:  # Ne pas écraser les types si Téracristallisé
+                    self.types = self.original_types.copy()  # Restaurer les types originaux
+                else:
+                    self.types = [self.tera_type]
             self.lost_flying_from_roost = False
         self.disabled_turns = 0  # Réinitialise le nombre de tours restants
         self.leech_seeded_by = None # Réinitialise l'effet de Leech Seed

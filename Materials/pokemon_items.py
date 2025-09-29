@@ -1,4 +1,4 @@
-from utilities import print_infos
+from Materials.utilities import print_infos
 
 ON_ATTACK_MOD_DICT = {
     "attack": 1.0,

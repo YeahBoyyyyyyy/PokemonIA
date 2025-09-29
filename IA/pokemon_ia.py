@@ -1,7 +1,9 @@
 import random
 from abc import ABC, abstractmethod
+import os
 from Materials.utilities import *
 from colors_utils import Colors
+from pokemon import pokemon
 
 class PokemonAI(ABC):
     """Classe abstraite pour toutes les IA Pokémon"""
@@ -542,23 +544,182 @@ class HighHeuristicAI(PokemonAI):
     def choose_action(self, fight, available_actions):
         return
     
-    def score_attack(self, fight, attack):
+    def score_actions(self, fight, attack):
         if self.team_id == 1:
             my_poke = fight.active1
             enemy = fight.active2
+            team = fight.team1
         else:
             my_poke = fight.active2
             enemy = fight.active1
+            team = fight.team2
         
-        score = [0, 0, 0, 0]
-        for i,atk in zip(range(4), [my_poke.attack1, my_poke.attack2, my_poke.attack3, my_poke.attack4]):
-            if atk != None:
-                from damage_calc import damage_calc
-                damages, chances_of_ko, _, _ = damage_calc(my_poke, enemy, atk, fight)
-                percentages = damages / enemy.current_hp
-                if chances_of_ko > 0.99:
-                    score[i] += 1000 # Très haute priorité pour les attaques qui peuvent KO
-                else:
-                    score[i] += percentages * 50
-                    
+        def tera_score(poke, attack, enemy):
+            """
+            Donne un score pour évaluer l'activation de la téracristallisation.
+
+            :return: score (int)
+            """
+            score = 0
+            if attack.type in poke.original_types:
+                score -= 100  # Pénalité si l'attaque est du type original
+            type_eff = evaluate_type_efficiency(poke, enemy)
+            score += type_eff * 80  # Bonus pour l'efficacité du type après téracristallisation
+            return score
+        
+        def score_attacks(my_poke, enemy, fight):  
+            """
+            Donne un score pour chaque attaque disponible sous forme de dico. 
+            
+            :return: dico {nom_attaque: score}
+            """ 
+            available_attacks = possible_attacks(my_poke)
+            score = {atk.name: 0 for atk in available_attacks if atk != None}
+            for i,atk in zip(range(4), available_attacks):
+                if atk != None:
+                    from damage_calc import damage_calc
+                    damages, chances_of_ko, _, _ = damage_calc(my_poke, enemy, atk, fight)
+                    percentages = damages / enemy.max_hp
+                    if chances_of_ko > 0.99:
+                        score[i] += 1000 # Très haute priorité pour les attaques qui peuvent KO
+                    else:
+                        score[i] += percentages * 70
+            return score
+
+        def score_team_attacks(fight, team):
+            """
+            Associe à une team un dico de score des attaques pour chaque pokémon.
+
+            :return: dico {poke: {nom_attaque: score}}
+            """
+            score_team = {poke : None for poke in team if poke.current_hp > 0}
+            for poke in team:
+                if poke.current_hp > 0:
+                    score_team[poke] = score_attacks(fight, poke)
+            return score_team    
+
+        def score_poke_on_terrain(fight, poke, score_attack_team):
+            """
+            Donne un score au pokémon actuel en fonction de plusieurs critères.
+
+            :return: dico {poke: score}
+            """
+
+            score = 0
+            if poke.current_hp > 0:
+                type_eff = evaluate_type_efficiency(poke, enemy)
+                score += (1/type_eff) * 100
+            if fight.leech_seeded_by == enemy:
+                score -= 50
+            if poke.status in ["poisoned", "badly_poisoned"]:
+                score -= 20
+                if poke.status == "badly_poisoned":
+                    if poke.toxic_counter and poke.toxic_counter > 1:
+                        score -= 10 * poke.toxic_counter
+            if poke.stats["Speed"] > enemy.stats["Speed"]:
+                score += 20
+            else:
+                score -= 10
+
+            score_atk = score_attack_team[poke] if score_attack_team[poke] != None else {}
+
+            ## Ajouter le score max des attaques
+            score += max(score_atk.values())
+
+            return score   
+
+        def score_switch_in(fight, team, scores_attack_team, enemy):
+            score_switch = {poke : 0 for poke in team if poke.current_hp > 0}
+            rest_team = [p for p in team if p != my_poke and p.current_hp > 0]
+            stat_attack = enemy.stats[category]
+            for poke in rest_team:
+                if poke.current_hp > 0:
+                    if simulate_hazards(fight, fight.hazards_team1 if self.team_id == 1 else fight.hazards_team2, poke) >= poke.current_hp:
+                        score_switch[poke] -= 200
+
+                    type_eff = evaluate_type_efficiency(poke, enemy)
+
+                    if poke.status in ["poisoned", "badly_poisoned"]:
+                        score_switch[poke] -= 40
+                    if scores_attack_team[poke] != None:
+                        score_switch[poke] += max(scores_attack_team[poke].values())
+
+                    hazards = fight.hazards_team1 if self.team_id == 1 else fight.hazards_team2
+                    if (hazards["Toxic Spikes"] > 0 and poke.status is not None) or hazards["Sticky Web"]:
+                        score_switch[poke] -= 50
+
+                    category = "Attack" if enemy.stats["Attack"] > enemy.stats["Special Attack"] else "Special Attack"
+                    stat_defense = enemy.stats["Defense" if category == "Attack" else "Special Defense"]
+                    if stat_defense > 1.2*stat_attack and type_eff <= 1:
+                        score_switch[poke] += 100
+                    else:
+                        score_switch[poke] -= 150
+
+
+        def simulate_hazards(fight, hazards, poke):
+            damages = 0
+            if poke.item != "Heavy-Duty Boots":
+                if hazards["Spikes"] > 0 and "Flying" not in poke.types and poke.talent != "Levitate":
+                    tier = {1 : 0.125, 2 : 0.1666666667, 3 : 0.25} 
+                    damages += int(poke.max_hp * tier[hazards["Spikes"]])
+                if hazards["Stealth Rock"]:
+                    rock_damage = int(poke.max_hp * 0.125)  # 1/8 des PV max
+                    type_eff = get_type_efficiency("Rock", poke)
+                    damages += int(rock_damage * type_eff)
+            return damages
+
+        scores_attack_team = score_team_attacks(fight, team)
+        score_switch = score_switch_in(fight, team, scores_attack_team, enemy)
+        score_pokemon_on_terrain = score_poke_on_terrain(fight, my_poke, scores_attack_team)
+
+        score_max, best_poke = 0, None
+        best_attack = None
+        best_switch_id = None
+
+        for p, s in score_switch.items():
+            if s > score_max:
+                score_max = s
+                best_poke = p
+        
+        for p, s in scores_attack_team[my_poke].items():
+            if p == best_poke:
+                s_m = max(scores_attack_team[my_poke].values())
+                for atk, sc in scores_attack_team[my_poke].items():
+                    if sc == s_m:
+                        best_attack = atk
+        
+        for p, s in score_switch.items():
+            if p == best_poke:
+                best_switch_id = team.index(p)
+        
+        if score_pokemon_on_terrain >= score_max:
+            return ('attack', best_attack, False)
+        else:
+            return ('switch', best_switch_id, None)
+
+
+    def simulate_attack(fight, poke, attack, enemy):
+        from Materials.pokemon_attacks import SimulationAttack
+        from damage_calc import damage_calc
+        fake_attack = SimulationAttack(attack).copy()
+
+        available_attacks = possible_attacks(poke)
+        infos_atks = {}
+        for attack in available_attacks:
+            if attack != None and attack.category != "Status":
+                fake_attack.category = "Physical" if attack.category == "Physical" else "Special"
+                type = getattr(attack, 'type', None)
+                fake_attack.type = type if type != None else "Normal"
+                damages, chances_of_ko, _, _ = damage_calc(poke, enemy, fake_attack, fight)
+                percentages = damages / enemy.max_hp
+                infos_atks[attack] = (damages, chances_of_ko, percentages)
+        return infos_atks
+                
+
+
+
+
+
+
+
 

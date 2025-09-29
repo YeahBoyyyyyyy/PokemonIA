@@ -1454,7 +1454,7 @@ class Fight():
             if utilities.PRINTING_METHOD:
                 print(f"{pokemon.name} souffre de sa brûlure ! Il perd {dmg} PV.")
             self.damage_method(pokemon, dmg, True)
-        elif pokemon.status == "poison":
+        elif pokemon.status == "poisoned":
             if pokemon.talent == "Poison Heal":
                 dmg = -int(pokemon.max_hp * 0.125)
                 if utilities.PRINTING_METHOD:
@@ -1593,9 +1593,9 @@ class Fight():
 
         # Vérifier les pièges d'entrée
         if hazards["Spikes"] > 0 and "Flying" not in pokemon.types and pokemon.talent != "Levitate":
-            damage = int(pokemon.max_hp * 0.0625 * hazards["Spikes"])  # 1/16 par couche de Spikes
+            tier = {1 : 0.125, 2 : 0.1666666667, 3 : 0.25} 
+            damage = int(pokemon.max_hp * tier[hazards["Spikes"]])  # 1/8, 1/6, ou 1/4 des PV max
             if utilities.PRINTING_METHOD:
-
                 print(f"{pokemon.name} subit {damage} points de dégâts à cause des Spikes !")
             self.damage_method(pokemon, damage)
 
@@ -1620,7 +1620,7 @@ class Fight():
                 pass  # Ignoré par Flying et Levitate
             else:
                 if hazards["Toxic Spikes"] == 1:
-                    pokemon.apply_status("poison")
+                    pokemon.apply_status("poisoned")
                     if utilities.PRINTING_METHOD:
                         print(f"{pokemon.name} est empoisonné par les Toxic Spikes !")
                 elif hazards["Toxic Spikes"] >= 2:

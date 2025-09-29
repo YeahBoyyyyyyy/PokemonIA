@@ -881,7 +881,7 @@ class Toxic(Attack):
     def apply_effect(self, user, target, fight):
 
         if target.status is None and "Poison" not in target.types and "Steel" not in target.types:
-            target.apply_status("toxic")
+            target.apply_status("badly_poisoned")
             print_infos(f"{target.name} est empoisonné !")
 
 class IceBeam(Attack):
@@ -2441,7 +2441,7 @@ class MortalSpin(Attack):
         
         # Empoisonner la cible seulement si l'attaque a infligé des dégâts
         if damage_dealt > 0 and target.status is None and "Poison" not in target.types:
-            target.apply_status("poison")
+            target.apply_status("poisoned")
             print_infos(f"{target.name} est empoisonné par Mortal Spin !")
 
 class MagicCoat(Attack):
@@ -2753,7 +2753,7 @@ class SludgeBomb(Attack):
         A 30 % de chance de provoquer un empoisonnement de la cible.
         """
         if random.random() < 0.3:
-            target.apply_status("poison")
+            target.apply_status("poisoned")
             print_infos(f"{target.name} est empoisonné !")
 
 class BugBuzz(Attack):
@@ -3553,7 +3553,7 @@ class SludgeWave(Attack):
         """10% de chance d'empoisonner"""
         if random.random() < 0.1:
             if target.status is None:
-                target.status = "poison"
+                target.status = "poisoned"
                 print_infos(f"{target.name} est empoisonné par Sludge Wave !")
 
 class CeaselessEdge(Attack):
@@ -3622,7 +3622,7 @@ class GunkShot(Attack):
         """30% de chance d'empoisonner la cible"""
         if random.random() < 0.3:
             if target.status is None:
-                target.status = "poison"
+                target.status = "poisoned"
                 print_infos(f"{target.name} est empoisonné par Gunk Shot !")
 
 class Struggle(Attack):
@@ -5123,3 +5123,19 @@ attack_registry = {
     "Wood Hammer": WoodHammer(),
     "X-Scissor": XScissor(),
 }
+
+class SimulationAttack(Attack):
+    """Attaque de simulation qui sert pour HighHeuristicAI, de 90 de puissance, de type non définit, de catégorie changeante en fonction
+    des stats du pokemon qui l'utilise, sans effets secondaires, et qui ne peut pas rater."""
+    def __init__(self):
+        super().__init__(
+            name="Simulation Attack",
+            type_=None,  # Type à définir dynamiquement
+            category=None,  # Catégorie par défaut, à changer dynamiquement
+            power=90,
+            accuracy=True,  # Ne peut pas rater
+            priority=0,
+            pp=1,  # PP illimités pour la simulation
+            flags=[],
+            target="Foe"
+        )

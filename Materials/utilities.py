@@ -221,32 +221,25 @@ def evaluate_type_efficiency(poke1, poke2):
 
     :param poke1: Le premier Pokémon à évaluer.
     :param poke2: Pokemon sur lequel on évalue l'efficacité des types de poke1.
-    :return: Un coefficient compris entre x(1/2)**9 et x(2)**9, valeurs possibles (1/2)**n et (2)**n ou n appartient à [0, 9].
+    :return: Un coefficient compris entre x(1/2)**4 et x(2)**4, valeurs possibles (1/2)**n et (2)**n ou n appartient à [0, 4].
     """
-    if hasattr(poke1, "original_types"):
-        original_type1 = poke1.original_types
+    if poke1.tera_activated:
+        types_poke1 = poke1.tera_type
     else:
-        original_type1 = poke1.types
-
-    if hasattr(poke2, "original_types"):
-        original_type2 = poke2.original_types
+        types_poke1 = poke1.original_types
+    
+    if poke2.tera_activated:
+        types_poke2 = poke2.tera_type
     else:
-        original_type2 = poke2.types
+        types_poke2 = poke2.original_types
 
     efficiency = 1.0
-    for type2 in poke2.original_types:
-        for type1 in poke1.original_types:
+
+    for type2 in types_poke2:
+        for type1 in types_poke1:
             efficiency *= type_chart[POKEMON_TYPES_ID[type1]][POKEMON_TYPES_ID[type2]]
 
-    if poke2.tera_activated:
-        for type1 in poke1.original_types: 
-            efficiency *= type_chart[POKEMON_TYPES_ID[type1]][POKEMON_TYPES_ID[poke2.types[0]]]
-
-    if poke1.tera_activated:
-        for type2 in poke2.original_types:
-            efficiency *= type_chart[POKEMON_TYPES_ID[poke1.types[0]]][POKEMON_TYPES_ID[type2]]
-
-    return efficiency     
+    return efficiency
 
 def get_type_efficiency(pokemon, attack_type):
     """

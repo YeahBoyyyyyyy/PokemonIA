@@ -8,6 +8,7 @@ import Materials.utilities as utilities
 def damage_calc(attacker, attack, defender, fight):
     """
     Calcule les dégâts d'une attaque d'un Pokémon sur un autre en tenant compte des talents, objets, terrains, météo, etc.
+    
     :param attacker: Instance de la classe Pokemon qui attaque.
     :param attack: Instance de la classe Attack qui est utilisée.
     :param defender: Instance de la classe Pokemon qui est la cible de l'attaque.
